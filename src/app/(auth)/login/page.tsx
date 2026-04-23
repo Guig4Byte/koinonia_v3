@@ -11,6 +11,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-bg px-5 py-8">
       <div className="w-full max-w-sm">
+        {/* Header pastoral */}
         <div className="mb-8 flex flex-col items-center gap-3 text-center">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-stone-800 text-white">
             <Church className="h-7 w-7" />
@@ -25,10 +26,8 @@ export default function LoginPage() {
           </div>
         </div>
 
+        {/* Card clean */}
         <div className="rounded-2xl bg-card p-6 shadow-sm border border-stone-200">
-          <h2 className="mb-5 text-lg font-medium text-stone-800">
-            Entrar
-          </h2>
           <LoginForm />
         </div>
       </div>

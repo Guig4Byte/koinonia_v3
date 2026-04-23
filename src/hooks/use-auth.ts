@@ -133,14 +133,17 @@ export function useLogin(options?: { redirectTo?: string }) {
         body: JSON.stringify(input),
       }),
     onSuccess: (response) => {
+      console.log("[useLogin] onSuccess", response);
       persistAuthTokens(response);
       queryClient.setQueryData(authQueryKey, response.user);
 
       if (options?.redirectTo) {
-        startTransition(() => {
-          router.replace(options.redirectTo ?? "/");
-        });
+        console.log("[useLogin] redirecting to", options.redirectTo);
+        router.replace(options.redirectTo);
       }
+    },
+    onError: (error) => {
+      console.error("[useLogin] onError", error);
     },
   });
 }
@@ -163,9 +166,7 @@ export function useOnboarding(options?: { redirectTo?: string }) {
       queryClient.setQueryData(authQueryKey, response.user);
 
       if (options?.redirectTo) {
-        startTransition(() => {
-          router.replace(options.redirectTo ?? "/");
-        });
+        router.replace(options.redirectTo);
       }
     },
   });
