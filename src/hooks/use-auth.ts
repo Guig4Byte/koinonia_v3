@@ -19,13 +19,12 @@ import type {
   MeResponse,
   OnboardingResponse,
   RefreshTokenResponse,
-  SessionUser,
 } from "@/types";
 
 export const authQueryKey = ["auth", "me"] as const;
 
 async function requestCurrentUser(accessToken: string) {
-  return apiRequest("/api/auth/me", {
+  return apiRequest<MeResponse>("/api/auth/me", {
     method: "GET",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -44,7 +43,7 @@ async function refreshAccessTokenFromStorage() {
     });
   }
 
-  const response = await apiRequest("/api/auth/refresh", {
+  const response = await apiRequest<RefreshTokenResponse>("/api/auth/refresh", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -126,7 +125,7 @@ export function useLogin(options?: { redirectTo?: string }) {
 
   return useMutation({
     mutationFn: (input: LoginInput) =>
-      apiRequest("/api/auth/login", {
+      apiRequest<LoginResponse>("/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -152,7 +151,7 @@ export function useOnboarding(options?: { redirectTo?: string }) {
 
   return useMutation({
     mutationFn: (input: OnboardingInput) =>
-      apiRequest("/api/auth/onboarding", {
+      apiRequest<OnboardingResponse>("/api/auth/onboarding", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -187,7 +186,7 @@ export function useRefreshToken() {
         });
       }
 
-      const response = await apiRequest("/api/auth/refresh", {
+      const response = await apiRequest<RefreshTokenResponse>("/api/auth/refresh", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
