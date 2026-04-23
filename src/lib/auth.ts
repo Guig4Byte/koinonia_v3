@@ -87,6 +87,23 @@ export async function verifyAccessToken(
   return result.isOk() ? result.value : null
 }
 
+export async function verifyAccessTokenDetailed(
+  token: string,
+): Promise<{ valid: true; payload: TokenPayload } | { valid: false; reason: string }> {
+  try {
+    const { payload } = await jwtVerify(token, getJwtSecret("JWT_SECRET"), {
+      clockTolerance: 60,
+    })
+    return { valid: true, payload: payload as unknown as TokenPayload }
+  } catch (error) {
+    const reason =
+      error instanceof joseErrors.JWTExpired
+        ? "Token expirado"
+        : "Token inválido"
+    return { valid: false, reason }
+  }
+}
+
 export async function signRefreshToken(userId: string): Promise<string> {
   return new SignJWT({ sub: userId })
     .setProtectedHeader({ alg: "HS256" })
