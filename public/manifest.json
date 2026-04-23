@@ -1,0 +1,10 @@
+{
+  "name": "Koinonia",
+  "short_name": "Koinonia",
+  "description": "PWA pastoral para gestão de células, presença e cuidado de pessoas.",
+  "lang": "pt-BR",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAF6F1",
+  "theme_color": "#2C2C2A"
+}

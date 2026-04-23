@@ -1,0 +1,271 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  passwordHash  String
+  role          Role
+  personId      String         @unique
+  churchId      String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+
+  person        Person         @relation(fields: [personId], references: [id])
+  church        Church         @relation(fields: [churchId], references: [id])
+  assignedTasks Task[]         @relation("Assignee")
+  refreshTokens RefreshToken[]
+
+  @@index([churchId])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Church {
+  id         String      @id @default(cuid())
+  name       String
+  createdAt  DateTime    @default(now())
+  deletedAt  DateTime?
+
+  people     Person[]
+  groups     Group[]
+  eventTypes EventType[]
+  users      User[]
+}
+
+model Person {
+  id                    String        @id @default(cuid())
+  churchId              String
+  name                  String
+  phone                 String?
+  photoUrl              String?
+  birthDate             DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  deletedAt             DateTime?
+
+  church                Church        @relation(fields: [churchId], references: [id])
+  memberships           Membership[]
+  attendances           Attendance[]
+  interactionsAsSubject Interaction[] @relation("Subject")
+  interactionsAsAuthor  Interaction[] @relation("Author")
+  needs                 Need[]
+  riskScore             RiskScore?
+  user                  User?
+
+  @@index([churchId])
+}
+
+model Group {
+  id           String       @id @default(cuid())
+  churchId     String
+  name         String
+  leaderId     String?
+  supervisorId String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  deletedAt    DateTime?
+
+  church       Church       @relation(fields: [churchId], references: [id])
+  memberships  Membership[]
+  events       Event[]
+  tasks        Task[]
+
+  @@index([churchId])
+  @@index([leaderId])
+  @@index([supervisorId])
+}
+
+model Membership {
+  id        String         @id @default(cuid())
+  personId  String
+  groupId   String
+  role      MembershipRole
+  joinedAt  DateTime       @default(now())
+  leftAt    DateTime?
+
+  person    Person         @relation(fields: [personId], references: [id])
+  group     Group          @relation(fields: [groupId], references: [id])
+
+  @@unique([personId, groupId])
+  @@index([groupId])
+}
+
+model EventType {
+  id         String    @id @default(cuid())
+  churchId   String
+  name       String
+  kind       EventKind
+  riskWeight Int       @default(1)
+  createdAt  DateTime  @default(now())
+
+  church     Church    @relation(fields: [churchId], references: [id])
+  events     Event[]
+
+  @@index([churchId])
+}
+
+model Event {
+  id          String       @id @default(cuid())
+  groupId     String
+  eventTypeId String
+  scheduledAt DateTime
+  occurredAt  DateTime?
+  notes       String?
+  createdAt   DateTime     @default(now())
+  deletedAt   DateTime?
+
+  group       Group        @relation(fields: [groupId], references: [id])
+  eventType   EventType    @relation(fields: [eventTypeId], references: [id])
+  attendances Attendance[]
+
+  @@index([groupId])
+  @@index([eventTypeId])
+}
+
+model Attendance {
+  id        String   @id @default(cuid())
+  eventId   String
+  personId  String
+  present   Boolean
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  person    Person   @relation(fields: [personId], references: [id])
+
+  @@unique([eventId, personId])
+  @@index([personId])
+}
+
+model Interaction {
+  id        String          @id @default(cuid())
+  personId  String
+  authorId  String
+  kind      InteractionKind
+  content   String
+  createdAt DateTime        @default(now())
+
+  person    Person          @relation("Subject", fields: [personId], references: [id], onDelete: Cascade)
+  author    Person          @relation("Author", fields: [authorId], references: [id])
+
+  @@index([personId])
+  @@index([authorId])
+}
+
+model Need {
+  id         String    @id @default(cuid())
+  personId   String
+  kind       NeedKind
+  priority   Priority
+  content    String
+  resolvedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  person     Person    @relation(fields: [personId], references: [id], onDelete: Cascade)
+  tasks      Task[]    @relation("NeedTasks")
+
+  @@index([personId])
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  assigneeId  String
+  groupId     String?
+  needId      String?
+  targetType  TaskTarget
+  targetId    String
+  description String
+  dueAt       DateTime
+  completedAt DateTime?
+  createdAt   DateTime   @default(now())
+  deletedAt   DateTime?
+
+  assignee    User       @relation("Assignee", fields: [assigneeId], references: [id])
+  group       Group?     @relation(fields: [groupId], references: [id])
+  need        Need?      @relation("NeedTasks", fields: [needId], references: [id], onDelete: SetNull)
+
+  @@index([assigneeId])
+  @@index([groupId])
+  @@index([needId])
+}
+
+model RiskScore {
+  id        String    @id @default(cuid())
+  personId  String    @unique
+  score     Int
+  level     RiskLevel
+  reasons   String[]
+  updatedAt DateTime  @updatedAt
+
+  person    Person    @relation(fields: [personId], references: [id], onDelete: Cascade)
+}
+
+enum Role {
+  pastor
+  supervisor
+  leader
+  host
+  member
+}
+
+enum MembershipRole {
+  member
+  host
+}
+
+enum EventKind {
+  community_bond
+  belonging
+  development
+  commitment
+}
+
+enum InteractionKind {
+  call
+  whatsapp
+  visit
+  prayer
+  note
+}
+
+enum NeedKind {
+  prayer
+  social
+  counseling
+}
+
+enum Priority {
+  low
+  medium
+  high
+}
+
+enum TaskTarget {
+  person
+  group
+  leader
+}
+
+enum RiskLevel {
+  green
+  yellow
+  red
+}
