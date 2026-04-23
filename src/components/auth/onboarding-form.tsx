@@ -1,17 +1,17 @@
-"use client";
+"use client"
 
-import Link from "next/link";
-import { LoaderCircle, Sparkles } from "lucide-react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { useState } from "react";
-import { useOnboarding } from "@/hooks/use-auth";
-import { isApiClientError } from "@/lib/api-client";
-import { onboardingSchema, type OnboardingInput } from "@/lib/validations/auth";
+import Link from "next/link"
+import { LoaderCircle, Sparkles } from "lucide-react"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import { useState } from "react"
+import { useOnboarding } from "@/hooks/use-auth"
+import { isApiClientError } from "@/lib/api-client"
+import { onboardingSchema, type OnboardingInput } from "@/lib/validations/auth"
 
 export function OnboardingForm() {
-  const [step, setStep] = useState<1 | 2>(1);
-  const onboardingMutation = useOnboarding({ redirectTo: "/" });
+  const [step, setStep] = useState<1 | 2>(1)
+  const onboardingMutation = useOnboarding({ redirectTo: "/" })
 
   const {
     register,
@@ -26,23 +26,22 @@ export function OnboardingForm() {
       email: "",
       password: "",
     },
-  });
+  })
 
   const goToNextStep = async () => {
-    const isChurchNameValid = await trigger("churchName");
-
+    const isChurchNameValid = await trigger("churchName")
     if (isChurchNameValid) {
-      setStep(2);
+      setStep(2)
     }
-  };
+  }
 
   const submitForm = handleSubmit((values) => {
-    onboardingMutation.mutate(values);
-  });
+    onboardingMutation.mutate(values)
+  })
 
   const errorMessage = isApiClientError(onboardingMutation.error)
     ? onboardingMutation.error.message
-    : null;
+    : null
 
   return (
     <div className="w-full max-w-lg rounded-[2rem] border border-white/70 bg-card/95 p-7 shadow-[0_30px_90px_-48px_rgba(44,44,42,0.45)] backdrop-blur">
@@ -70,7 +69,7 @@ export function OnboardingForm() {
                 id="churchName"
                 type="text"
                 className="h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 text-base text-stone-900 outline-none transition focus:border-new focus:ring-2 focus:ring-new/20"
-                placeholder="Comunidade Esperanca"
+                placeholder="Comunidade Esperança"
               />
               {errors.churchName ? (
                 <p className="text-sm text-stone-500">{errors.churchName.message}</p>
@@ -105,7 +104,7 @@ export function OnboardingForm() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-stone-700" htmlFor="email">
-                Email
+                E-mail
               </label>
               <input
                 {...register("email")}
@@ -172,9 +171,9 @@ export function OnboardingForm() {
           href="/login"
           className="inline-flex h-12 items-center text-sm font-medium text-new transition hover:text-new/80"
         >
-          Ja tem acesso? Entrar
+          Já tem acesso? Entrar
         </Link>
       </div>
     </div>
-  );
+  )
 }

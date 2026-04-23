@@ -1,15 +1,15 @@
-"use client";
+"use client"
 
-import Link from "next/link";
-import { LoaderCircle, ShieldCheck } from "lucide-react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { useLogin } from "@/hooks/use-auth";
-import { isApiClientError } from "@/lib/api-client";
-import { loginSchema, type LoginInput } from "@/lib/validations/auth";
+import Link from "next/link"
+import { LoaderCircle, ShieldCheck } from "lucide-react"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import { useLogin } from "@/hooks/use-auth"
+import { isApiClientError } from "@/lib/api-client"
+import { loginSchema, type LoginInput } from "@/lib/validations/auth"
 
 export function LoginForm() {
-  const loginMutation = useLogin({ redirectTo: "/" });
+  const loginMutation = useLogin({ redirectTo: "/" })
 
   const {
     register,
@@ -21,15 +21,15 @@ export function LoginForm() {
       email: "",
       password: "",
     },
-  });
+  })
 
   const submitForm = handleSubmit((values) => {
-    loginMutation.mutate(values);
-  });
+    loginMutation.mutate(values)
+  })
 
   const errorMessage = isApiClientError(loginMutation.error)
     ? loginMutation.error.message
-    : null;
+    : null
 
   return (
     <div className="w-full max-w-md rounded-[2rem] border border-white/70 bg-card/95 p-7 shadow-[0_30px_90px_-48px_rgba(44,44,42,0.45)] backdrop-blur">
@@ -48,7 +48,7 @@ export function LoginForm() {
       <form className="space-y-5" onSubmit={submitForm}>
         <div className="space-y-2">
           <label className="text-sm font-medium text-stone-700" htmlFor="email">
-            Email
+            E-mail
           </label>
           <input
             {...register("email")}
@@ -107,5 +107,5 @@ export function LoginForm() {
         </Link>
       </div>
     </div>
-  );
+  )
 }

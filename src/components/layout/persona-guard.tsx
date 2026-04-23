@@ -1,52 +1,39 @@
-"use client";
+"use client"
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useMe, useStoredSessionState } from "@/hooks/use-auth";
-import { clearStoredAuth } from "@/lib/auth-storage";
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useMe } from "@/hooks/use-auth"
+import { Loader2 } from "lucide-react"
 
-const roleRedirectMap = {
+const ROLE_ROUTES: Record<string, string> = {
   pastor: "/pastor",
   supervisor: "/supervisor",
   leader: "/lider",
-} as const;
+}
 
 export function PersonaGuard() {
-  const router = useRouter();
-  const sessionState = useStoredSessionState();
-  const meQuery = useMe({
-    enabled: sessionState.isHydrated && sessionState.hasSession,
-  });
+  const router = useRouter()
+  const { data: user, isLoading } = useMe()
 
   useEffect(() => {
-    if (!sessionState.isHydrated) {
-      return;
+    if (!isLoading && user) {
+      const route = ROLE_ROUTES[user.role]
+      if (route) router.replace(route)
     }
+  }, [user, isLoading, router])
 
-    if (!sessionState.hasSession) {
-      router.replace("/login");
-      return;
-    }
-
-    if (meQuery.isError) {
-      clearStoredAuth();
-      router.replace("/login");
-      return;
-    }
-
-    if (meQuery.data) {
-      const destination = roleRedirectMap[meQuery.data.role as keyof typeof roleRedirectMap];
-      router.replace(destination ?? "/login");
-    }
-  }, [meQuery.data, meQuery.isError, router, sessionState.hasSession, sessionState.isHydrated]);
-
-  return (
-    <div className="flex min-h-screen items-center justify-center px-6 py-12">
-      <div className="rounded-[2rem] border border-white/70 bg-card/95 px-6 py-8 text-center shadow-[0_30px_90px_-48px_rgba(44,44,42,0.45)]">
-        <p className="text-sm font-medium text-stone-500">
-          Preparando sua visao pastoral...
-        </p>
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-bg">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-stone-400" />
+          <p className="text-lg font-medium text-stone-600">
+            Preparando sua visão pastoral...
+          </p>
+        </div>
       </div>
-    </div>
-  );
+    )
+  }
+
+  return null
 }
