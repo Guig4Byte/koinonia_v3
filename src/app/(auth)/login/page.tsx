@@ -1,5 +1,4 @@
 import { Metadata } from "next"
-import Link from "next/link"
 import { LoginForm } from "@/components/auth/login-form"
 import { Church } from "lucide-react"
 
@@ -32,16 +31,6 @@ export default function LoginPage() {
           </h2>
           <LoginForm />
         </div>
-
-        <p className="mt-6 text-center text-sm text-stone-500">
-          Primeiro acesso?{" "}
-          <Link
-            href="/onboarding"
-            className="font-medium text-stone-800 underline underline-offset-4"
-          >
-            Criar igreja
-          </Link>
-        </p>
       </div>
     </div>
   )

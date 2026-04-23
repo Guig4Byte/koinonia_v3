@@ -34,11 +34,10 @@ export default function AuthenticatedAppLayout({
 
   if (!sessionState.isHydrated || (sessionState.hasSession && meQuery.isPending)) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-6 py-12">
-        <div className="rounded-[2rem] border border-white/70 bg-card/95 px-6 py-8 text-center shadow-[0_30px_90px_-48px_rgba(44,44,42,0.45)]">
-          <p className="text-sm font-medium text-stone-500">
-            Validando seu acesso...
-          </p>
+      <div className="flex h-screen items-center justify-center bg-bg">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-300 border-t-stone-800" />
+          <p className="text-sm text-stone-500">Carregando...</p>
         </div>
       </div>
     );

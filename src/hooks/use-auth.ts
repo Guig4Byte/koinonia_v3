@@ -25,7 +25,7 @@ import type {
 export const authQueryKey = ["auth", "me"] as const;
 
 async function requestCurrentUser(accessToken: string) {
-  return apiRequest<MeResponse>("/api/auth/me", {
+  return apiRequest("/api/auth/me", {
     method: "GET",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -40,11 +40,11 @@ async function refreshAccessTokenFromStorage() {
     throw new ApiClientError({
       status: 401,
       code: "REFRESH_TOKEN_INVALID",
-      message: "Sua sessao nao pode ser renovada.",
+      message: "Sua sessão não pode ser renovada.",
     });
   }
 
-  const response = await apiRequest<RefreshTokenResponse>("/api/auth/refresh", {
+  const response = await apiRequest("/api/auth/refresh", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -78,7 +78,7 @@ export function useStoredSessionState() {
 }
 
 export function useMe(options?: { enabled?: boolean }) {
-  return useQuery<SessionUser>({
+  return useQuery({
     queryKey: authQueryKey,
     enabled: options?.enabled ?? true,
     queryFn: async () => {
@@ -88,7 +88,7 @@ export function useMe(options?: { enabled?: boolean }) {
         throw new ApiClientError({
           status: 401,
           code: "TOKEN_INVALID",
-          message: "Voce precisa entrar para continuar.",
+          message: "Você precisa entrar para continuar.",
         });
       }
 
@@ -126,7 +126,7 @@ export function useLogin(options?: { redirectTo?: string }) {
 
   return useMutation({
     mutationFn: (input: LoginInput) =>
-      apiRequest<LoginResponse>("/api/auth/login", {
+      apiRequest("/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -152,7 +152,7 @@ export function useOnboarding(options?: { redirectTo?: string }) {
 
   return useMutation({
     mutationFn: (input: OnboardingInput) =>
-      apiRequest<OnboardingResponse>("/api/auth/onboarding", {
+      apiRequest("/api/auth/onboarding", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -183,11 +183,11 @@ export function useRefreshToken() {
         throw new ApiClientError({
           status: 401,
           code: "REFRESH_TOKEN_INVALID",
-          message: "Sua sessao nao pode ser renovada.",
+          message: "Sua sessão não pode ser renovada.",
         });
       }
 
-      const response = await apiRequest<RefreshTokenResponse>("/api/auth/refresh", {
+      const response = await apiRequest("/api/auth/refresh", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
