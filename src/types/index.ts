@@ -36,6 +36,29 @@ export interface AuthUser {
   churchId: string;
 }
 
+export interface SessionUser extends AuthUser {
+  name: string;
+}
+
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+}
+
+export interface LoginResponse extends AuthTokens {
+  user: SessionUser;
+}
+
+export interface RefreshTokenResponse {
+  accessToken: string;
+}
+
+export interface MeResponse {
+  user: SessionUser;
+}
+
+export type OnboardingResponse = LoginResponse;
+
 export interface SeedAccount {
   name: string;
   email: string;
@@ -48,4 +71,10 @@ export interface AttendanceSummary {
   present: number;
   absent: number;
   percentage: number;
+}
+
+export interface ApiErrorResponse<ErrorCode extends string = string> {
+  error: ErrorCode;
+  message: string;
+  issues?: string[];
 }

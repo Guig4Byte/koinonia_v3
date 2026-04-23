@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { AppProviders } from "@/components/providers/app-providers";
 import "./globals.css";
 
 const inter = Inter({
@@ -29,7 +30,9 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${inter.variable} h-full`}
     >
-      <body className="min-h-full font-sans text-stone-900">{children}</body>
+      <body className="min-h-full font-sans text-stone-900">
+        <AppProviders>{children}</AppProviders>
+      </body>
     </html>
   );
 }

@@ -1,0 +1,221 @@
+"use client";
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { startTransition, useSyncExternalStore } from "react";
+import type { LoginInput, OnboardingInput } from "@/lib/validations/auth";
+import { apiRequest, ApiClientError, isApiClientError } from "@/lib/api-client";
+import {
+  clearStoredAuth,
+  getStoredAccessToken,
+  getStoredRefreshToken,
+  hasStoredSession,
+  persistAuthTokens,
+  subscribeToAuthStorage,
+  updateStoredAccessToken,
+} from "@/lib/auth-storage";
+import type {
+  LoginResponse,
+  MeResponse,
+  OnboardingResponse,
+  RefreshTokenResponse,
+  SessionUser,
+} from "@/types";
+
+export const authQueryKey = ["auth", "me"] as const;
+
+async function requestCurrentUser(accessToken: string) {
+  return apiRequest<MeResponse>("/api/auth/me", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+}
+
+async function refreshAccessTokenFromStorage() {
+  const refreshToken = getStoredRefreshToken();
+
+  if (!refreshToken) {
+    throw new ApiClientError({
+      status: 401,
+      code: "REFRESH_TOKEN_INVALID",
+      message: "Sua sessao nao pode ser renovada.",
+    });
+  }
+
+  const response = await apiRequest<RefreshTokenResponse>("/api/auth/refresh", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      refreshToken,
+    }),
+  });
+
+  updateStoredAccessToken(response.accessToken);
+  return response.accessToken;
+}
+
+export function useStoredSessionState() {
+  const isHydrated = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
+
+  const storedSession = useSyncExternalStore(
+    subscribeToAuthStorage,
+    () => hasStoredSession(),
+    () => false,
+  );
+
+  return {
+    isHydrated,
+    hasSession: isHydrated && storedSession,
+  };
+}
+
+export function useMe(options?: { enabled?: boolean }) {
+  return useQuery<SessionUser>({
+    queryKey: authQueryKey,
+    enabled: options?.enabled ?? true,
+    queryFn: async () => {
+      const accessToken = getStoredAccessToken();
+
+      if (!accessToken) {
+        throw new ApiClientError({
+          status: 401,
+          code: "TOKEN_INVALID",
+          message: "Voce precisa entrar para continuar.",
+        });
+      }
+
+      try {
+        const response = await requestCurrentUser(accessToken);
+        return response.user;
+      } catch (error) {
+        if (isApiClientError(error) && error.code === "TOKEN_EXPIRED") {
+          try {
+            const renewedAccessToken = await refreshAccessTokenFromStorage();
+            const retriedResponse = await requestCurrentUser(renewedAccessToken);
+            return retriedResponse.user;
+          } catch (refreshError) {
+            clearStoredAuth();
+            throw refreshError;
+          }
+        }
+
+        if (
+          isApiClientError(error) &&
+          (error.code === "TOKEN_INVALID" || error.code === "REFRESH_TOKEN_INVALID")
+        ) {
+          clearStoredAuth();
+        }
+
+        throw error;
+      }
+    },
+  });
+}
+
+export function useLogin(options?: { redirectTo?: string }) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: LoginInput) =>
+      apiRequest<LoginResponse>("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(input),
+      }),
+    onSuccess: (response) => {
+      persistAuthTokens(response);
+      queryClient.setQueryData(authQueryKey, response.user);
+
+      if (options?.redirectTo) {
+        startTransition(() => {
+          router.replace(options.redirectTo ?? "/");
+        });
+      }
+    },
+  });
+}
+
+export function useOnboarding(options?: { redirectTo?: string }) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: OnboardingInput) =>
+      apiRequest<OnboardingResponse>("/api/auth/onboarding", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(input),
+      }),
+    onSuccess: (response) => {
+      persistAuthTokens(response);
+      queryClient.setQueryData(authQueryKey, response.user);
+
+      if (options?.redirectTo) {
+        startTransition(() => {
+          router.replace(options.redirectTo ?? "/");
+        });
+      }
+    },
+  });
+}
+
+export function useRefreshToken() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (refreshToken?: string) => {
+      const selectedRefreshToken = refreshToken ?? getStoredRefreshToken();
+
+      if (!selectedRefreshToken) {
+        throw new ApiClientError({
+          status: 401,
+          code: "REFRESH_TOKEN_INVALID",
+          message: "Sua sessao nao pode ser renovada.",
+        });
+      }
+
+      const response = await apiRequest<RefreshTokenResponse>("/api/auth/refresh", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          refreshToken: selectedRefreshToken,
+        }),
+      });
+
+      updateStoredAccessToken(response.accessToken);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: authQueryKey });
+    },
+  });
+}
+
+export function useLogout() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
+  return () => {
+    clearStoredAuth();
+    queryClient.removeQueries({ queryKey: authQueryKey });
+
+    startTransition(() => {
+      router.replace("/login");
+    });
+  };
+}

@@ -1,343 +1,345 @@
-import { hash } from "bcryptjs";
-import {
-  EventKind,
-  InteractionKind,
-  MembershipRole,
-  NeedKind,
-  PrismaClient,
-  Priority,
-  RiskLevel,
-  Role,
-  TaskTarget,
-} from "@prisma/client";
+import { PrismaClient } from '@prisma/client'
+import { hashPassword } from '../src/lib/auth'
 
-const prisma = new PrismaClient();
-
-const daysAgo = (days: number, hour = 19) => {
-  const date = new Date();
-  date.setDate(date.getDate() - days);
-  date.setHours(hour, 0, 0, 0);
-  return date;
-};
+const prisma = new PrismaClient()
 
 async function main() {
-  const sharedPassword = await hash("koinonia123", 10);
-  const createMember = (name: string, phone: string, birthDate: string) =>
+  console.log('🌱 Iniciando seed...')
+
+  // Limpar dados existentes (respeitando FKs)
+  await prisma.$transaction([
+    prisma.refreshToken.deleteMany(),
+    prisma.task.deleteMany(),
+    prisma.need.deleteMany(),
+    prisma.interaction.deleteMany(),
+    prisma.attendance.deleteMany(),
+    prisma.riskScore.deleteMany(),
+    prisma.membership.deleteMany(),
+    prisma.event.deleteMany(),
+    prisma.eventType.deleteMany(),
+    prisma.group.deleteMany(),
+    prisma.user.deleteMany(),
+    prisma.person.deleteMany(),
+    prisma.church.deleteMany(),
+  ])
+
+  console.log('🧹 Dados anteriores removidos')
+
+  // ─── Igreja ───
+  const church = await prisma.church.create({
+    data: { name: 'Comunidade Esperança' },
+  })
+  console.log('⛪ Igreja criada:', church.name)
+
+  // ─── Tipos de Evento ───
+  const [cellType, emcType] = await Promise.all([
+    prisma.eventType.create({
+      data: {
+        churchId: church.id,
+        name: 'Célula',
+        kind: 'community_bond',
+        riskWeight: 3,
+      },
+    }),
+    prisma.eventType.create({
+      data: {
+        churchId: church.id,
+        name: 'EMC',
+        kind: 'development',
+        riskWeight: 2,
+      },
+    }),
+  ])
+  console.log('📅 Tipos de evento criados')
+
+  // ─── Pessoas (Pastor, Supervisora, Líder) ───
+  const [robertoPerson, anaPerson, brunoPerson] = await Promise.all([
     prisma.person.create({
       data: {
         churchId: church.id,
-        name,
-        phone,
-        birthDate: new Date(`${birthDate}T00:00:00.000Z`),
+        name: 'Roberto Silva',
+        phone: '+55 11 99999-0001',
       },
-    });
+    }),
+    prisma.person.create({
+      data: {
+        churchId: church.id,
+        name: 'Ana Paula',
+        phone: '+55 11 99999-0002',
+      },
+    }),
+    prisma.person.create({
+      data: {
+        churchId: church.id,
+        name: 'Bruno Costa',
+        phone: '+55 11 99999-0003',
+      },
+    }),
+  ])
 
-  await prisma.refreshToken.deleteMany();
-  await prisma.attendance.deleteMany();
-  await prisma.interaction.deleteMany();
-  await prisma.task.deleteMany();
-  await prisma.need.deleteMany();
-  await prisma.riskScore.deleteMany();
-  await prisma.event.deleteMany();
-  await prisma.eventType.deleteMany();
-  await prisma.membership.deleteMany();
-  await prisma.user.deleteMany();
-  await prisma.group.deleteMany();
-  await prisma.person.deleteMany();
-  await prisma.church.deleteMany();
+  // ─── Usuários ───
+  const commonPassword = await hashPassword('koinonia123')
 
-  const church = await prisma.church.create({
-    data: {
-      name: "Comunidade Esperança",
-    },
-  });
-
-  const roberto = await prisma.person.create({
-    data: {
-      churchId: church.id,
-      name: "Roberto Almeida",
-      phone: "+55 11 99999-1001",
-      birthDate: new Date("1973-08-18T00:00:00.000Z"),
-    },
-  });
-
-  const ana = await prisma.person.create({
-    data: {
-      churchId: church.id,
-      name: "Ana Carvalho",
-      phone: "+55 11 99999-1002",
-      birthDate: new Date("1985-04-02T00:00:00.000Z"),
-    },
-  });
-
-  const bruno = await prisma.person.create({
-    data: {
-      churchId: church.id,
-      name: "Bruno Martins",
-      phone: "+55 11 99999-1003",
-      birthDate: new Date("1991-11-26T00:00:00.000Z"),
-    },
-  });
-
-  const carla = await createMember("Carla Mendes", "+55 11 99999-2001", "1994-02-14");
-  const daniel = await createMember("Daniel Rocha", "+55 11 99999-2002", "1989-06-30");
-  const ester = await createMember("Ester Alves", "+55 11 99999-2003", "1997-09-08");
-  const felipe = await createMember("Felipe Costa", "+55 11 99999-2004", "1988-05-12");
-  const gabriela = await createMember("Gabriela Santos", "+55 11 99999-2005", "1995-01-20");
-  const helena = await createMember("Helena Ferreira", "+55 11 99999-2006", "1979-12-04");
-  const igor = await createMember("Igor Nascimento", "+55 11 99999-2007", "1992-03-10");
-  const juliana = await createMember("Juliana Oliveira", "+55 11 99999-2008", "1986-07-17");
-  const leandro = await createMember("Leandro Gomes", "+55 11 99999-2009", "1990-10-09");
-  const mariana = await createMember("Mariana Barros", "+55 11 99999-2010", "1998-04-28");
-
-  await prisma.user.createMany({
-    data: [
-      {
-        email: "roberto@comunidadeesperanca.org",
-        passwordHash: sharedPassword,
-        role: Role.pastor,
-        personId: roberto.id,
+  const users = await Promise.all([
+    prisma.user.create({
+      data: {
+        email: 'roberto@comunidadeesperanca.org',
+        passwordHash: commonPassword,
+        role: 'pastor',
+        personId: robertoPerson.id,
         churchId: church.id,
       },
-      {
-        email: "ana@comunidadeesperanca.org",
-        passwordHash: sharedPassword,
-        role: Role.supervisor,
-        personId: ana.id,
+    }),
+    prisma.user.create({
+      data: {
+        email: 'ana@comunidadeesperanca.org',
+        passwordHash: commonPassword,
+        role: 'supervisor',
+        personId: anaPerson.id,
         churchId: church.id,
       },
-      {
-        email: "bruno@comunidadeesperanca.org",
-        passwordHash: sharedPassword,
-        role: Role.leader,
-        personId: bruno.id,
+    }),
+    prisma.user.create({
+      data: {
+        email: 'bruno@comunidadeesperanca.org',
+        passwordHash: commonPassword,
+        role: 'leader',
+        personId: brunoPerson.id,
         churchId: church.id,
       },
-    ],
-  });
+    }),
+  ])
 
-  const groupEsperanca = await prisma.group.create({
-    data: {
-      churchId: church.id,
-      name: "Esperança",
-      leaderId: bruno.id,
-      supervisorId: ana.id,
-    },
-  });
+  const anaUser = users[1]
+  const brunoUser = users[2]
+  console.log('👤 Usuários criados (senha: koinonia123)')
 
-  const groupAgape = await prisma.group.create({
-    data: {
-      churchId: church.id,
-      name: "Ágape",
-      leaderId: felipe.id,
-      supervisorId: ana.id,
-    },
-  });
+  // ─── Células ───
+  const [esperanca, agape, shalom] = await Promise.all([
+    prisma.group.create({
+      data: {
+        churchId: church.id,
+        name: 'Esperança',
+        leaderId: brunoPerson.id,
+        supervisorId: anaPerson.id,
+      },
+    }),
+    prisma.group.create({
+      data: {
+        churchId: church.id,
+        name: 'Ágape',
+        leaderId: anaPerson.id,
+        supervisorId: anaPerson.id,
+      },
+    }),
+    prisma.group.create({
+      data: {
+        churchId: church.id,
+        name: 'Shalom',
+        leaderId: robertoPerson.id,
+        supervisorId: anaPerson.id,
+      },
+    }),
+  ])
+  console.log('🏠 Células criadas')
 
-  const groupShalom = await prisma.group.create({
-    data: {
-      churchId: church.id,
-      name: "Shalom",
-      leaderId: juliana.id,
-      supervisorId: ana.id,
-    },
-  });
+  // ─── Membros ───
+  const membersData = [
+    { name: 'Cláudio Mendes', phone: '+55 11 98888-0001', groupId: esperanca.id },
+    { name: 'Maria Oliveira', phone: '+55 11 98888-0002', groupId: esperanca.id },
+    { name: 'Pedro Souza', phone: '+55 11 98888-0003', groupId: esperanca.id },
+    { name: 'Carla Ferreira', phone: '+55 11 98888-0004', groupId: esperanca.id },
+    { name: 'Lucas Santos', phone: '+55 11 98888-0005', groupId: esperanca.id },
+    { name: 'Fernanda Lima', phone: '+55 11 98888-0006', groupId: agape.id },
+    { name: 'Ricardo Almeida', phone: '+55 11 98888-0007', groupId: agape.id },
+    { name: 'Juliana Costa', phone: '+55 11 98888-0008', groupId: shalom.id },
+    { name: 'Marcos Pereira', phone: '+55 11 98888-0009', groupId: shalom.id },
+    { name: 'Amanda Rocha', phone: '+55 11 98888-0010', groupId: shalom.id },
+  ]
 
-  await prisma.membership.createMany({
-    data: [
-      { personId: bruno.id, groupId: groupEsperanca.id, role: MembershipRole.host },
-      { personId: carla.id, groupId: groupEsperanca.id, role: MembershipRole.member },
-      { personId: daniel.id, groupId: groupEsperanca.id, role: MembershipRole.member },
-      { personId: ester.id, groupId: groupEsperanca.id, role: MembershipRole.member },
-      { personId: felipe.id, groupId: groupAgape.id, role: MembershipRole.host },
-      { personId: gabriela.id, groupId: groupAgape.id, role: MembershipRole.member },
-      { personId: helena.id, groupId: groupAgape.id, role: MembershipRole.member },
-      { personId: igor.id, groupId: groupShalom.id, role: MembershipRole.member },
-      { personId: juliana.id, groupId: groupShalom.id, role: MembershipRole.host },
-      { personId: leandro.id, groupId: groupShalom.id, role: MembershipRole.member },
-      { personId: mariana.id, groupId: groupShalom.id, role: MembershipRole.member },
-    ],
-  });
+  const members = await Promise.all(
+    membersData.map((m) =>
+      prisma.person.create({
+        data: {
+          churchId: church.id,
+          name: m.name,
+          phone: m.phone,
+          memberships: {
+            create: {
+              groupId: m.groupId,
+              role: 'member',
+            },
+          },
+        },
+      })
+    )
+  )
+  console.log('👥 Membros criados')
 
-  const eventTypeCelula = await prisma.eventType.create({
-    data: {
-      churchId: church.id,
-      name: "Célula",
-      kind: EventKind.community_bond,
-      riskWeight: 1,
-    },
-  });
+  // ─── Eventos ───
+  const now = new Date()
+  const events = await Promise.all([
+    prisma.event.create({
+      data: {
+        groupId: esperanca.id,
+        eventTypeId: cellType.id,
+        scheduledAt: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
+        occurredAt: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
+      },
+    }),
+    prisma.event.create({
+      data: {
+        groupId: esperanca.id,
+        eventTypeId: cellType.id,
+        scheduledAt: new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000),
+        occurredAt: new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000),
+      },
+    }),
+    prisma.event.create({
+      data: {
+        groupId: esperanca.id,
+        eventTypeId: emcType.id,
+        scheduledAt: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000),
+        occurredAt: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000),
+      },
+    }),
+  ])
+  console.log('📆 Eventos criados')
 
-  const eventTypeEmc = await prisma.eventType.create({
-    data: {
-      churchId: church.id,
-      name: "EMC",
-      kind: EventKind.development,
-      riskWeight: 2,
-    },
-  });
+  // ─── Presenças ───
+  const esperancaMembers = members.filter((_, i) => i < 5)
+  const attendanceData: { eventId: string; personId: string; present: boolean }[] = []
 
-  const eventoEsperanca = await prisma.event.create({
-    data: {
-      groupId: groupEsperanca.id,
-      eventTypeId: eventTypeCelula.id,
-      scheduledAt: daysAgo(18),
-      occurredAt: daysAgo(18, 20),
-      notes: "Encontro com foco em oração e integração dos novos membros.",
-    },
-  });
+  // Evento 1 (semana passada): Cláudio faltou
+  esperancaMembers.forEach((m, i) => {
+    attendanceData.push({
+      eventId: events[0].id,
+      personId: m.id,
+      present: i !== 0,
+    })
+  })
 
-  const eventoAgape = await prisma.event.create({
-    data: {
-      groupId: groupAgape.id,
-      eventTypeId: eventTypeEmc.id,
-      scheduledAt: daysAgo(11),
-      occurredAt: daysAgo(11, 21),
-      notes: "Treinamento EMC com dinâmica em duplas.",
-    },
-  });
+  // Evento 2 (2 semanas atrás): Cláudio e Maria faltaram
+  esperancaMembers.forEach((m, i) => {
+    attendanceData.push({
+      eventId: events[1].id,
+      personId: m.id,
+      present: i > 1,
+    })
+  })
 
-  const eventoShalom = await prisma.event.create({
-    data: {
-      groupId: groupShalom.id,
-      eventTypeId: eventTypeCelula.id,
-      scheduledAt: daysAgo(4),
-      occurredAt: daysAgo(4, 20),
-      notes: "Célula com ceia e conversa pastoral.",
-    },
-  });
+  // Evento 3 (EMC): todos presentes
+  esperancaMembers.forEach((m) => {
+    attendanceData.push({
+      eventId: events[2].id,
+      personId: m.id,
+      present: true,
+    })
+  })
 
-  await prisma.attendance.createMany({
-    data: [
-      { eventId: eventoEsperanca.id, personId: bruno.id, present: true },
-      { eventId: eventoEsperanca.id, personId: carla.id, present: true },
-      { eventId: eventoEsperanca.id, personId: daniel.id, present: false },
-      { eventId: eventoEsperanca.id, personId: ester.id, present: true },
-      { eventId: eventoAgape.id, personId: felipe.id, present: true },
-      { eventId: eventoAgape.id, personId: gabriela.id, present: false },
-      { eventId: eventoAgape.id, personId: helena.id, present: true },
-      { eventId: eventoShalom.id, personId: igor.id, present: false },
-      { eventId: eventoShalom.id, personId: juliana.id, present: true },
-      { eventId: eventoShalom.id, personId: leandro.id, present: false },
-      { eventId: eventoShalom.id, personId: mariana.id, present: true },
-    ],
-  });
+  await prisma.attendance.createMany({ data: attendanceData })
+  console.log('✅ Presenças registradas')
+
+  // ─── Risk Scores, Interações, Needs, Tasks ───
+  // Sabemos que esperancaMembers tem 5 elementos (filtramos i < 5)
+  const claudio = esperancaMembers[0]!
+  const maria = esperancaMembers[1]!
+  const pedro = esperancaMembers[2]!
 
   await prisma.riskScore.createMany({
     data: [
       {
-        personId: daniel.id,
-        score: 82,
-        level: RiskLevel.red,
-        reasons: ["Duas ausências recentes", "Pedido de oração urgente"],
+        personId: claudio.id,
+        score: 25,
+        level: 'red',
+        reasons: ['2_faltas_consecutivas', 'sem_contato_14d'],
       },
       {
-        personId: gabriela.id,
-        score: 58,
-        level: RiskLevel.yellow,
-        reasons: ["Oscilação de frequência", "Contato pastoral pendente"],
-      },
-      {
-        personId: leandro.id,
-        score: 71,
-        level: RiskLevel.red,
-        reasons: ["Baixa presença em eventos", "Família em transição"],
+        personId: maria.id,
+        score: 65,
+        level: 'yellow',
+        reasons: ['1_falta', 'visitante_novo'],
       },
     ],
-  });
-
-  const danielNeed = await prisma.need.create({
-    data: {
-      personId: daniel.id,
-      kind: NeedKind.prayer,
-      priority: Priority.high,
-      content: "Oração por recolocação profissional e paz emocional.",
-    },
-  });
-
-  await prisma.need.create({
-    data: {
-      personId: gabriela.id,
-      kind: NeedKind.counseling,
-      priority: Priority.medium,
-      content: "Conversar sobre organização da rotina e discipulado.",
-    },
-  });
-
-  const [pastorUser, supervisorUser, leaderUser] = await Promise.all([
-    prisma.user.findUniqueOrThrow({
-      where: { email: "roberto@comunidadeesperanca.org" },
-    }),
-    prisma.user.findUniqueOrThrow({
-      where: { email: "ana@comunidadeesperanca.org" },
-    }),
-    prisma.user.findUniqueOrThrow({
-      where: { email: "bruno@comunidadeesperanca.org" },
-    }),
-  ]);
+  })
+  console.log('⚠️ Risk scores criados')
 
   await prisma.interaction.createMany({
     data: [
       {
-        personId: daniel.id,
-        authorId: roberto.id,
-        kind: InteractionKind.prayer,
-        content: "Roberto orou com Daniel após o culto de domingo.",
+        personId: claudio.id,
+        authorId: brunoPerson.id,
+        kind: 'call',
+        content: 'Ligou, não atendeu. Deixei mensagem no WhatsApp.',
       },
       {
-        personId: gabriela.id,
-        authorId: ana.id,
-        kind: InteractionKind.whatsapp,
-        content: "Ana combinou um café rápido para ouvir Gabriela na próxima semana.",
-      },
-      {
-        personId: leandro.id,
-        authorId: bruno.id,
-        kind: InteractionKind.visit,
-        content: "Bruno visitou a família e registrou melhora no ânimo.",
+        personId: pedro.id,
+        authorId: brunoPerson.id,
+        kind: 'visit',
+        content: 'Visitou em casa. Está bem, mas com problemas no trabalho.',
       },
     ],
-  });
+  })
+  console.log('💬 Interações criadas')
+
+  await prisma.need.createMany({
+    data: [
+      {
+        personId: claudio.id,
+        kind: 'prayer',
+        priority: 'high',
+        content: 'Pedido de oração pela saúde da mãe',
+      },
+      {
+        personId: pedro.id,
+        kind: 'social',
+        priority: 'medium',
+        content: 'Precisa de ajuda com emprego',
+      },
+    ],
+  })
+  console.log('🙏 Necessidades criadas')
 
   await prisma.task.createMany({
     data: [
       {
-        assigneeId: supervisorUser.id,
-        groupId: groupEsperanca.id,
-        needId: danielNeed.id,
-        targetType: TaskTarget.person,
-        targetId: daniel.id,
-        description: "Agendar visita pastoral com Daniel até sexta-feira.",
-        dueAt: daysAgo(-2),
+        assigneeId: brunoUser.id,
+        targetType: 'person',
+        targetId: claudio.id,
+        description: 'Ligar para Cláudio novamente. Terceira tentativa.',
+        dueAt: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000),
       },
       {
-        assigneeId: leaderUser.id,
-        groupId: groupShalom.id,
-        targetType: TaskTarget.person,
-        targetId: leandro.id,
-        description: "Confirmar presença de Leandro no próximo encontro da célula.",
-        dueAt: daysAgo(-1),
+        assigneeId: brunoUser.id,
+        targetType: 'person',
+        targetId: maria.id,
+        description: 'Acolher Maria na próxima célula. Segunda semana.',
+        dueAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
       },
       {
-        assigneeId: pastorUser.id,
-        targetType: TaskTarget.group,
-        targetId: groupAgape.id,
-        description: "Revisar a saúde geral da célula Ágape com Ana.",
-        dueAt: daysAgo(-3),
+        assigneeId: anaUser.id,
+        targetType: 'leader',
+        targetId: brunoUser.id,
+        description: 'Cobrar Bruno sobre follow-ups atrasados de Cláudio.',
+        dueAt: new Date(now.getTime() + 1 * 24 * 60 * 60 * 1000),
       },
     ],
-  });
+  })
+  console.log('✓ Tasks criadas')
 
-  console.log("Seed concluído com sucesso.");
-  console.log("Credenciais iniciais: roberto@comunidadeesperanca.org / ana@comunidadeesperanca.org / bruno@comunidadeesperanca.org");
-  console.log("Senha para todos os usuários seedados: koinonia123");
+  console.log('\n🎉 Seed concluído com sucesso!')
+  console.log('\nUsuários de teste:')
+  console.log('  roberto@comunidadeesperanca.org (pastor)')
+  console.log('  ana@comunidadeesperanca.org (supervisora)')
+  console.log('  bruno@comunidadeesperanca.org (líder)')
+  console.log('  Senha comum: koinonia123')
 }
 
 main()
-  .catch((error) => {
-    console.error("Falha ao executar seed:", error);
-    process.exitCode = 1;
+  .catch((e) => {
+    console.error('❌ Erro no seed:', e)
+    process.exit(1)
   })
   .finally(async () => {
-    await prisma.$disconnect();
-  });
+    await prisma.$disconnect()
+  })

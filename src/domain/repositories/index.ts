@@ -1,0 +1,6 @@
+export type { PersonRepository } from './person.repository'
+export type { GroupRepository } from './group.repository'
+export type { EventRepository } from './event.repository'
+export type { AttendanceRepository } from './attendance.repository'
+export type { InteractionRepository } from './interaction.repository'
+export type { TaskRepository } from './task.repository'
