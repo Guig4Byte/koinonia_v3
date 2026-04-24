@@ -36,6 +36,15 @@ export interface AuthUser {
   churchId: string;
 }
 
+export interface TokenPayload {
+  sub: string;
+  email: string;
+  role: string;
+  personId: string;
+  churchId: string;
+  name: string;
+}
+
 export interface SessionUser extends AuthUser {
   name: string;
 }
@@ -58,13 +67,6 @@ export interface MeResponse {
 }
 
 export type OnboardingResponse = LoginResponse;
-
-export interface SeedAccount {
-  name: string;
-  email: string;
-  role: AppRole;
-  password: string;
-}
 
 export interface AttendanceSummary {
   total: number;

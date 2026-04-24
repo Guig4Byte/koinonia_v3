@@ -2,85 +2,66 @@
 
 import Link from "next/link"
 import { LoaderCircle } from "lucide-react"
-import { useState, useCallback } from "react"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
 import { useLogin } from "@/hooks/use-auth"
 import { isApiClientError } from "@/lib/api-client"
+import { loginSchema, type LoginInput } from "@/lib/validations/auth"
 
 export function LoginForm() {
   const loginMutation = useLogin({ redirectTo: "/" })
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [validationErrors, setValidationErrors] = useState<{email?: string; password?: string}>({})
 
-  const handleSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault()
-    console.log("[LoginForm] handleSubmit called")
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginInput>({
+    resolver: zodResolver(loginSchema),
+  })
 
-    const errors: {email?: string; password?: string} = {}
-
-    if (!email.trim()) {
-      errors.email = "Informe seu e-mail."
-    } else if (!email.includes("@")) {
-      errors.email = "E-mail inválido."
-    }
-
-    if (!password.trim()) {
-      errors.password = "Informe sua senha."
-    } else if (password.length < 8) {
-      errors.password = "A senha precisa ter pelo menos 8 caracteres."
-    }
-
-    if (Object.keys(errors).length > 0) {
-      setValidationErrors(errors)
-      return
-    }
-
-    setValidationErrors({})
-    console.log("[LoginForm] calling mutate with", { email, password })
-    loginMutation.mutate({ email, password })
-  }, [email, password, loginMutation])
+  const onSubmit = (values: LoginInput) => {
+    loginMutation.mutate(values)
+  }
 
   const errorMessage = isApiClientError(loginMutation.error)
     ? loginMutation.error.message
     : null
 
   return (
-    <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
+    <form className="flex flex-col gap-5" onSubmit={handleSubmit(onSubmit)} noValidate>
       {/* E-mail */}
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-stone-700" htmlFor="email">
+        <label className="text-sm font-medium text-[var(--text-secondary)]" htmlFor="email">
           E-mail
         </label>
         <input
+          {...register("email")}
           id="email"
           type="email"
           autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="h-12 w-full rounded-xl border border-stone-200 bg-white px-4 text-base text-stone-900 outline-none transition focus:border-stone-400 focus:ring-2 focus:ring-stone-100"
+          className="h-12 w-full rounded-xl border border-[var(--input-border)] bg-[var(--input-bg)] px-4 text-base text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-light)]"
           placeholder="voce@igreja.org"
         />
-        {validationErrors.email ? (
-          <p className="text-sm text-risk">{validationErrors.email}</p>
+        {errors.email ? (
+          <p className="text-sm text-risk">{errors.email.message}</p>
         ) : null}
       </div>
 
       {/* Senha */}
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-stone-700" htmlFor="password">
+        <label className="text-sm font-medium text-[var(--text-secondary)]" htmlFor="password">
           Senha
         </label>
         <input
+          {...register("password")}
           id="password"
           type="password"
           autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="h-12 w-full rounded-xl border border-stone-200 bg-white px-4 text-base text-stone-900 outline-none transition focus:border-stone-400 focus:ring-2 focus:ring-stone-100"
+          className="h-12 w-full rounded-xl border border-[var(--input-border)] bg-[var(--input-bg)] px-4 text-base text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-light)]"
           placeholder="Sua senha"
         />
-        {validationErrors.password ? (
-          <p className="text-sm text-risk">{validationErrors.password}</p>
+        {errors.password ? (
+          <p className="text-sm text-risk">{errors.password.message}</p>
         ) : null}
       </div>
 
@@ -106,10 +87,10 @@ export function LoginForm() {
       ) : null}
 
       {/* Link onboarding */}
-      <div className="border-t border-stone-100 pt-4">
+      <div className="border-t border-[var(--border-light)] pt-4">
         <Link
           href="/onboarding"
-          className="text-sm font-medium text-new transition hover:text-new/80"
+          className="text-sm font-medium text-[var(--new)] transition hover:opacity-80"
         >
           Primeiro acesso? Criar igreja
         </Link>

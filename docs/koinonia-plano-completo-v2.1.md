@@ -38,7 +38,6 @@ Animações                → Framer Motion
 Ícones                   → Lucide React
 Fonte                    → Inter (Google Fonts)
 Query/Cache              → TanStack Query (React Query)
-Estado Local             → Zustand
 Formulários              → React Hook Form + Zod
 Backend/API              → Next.js Route Handlers (API Routes)
 ORM                      → Prisma
@@ -124,8 +123,9 @@ koinonia/
 │   │   │   │   └── page.tsx
 │   │   │   └── onboarding/    # Primeiro acesso do pastor
 │   │   │       └── page.tsx
+│   │   ├── proxy.ts           # Proteção de APIs (Next.js 16 — antigo middleware.ts)
 │   │   ├── (app)/             # Grupo de rotas autenticadas (shell mobile)
-│   │   │   ├── layout.tsx     # Bottom nav, header, providers
+│   │   │   ├── layout.tsx     # Bottom nav, header, providers + auth client-side
 │   │   │   ├── page.tsx       # Redirect por persona
 │   │   │   ├── pastor/
 │   │   │   │   ├── page.tsx           # Visão (3 linhas)
@@ -159,6 +159,8 @@ koinonia/
 │   │   ├── api/               # API Routes (Route Handlers)
 │   │   │   ├── auth/
 │   │   │   │   ├── login/
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── logout/
 │   │   │   │   │   └── route.ts
 │   │   │   │   ├── refresh/
 │   │   │   │   │   └── route.ts
@@ -212,7 +214,10 @@ koinonia/
 │   ├── lib/
 │   │   ├── prisma.ts          # Singleton PrismaClient
 │   │   ├── auth.ts            # JWT sign/verify, bcrypt, sessão
+│   │   ├── auth-service.ts    # Lógica de negócio de autenticação
+│   │   ├── auth-storage.ts    # localStorage para tokens (client-side)
 │   │   ├── api-client.ts      # Fetch wrapper com TanStack Query
+│   │   ├── api-response.ts    # Helpers padronizados de resposta HTTP
 │   │   └── utils.ts           # cn() (clsx + tailwind-merge)
 │   ├── hooks/
 │   │   ├── use-auth.ts
@@ -221,8 +226,6 @@ koinonia/
 │   │   ├── use-attendance.ts
 │   │   ├── use-search.ts      # Debounce 300ms
 │   │   └── use-theme.ts
-│   ├── stores/
-│   │   └── app-store.ts       # Zustand (estado local leve)
 │   ├── types/
 │   │   └── index.ts           # Tipos globais compartilhados
 │   └── domain/                # Lógica de negócio PURA (sem framework)
@@ -250,7 +253,7 @@ koinonia/
 │           └── domain-errors.ts
 ├── tailwind.config.ts
 ├── tsconfig.json
-├── next.config.js
+├── next.config.mjs
 └── package.json
 ```
 
@@ -296,9 +299,9 @@ import type { Config } from 'tailwindcss'
 const config: Config = {
   darkMode: 'class',
   content: [
-    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/lib/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
@@ -372,7 +375,8 @@ export default config
   }
 
   body {
-    @apply bg-stone-900;
+    background-color: var(--bg);
+    color: var(--text-primary);
   }
 }
 ```
@@ -523,15 +527,18 @@ model Attendance {
 }
 
 model Interaction {
-  id        String   @id @default(cuid())
+  id        String          @id @default(cuid())
   personId  String
   authorId  String
   kind      InteractionKind
   content   String
-  createdAt DateTime @default(now())
+  createdAt DateTime        @default(now())
 
-  person    Person   @relation("Subject", fields: [personId], references: [id])
-  author    Person   @relation("Author", fields: [authorId], references: [id])
+  person    Person          @relation("Subject", fields: [personId], references: [id], onDelete: Cascade)
+  author    Person          @relation("Author", fields: [authorId], references: [id])
+
+  @@index([personId])
+  @@index([authorId])
 }
 
 model Need {
@@ -543,22 +550,32 @@ model Need {
   resolvedAt  DateTime?
   createdAt   DateTime  @default(now())
 
-  person      Person    @relation(fields: [personId], references: [id])
-  tasks       Task[]
+  person      Person    @relation(fields: [personId], references: [id], onDelete: Cascade)
+  tasks       Task[]    @relation("NeedTasks")
+
+  @@index([personId])
 }
 
 model Task {
-  id          String    @id @default(cuid())
+  id          String     @id @default(cuid())
   assigneeId  String
+  groupId     String?
+  needId      String?
   targetType  TaskTarget
   targetId    String
   description String
   dueAt       DateTime
   completedAt DateTime?
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime   @default(now())
   deletedAt   DateTime?
 
-  assignee    User      @relation("Assignee", fields: [assigneeId], references: [id])
+  assignee    User       @relation("Assignee", fields: [assigneeId], references: [id])
+  group       Group?     @relation(fields: [groupId], references: [id])
+  need        Need?      @relation("NeedTasks", fields: [needId], references: [id], onDelete: SetNull)
+
+  @@index([assigneeId])
+  @@index([groupId])
+  @@index([needId])
 }
 
 model RiskScore {
@@ -638,14 +655,14 @@ enum RiskLevel {
 
 **Comando de instalação:**
 ```bash
-npx create-next-app@latest koinonia --typescript --tailwind --eslint --app --src-dir --turbopack
+npx create-next-app@latest koinonia --typescript --tailwind --eslint --app --src-dir
 ```
 
 **Tarefas:**
 1. Instalar dependências:
    ```bash
    npm install prisma @prisma/client zod react-hook-form @hookform/resolvers lucide-react framer-motion clsx tailwind-merge bcryptjs jose next-themes @tanstack/react-query
-   npm install -D vitest @vitejs/plugin-react @testing-library/react @testing-library/jest-dom jsdom
+   npm install -D vitest @vitejs/plugin-react @testing-library/react @testing-library/jest-dom jsdom dotenv
    ```
 2. Configurar `prisma/schema.prisma` (copiar do documento)
 3. Rodar `npx prisma migrate dev --name init`
@@ -657,7 +674,7 @@ npx create-next-app@latest koinonia --typescript --tailwind --eslint --app --src
    - 10 membros distribuídos em 3 células
    - 2 event types: Célula e EMC
    - 3 eventos passados com presenças variadas
-5. Configurar `tsconfig.json`, `tailwind.config.ts`, `next.config.js` (com next-pwa)
+5. Configurar `tsconfig.json`, `tailwind.config.ts`, `next.config.mjs` (com next-pwa)
 6. Criar `src/lib/utils.ts` (cn helper)
 7. Criar `src/lib/prisma.ts` (singleton)
 8. Criar `src/types/index.ts` com tipos globais
@@ -672,7 +689,12 @@ npx create-next-app@latest koinonia --typescript --tailwind --eslint --app --src
 ---
 
 ### 🌊 Onda 1 — Autenticação e Onboarding
-**Objetivo:** Login seguro, sessão com refresh token, primeiro acesso do pastor.
+**Objetivo:** Login seguro, sessão com refresh token, logout server-side, primeiro acesso do pastor.
+
+> **Arquitetura de auth no Koinonia (padrão dual):**
+> - **APIs:** `src/proxy.ts` (Next.js 16) intercepta rotas `/api/*`, valida o Bearer token e injeta headers `x-user-id`, `x-user-role`, `x-person-id`, `x-church-id`. NÃO redireciona páginas.
+> - **Páginas:** `src/app/(app)/layout.tsx` (client component) verifica sessão via `useMe()` e redireciona para `/login` se o usuário não estiver autenticado. Isso evita o problema do middleware não ter acesso ao `localStorage`.
+> - **Tokens:** Access token (15min) e refresh token (7 dias) ficam em `localStorage` via `src/lib/auth-storage.ts`.
 
 **Tarefas:**
 1. Criar `src/lib/auth.ts`:
@@ -682,44 +704,66 @@ npx create-next-app@latest koinonia --typescript --tailwind --eslint --app --src
    - `signRefreshToken(userId: string): Promise<string>` (JWT, 7 dias)
    - `verifyAccessToken(token: string): Promise<TokenPayload | null>`
    - `verifyRefreshToken(token: string): Promise<string | null>` (retorna userId)
-2. Criar API Route `POST /api/auth/login`:
-   - Recebe `{ email, password }`
-   - Verifica credenciais
-   - Retorna `{ accessToken, refreshToken, user: { id, name, role, personId } }`
-3. Criar API Route `POST /api/auth/refresh`:
-   - Recebe `{ refreshToken }`
-   - Gera novo accessToken
-4. Criar API Route `GET /api/auth/me`:
-   - Recebe `Authorization: Bearer <token>`
-   - Retorna usuário logado com persona
-5. Criar middleware `src/middleware.ts` (Next.js):
-   - Protege rotas `/api/*` (exceto `/api/auth/*`)
-   - Injeta `user` no request
-6. Criar tela `/(auth)/login/page.tsx`:
-   - Formulário simples: email, senha
+   - `extractBearerToken(header: string | null): string | null`
+2. Criar `src/lib/auth-storage.ts`:
+   - `persistAuthTokens(tokens)` — salva access + refresh no `localStorage`
+   - `getStoredAccessToken()` / `getStoredRefreshToken()`
+   - `clearStoredAuth()` — remove tokens e dispara evento de mudança
+   - `subscribeToAuthStorage(callback)` — para hooks reagirem a logout
+3. Criar `src/lib/auth-service.ts`:
+   - `loginUser(input)` — busca user, verifica senha, cria tokens, retorna `Result<LoginResponse, DomainError>`
+   - `refreshAccessToken(input)` — valida refresh token no banco, gera novo access token
+   - `getAuthenticatedUser(input)` — valida access token e retorna usuário
+   - `onboardChurch(input)` — cria igreja + pastor + user em transação (só se não houver igreja)
+4. Criar API Routes:
+   - `POST /api/auth/login` — Zod schema, chama `loginUser`, retorna tokens + user
+   - `POST /api/auth/logout` — recebe `{ refreshToken }`, deleta o token do banco (logout server-side)
+   - `POST /api/auth/refresh` — Zod schema, chama `refreshAccessToken`
+   - `GET /api/auth/me` — extrai Bearer, chama `getAuthenticatedUser`
+   - `POST /api/auth/onboarding` — Zod schema, chama `onboardChurch`
+5. Criar `src/lib/api-response.ts`:
+   - `validationErrorResponse`, `domainErrorResponse`, `serverErrorResponse`, `invalidJsonResponse`
+   - Mapeamento de `DomainError` para status HTTP e mensagens em português
+6. Criar `src/proxy.ts` (Next.js 16 — substitui `middleware.ts`):
+   - Exporta função `proxy(request)`
+   - Matcher: `/api/:path*`
+   - Libera `/api/auth/*`
+   - Para APIs protegidas: extrai Bearer, verifica JWT, injeta headers `x-user-id`, `x-user-role`, `x-person-id`, `x-church-id`
+   - Retorna 401 JSON se token ausente ou inválido
+   - **NUNCA** redireciona páginas (isso é feito no client-side)
+7. Criar tela `/(auth)/login/page.tsx`:
+   - Formulário com React Hook Form + Zod (`loginSchema`)
    - Layout mobile-first, inputs grandes (h-12, text-base)
    - Sem validação visual agressiva (mensagens suaves)
-7. Criar tela `/(auth)/onboarding/page.tsx`:
+8. Criar tela `/(auth)/onboarding/page.tsx`:
    - Só acessível se não houver igreja no banco
-   - Formulário: nome da igreja, nome do pastor, email, senha
+   - Formulário com React Hook Form + Zod: nome da igreja, nome do pastor, email, senha
    - Cria igreja + pastor + user em uma transação
-8. Criar `src/hooks/use-auth.ts` (TanStack Query):
-   - `useMe()` — busca `/api/auth/me`
-   - `useLogin()` — mutation para login
-   - `useLogout()` — limpa tokens
-9. Criar `src/components/layout/persona-guard.tsx`:
-   - Lê `useMe()`
-   - Se role for `pastor`, redireciona `/pastor`
-   - Se `supervisor`, redireciona `/supervisor`
-   - Se `leader`, redireciona `/lider`
+9. Criar `src/hooks/use-auth.ts` (TanStack Query):
+   - `useMe()` — busca `/api/auth/me`, com retry automático em `TOKEN_EXPIRED` (usa refresh token)
+   - `useLogin()` — mutation para login, persiste tokens, redireciona
+   - `useLogout()` — chama `POST /api/auth/logout` (invalida refresh no servidor), depois limpa localStorage e redireciona
+   - `useOnboarding()` — mutation para onboarding
+   - `useStoredSessionState()` — retorna se há sessão no localStorage (para evitar flash de login)
+10. Criar `src/components/layout/persona-guard.tsx`:
+    - Lê `useMe()`
+    - Se role for `pastor`, redireciona `/pastor`
+    - Se `supervisor`, redireciona `/supervisor`
+    - Se `leader`, redireciona `/lider`
+11. Criar `src/app/(app)/layout.tsx`:
+    - Client component que verifica `useStoredSessionState()` e `useMe()`
+    - Redireciona para `/login` se não houver sessão ou se `useMe()` falhar
+    - Mostra tela de loading enquanto verifica
 
 **Contrato de Entrega:**
 - [ ] Login funciona com seed data (Roberto/Ana/Bruno)
-- [ ] Refresh token renova sessão
-- [ ] Rota protegida rejeita token inválido
-- [ ] Onboarding cria primeira igreja
+- [ ] Refresh token renova sessão silenciosamente
+- [ ] Logout deleta o refresh token no banco e limpa o client
+- [ ] Rota de API protegida rejeita token inválido (401 JSON)
+- [ ] Acesso direto a `/lider` funciona após login (F5 não quebra)
+- [ ] Onboarding cria primeira igreja e redireciona
 - [ ] Redirect por persona funciona
-- [ ] Testes unitários para `auth.ts` (hash, verify, sign)
+- [ ] Testes unitários para `auth.ts` (hash, verify, JWT sign/verify, bearer extraction)
 
 ---
 
@@ -1117,7 +1161,7 @@ npx create-next-app@latest koinonia --typescript --tailwind --eslint --app --src
 **Objetivo:** Dark mode pastoral, micro-transições, empty states, refinamento visual.
 
 **Tarefas:**
-1. Instalar `next-themes`
+1. Configurar `next-themes` (já instalado na Onda 0)
 2. Criar `src/components/layout/theme-provider.tsx`:
    - Detecta preferência do sistema
    - Das 21h às 6h, força dark mode (se usuário não tiver preferência explícita)
@@ -1220,7 +1264,7 @@ npx create-next-app@latest koinonia --typescript --tailwind --eslint --app --src
 **Objetivo:** App instalável, offline básico, publicação.
 
 **Tarefas:**
-1. Configurar `next-pwa` no `next.config.js`:
+1. Configurar `next-pwa` no `next.config.mjs`:
    - Gera `manifest.json`
    - Gera Service Worker
    - Cache de páginas estáticas
@@ -1270,7 +1314,7 @@ REGRAS ABSOLUTAS:
 2. Cada caso de uso é um arquivo isolado em src/domain/use-cases/. Sem god classes.
 3. Todo input de API passa por Zod antes de chegar no domínio.
 4. Repositórios são interfaces em src/domain/repositories/. Implementações ficam em src/app/api/_repositories/.
-5. Erros de negócio usam neverthrow (Result<T, E>). Não use throw para fluxo normal.
+5. Erros de negócio usam neverthrow (Result<T, E>) para fluxos previsíveis. Throws são aceitáveis apenas para erros irrecuperáveis (configuração ausente, falhas de infra).
 6. Componentes React recebem apenas props. Lógica de negócio fica em hooks ou casos de uso.
 7. Nenhum texto menor que 13px no mobile. Touch targets mínimo 48x48px.
 8. Cores de status: risk (#993C1D), ok (#3B6D11), warn (#854F0B), new (#185FA5). NUNCA vermelho puro.
@@ -1278,9 +1322,11 @@ REGRAS ABSOLUTAS:
 10. Testes unitários para domínio. Testes de integração para rotas críticas.
 
 NEXT.JS 16 — ATENÇÃO:
+- O arquivo de interceptação de requisões é `src/proxy.ts` (antigo `middleware.ts`).
+- `proxy.ts` roda no Node.js runtime. Use para APIs apenas. NÃO redirecione páginas (o client-side cuida disso).
 - Params de rotas dinâmicas são Promise. SEMPRE use await params.
 - fetch() NÃO é cacheado por padrão. Declare cache explicitamente se necessário.
-- Turbopack já vem ativado em dev (não precisa configurar).
+- Turbopack já vem ativado em dev (`next dev` não precisa de flag).
 
 PERSONAS E RESTRIÇÕES:
 - Bruno (líder): vê APENAS sua célula. Registra presença. Anota cuidado.
@@ -1301,27 +1347,31 @@ Implemente a Onda 0 do Koinonia na pasta vazia atual.
 
 IMPORTANTE: Use Next.js 16 (versão estável atual).
 - Node.js mínimo: 20.x
-- Turbopack é o bundler padrão em dev
+- Turbopack é o bundler padrão em dev (next dev já usa automaticamente)
 - Params de rotas dinâmicas são Promise (async/await)
 
 Comando de instalação:
-npx create-next-app@latest koinonia --typescript --tailwind --eslint --app --src-dir --turbopack
+npx create-next-app@latest koinonia --typescript --tailwind --eslint --app --src-dir
 
 Requisitos:
 1. Crie o projeto Next.js 16 com App Router, TypeScript, Tailwind CSS.
 2. Instale: prisma, @prisma/client, zod, react-hook-form, @hookform/resolvers,
    lucide-react, framer-motion, clsx, tailwind-merge, bcryptjs, jose,
    next-themes, @tanstack/react-query, vitest, @testing-library/react,
-   @testing-library/jest-dom, jsdom.
+   @testing-library/jest-dom, jsdom, dotenv.
 3. Configure Prisma com PostgreSQL. O DATABASE_URL está no arquivo .env
    na raiz do projeto. NÃO modifique o .env. O schema deve usar
    env("DATABASE_URL").
 4. Crie o schema.prisma completo conforme o modelo fornecido no documento.
+   Inclua @@index nos campos de filtro frequentes (churchId, groupId, personId,
+   leaderId, supervisorId, eventTypeId, assigneeId, needId).
 5. Crie prisma/seed.ts com dados fictícios: Igreja "Comunidade Esperança",
    Roberto (pastor), Ana (supervisora), Bruno (líder), 10 membros,
    3 células, 2 event types, 3 eventos com presenças variadas.
+   IMPORTANTE: crie Membership também para os líderes e supervisores
+   nas células que pertencem (senão eles não aparecem na lista de membros).
 6. Configure tailwind.config.ts com o tema pastoral (cores, fonte Inter,
-   animações).
+   animações). Não inclua ./src/pages/**/* no content (usamos App Router).
 7. Crie src/lib/utils.ts (cn helper) e src/lib/prisma.ts (singleton).
 8. Crie src/types/index.ts com tipos globais.
 9. Crie .gitignore excluindo node_modules, .next, .env, *.log.
@@ -1335,19 +1385,28 @@ NÃO exponha a connection string em nenhum arquivo do projeto.
 ```
 Implemente a Onda 1: Autenticação e Onboarding.
 
-IMPORTANTE: Next.js 16 — params é Promise em rotas dinâmicas.
+IMPORTANTE: Next.js 16 usa proxy.ts (antigo middleware.ts). Não crie middleware.ts.
+Arquitetura de auth dual:
+- APIs: src/proxy.ts valida Bearer token e injeta headers x-user-*.
+- Páginas: src/app/(app)/layout.tsx (client component) verifica sessão e redireciona.
 
-1. Crie src/lib/auth.ts com hash, verify, sign/verify JWT (access + refresh).
-2. Crie as API routes: POST /api/auth/login, POST /api/auth/refresh, GET /api/auth/me.
-   Lembre-se: em Route Handlers do Next.js 16, params NÃO existe nessas rotas
-   (são rotas fixas), mas se criar rotas dinâmicas use await params.
-3. Crie o middleware de proteção de rotas em src/middleware.ts.
-4. Crie a tela de login mobile-first (inputs grandes, sem validação agressiva).
-5. Crie a tela de onboarding (primeira igreja).
-6. Crie os hooks use-auth.ts com TanStack Query.
-7. Crie o PersonaGuard que redireciona por role.
+1. Crie src/lib/auth.ts com hash, verify, sign/verify JWT (access + refresh), extractBearerToken.
+2. Crie src/lib/auth-storage.ts (localStorage para tokens) e src/lib/auth-service.ts (lógica de negócio).
+3. Crie src/lib/api-response.ts (helpers padronizados de resposta HTTP).
+4. Crie as API routes: POST /api/auth/login, POST /api/auth/logout (deleta refresh token do banco),
+   POST /api/auth/refresh, GET /api/auth/me, POST /api/auth/onboarding.
+   TODAS as rotas com body devem usar Zod para validação.
+5. Crie src/proxy.ts (função proxy, matcher /api/:path*). Protege APIs, não redireciona páginas.
+6. Crie a tela de login mobile-first com React Hook Form + Zod.
+7. Crie a tela de onboarding (primeira igreja) com React Hook Form + Zod.
+8. Crie src/hooks/use-auth.ts com useMe, useLogin, useLogout, useOnboarding, useStoredSessionState.
+   useLogout deve chamar POST /api/auth/logout antes de limpar o localStorage.
+9. Crie src/app/(app)/layout.tsx (client component) que protege páginas via useMe + redirect.
+10. Crie o PersonaGuard que redireciona por role.
+11. Escreva testes unitários em src/lib/auth.test.ts (hash, verify, JWT, bearer token).
 
-Entregue: login funciona com seed data, refresh renova sessão, redirect por persona funciona.
+Entregue: login funciona, refresh renova sessão, logout invalida no servidor,
+F5 em páginas protegidas funciona, redirect por persona funciona, testes passam.
 ```
 
 ### Prompt Onda 3

@@ -1,0 +1,34 @@
+Se eu, Roberto (52 anos), estou com o celular na mão, eu não estou trabalhando, estou pastoreando. Eu estou no corredor do hospital, no carro antes de um velório, ou no sofá de casa às 22h com a consciência pesada. Eu não quero "usar um sistema". Eu quero resolver uma angústia silenciosa.
+Se o foco é mobile, o sistema precisa ser menos um "painel de controle" e mais um "termômetro de bolso".
+Aqui está como eu gostaria que fosse:
+1. A Primeira Tela: O "Olá, Roberto" em 3 Linhas
+Esqueça o dashboard com 8 cards. Minha tela inicial mobile deve caber no meu polegar e na minha capacidade de atenção fragmentada.
+Eu abro o app e vejo, em letras grandes e confortáveis (sem óculos de leitura):
+Boa noite, Roberto. Hoje, 3 pessoas estão escapando pelos dedos. A Ana está com 2 líderes sobrecarregados.
+Só isso. Acabou a tela. Se eu quiser saber mais, eu rolo. Mas essas duas frases já cumpriram 80% da minha necessidade. Elas me dizem se eu preciso me preocupar agora ou se posso largar o celular e dormir em paz.
+2. A Navegação: Uma Mão, Polegar, Sem Mistério
+Eu não quero um menu hambúrguer escondido no canto superior esquerdo. Isso é um cemitério de funcionalidades.
+Quero uma barra inferior com 3 botões, no máximo 4:
+
+🏠 Visão (a tela das 3 linhas)
+👥 Pessoas (a lista de quem sumiu ou precisa de mim)
+📋 Ações (as coisas que eu preciso fazer ou acompanhar) E eu quero que o sistema me empurre para onde eu preciso ir. Se tem 3 pessoas escapando, o ícone de "Pessoas" deveria ter um discreto ponto vermelho. Não como uma notificação invasiva de "tarefa atrasada", mas como um lembrete visual: "Ei, tem coisa aqui esperando seu coração."
+O "Feed" Pastoral (Não Lista de Leads)
+Quando eu clico em Pessoas, eu não quero uma tabela ordenável por data_ultimo_contato. Isso é coisa de desktop.
+Eu quero um feed, estilo rede social (mas sem algoritmo viciante).
+
+Foto do João.
+Frase curta embaixo: "Bruno ligou terça. Disse que está desempregado."
+Um botão grande do tamanho do meu dedo: 📞 Orar por isso. Pronto. Eu vejo, eu oro, eu sigo a vida. Se eu quiser ligar para o Bruno para saber mais detalhes, eu pego o telefone. O sistema mobile não precisa ser a ferramenta de ação, ele é a ferramenta de consciência situacional.
+A "Pesquisa de Emergência"
+Metade das vezes que eu abro o app é porque alguém me falou um nome no corredor: "Pastor, ora pelo irmão Cláudio."
+No mobile, a barra de busca precisa ser a heroína. Ela precisa estar sempre visível no topo. E quando eu digito "Clau", ela precisa me mostrar:
+
+Cláudio Mendes (Célula Esperança)
+"Última vez visto: 3 semanas atrás. Status: Esfriando." Isso me permite, em 5 segundos, olhar para a pessoa que pediu e dizer: "Pode deixar, ele está no nosso radar. O líder dele vai procurá-lo esta semana." Isso gera confiança pastoral instantânea.
+O que eu NÃO quero no mobile (De jeito nenhum)
+
+Planilhas. Se eu abrir uma tela e vir uma grade com 10 colunas, eu fecho o app na hora. Minha vista cansa e meu polegar não tem precisão cirúrgica.
+Formulários longos. Eu não vou cadastrar um novo membro pelo celular. Se for para anotar algo, que seja uma caixa de texto livre: "Anotar: Filho do João está doente." E o sistema que se vire para categorizar depois.
+Gráficos de pizza complexos. No mobile, um número grande e uma seta para cima ou para baixo são suficientes. "Presença: 72% (estável)". Ponto. O Resumo do Pastor Mobile Se o foco é mobile, a palavra de ordem é alívio cognitivo. O sistema ideal para mim, no celular, é aquele que eu abro, respiro fundo por 3 segundos, sinto que a igreja não está desgovernada, e fecho. Ele existe para tirar um peso das minhas costas, não para me lembrar de mais coisas que eu não fiz. Façam o sistema para o Roberto que está cansado, sem óculos, no escuro do quarto, antes de dormir. Se ele conseguir usar aí, vocês venceram.
+E ai, como voce construiria esse sistema. Ou como planejaria?

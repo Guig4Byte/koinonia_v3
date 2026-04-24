@@ -133,16 +133,19 @@ export function useLogin(options?: { redirectTo?: string }) {
         body: JSON.stringify(input),
       }),
     onSuccess: (response) => {
-      console.log("[useLogin] onSuccess", response);
       persistAuthTokens(response);
+      queryClient.clear(); // Limpa cache de usuário anterior
       queryClient.setQueryData(authQueryKey, response.user);
 
-      if (options?.redirectTo) {
-        console.log("[useLogin] redirecting to", options.redirectTo);
-        startTransition(() => {
-          router.replace(options.redirectTo ?? "/");
-        });
-      }
+      const redirectTo = options?.redirectTo;
+      const role = response.user.role;
+      const defaultRoute =
+        role === "pastor" ? "/pastor" :
+        role === "supervisor" ? "/supervisor" :
+        role === "leader" ? "/lider" : "/";
+      startTransition(() => {
+        router.replace(redirectTo ?? defaultRoute);
+      });
     },
     onError: (error) => {
       console.error("[useLogin] onError", error);
@@ -165,13 +168,21 @@ export function useOnboarding(options?: { redirectTo?: string }) {
       }),
     onSuccess: (response) => {
       persistAuthTokens(response);
+      queryClient.clear(); // Limpa cache de usuário anterior
       queryClient.setQueryData(authQueryKey, response.user);
 
-      if (options?.redirectTo) {
-        startTransition(() => {
-          router.replace(options.redirectTo ?? "/");
-        });
-      }
+      const redirectTo = options?.redirectTo;
+      const role = response.user.role;
+      const defaultRoute =
+        role === "pastor" ? "/pastor" :
+        role === "supervisor" ? "/supervisor" :
+        role === "leader" ? "/lider" : "/";
+      startTransition(() => {
+        router.replace(redirectTo ?? defaultRoute);
+      });
+    },
+    onError: (error) => {
+      console.error("[useOnboarding] onError", error);
     },
   });
 }
@@ -214,9 +225,25 @@ export function useLogout() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  return () => {
+  return async () => {
+    const refreshToken = getStoredRefreshToken();
+
+    if (refreshToken) {
+      try {
+        await apiRequest("/api/auth/logout", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ refreshToken }),
+        });
+      } catch {
+        // Ignora erro de logout no servidor — logout local sempre deve funcionar
+      }
+    }
+
     clearStoredAuth();
-    queryClient.removeQueries({ queryKey: authQueryKey });
+    queryClient.clear(); // Limpa TODO o cache, não só auth
 
     startTransition(() => {
       router.replace("/login");

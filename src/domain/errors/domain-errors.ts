@@ -13,6 +13,7 @@ export const DomainErrors = {
   CHURCH_NOT_FOUND: 'CHURCH_NOT_FOUND',
   USER_ALREADY_EXISTS: 'USER_ALREADY_EXISTS',
   EMAIL_ALREADY_EXISTS: 'EMAIL_ALREADY_EXISTS',
+  TASK_NOT_FOUND: 'TASK_NOT_FOUND',
 } as const
 
 export type DomainError = (typeof DomainErrors)[keyof typeof DomainErrors]

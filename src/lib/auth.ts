@@ -1,17 +1,9 @@
 import { err, ok, type Result } from "neverthrow"
-import { SignJWT, errors as joseErrors, jwtVerify } from "jose"
+import { SignJWT, errors as joseErrors, jwtVerify, type JWTPayload } from "jose"
 import { DomainErrors } from "@/domain/errors/domain-errors"
+import type { TokenPayload } from "@/types"
 
 const textEncoder = new TextEncoder()
-
-export interface TokenPayload {
-  sub: string
-  email: string
-  role: string
-  personId: string
-  churchId: string
-  [key: string]: unknown
-}
 
 type AccessTokenError =
   | typeof DomainErrors.TOKEN_EXPIRED
@@ -35,11 +27,11 @@ export function extractBearerToken(authorizationHeader: string | null) {
   if (!authorizationHeader) {
     return null
   }
-  const [scheme, token] = authorizationHeader.split(" ")
-  if (scheme !== "Bearer" || !token) {
+  const match = authorizationHeader.match(/^Bearer\s+(.+)$/)
+  if (!match) {
     return null
   }
-  return token
+  return match[1] ?? null
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -56,7 +48,7 @@ export async function verifyPassword(
 }
 
 export async function signAccessToken(payload: TokenPayload): Promise<string> {
-  return new SignJWT(payload)
+  return new SignJWT(payload as unknown as JWTPayload)
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(payload.sub)
     .setIssuedAt()
@@ -90,18 +82,18 @@ export async function verifyAccessToken(
 export async function verifyAccessTokenDetailed(
   token: string,
 ): Promise<{ valid: true; payload: TokenPayload } | { valid: false; reason: string }> {
-  try {
-    const { payload } = await jwtVerify(token, getJwtSecret("JWT_SECRET"), {
-      clockTolerance: 60,
-    })
-    return { valid: true, payload: payload as unknown as TokenPayload }
-  } catch (error) {
-    const reason =
-      error instanceof joseErrors.JWTExpired
-        ? "Token expirado"
-        : "Token inválido"
-    return { valid: false, reason }
+  const result = await verifyAccessTokenResult(token)
+
+  if (result.isOk()) {
+    return { valid: true, payload: result.value }
   }
+
+  const reason =
+    result.error === DomainErrors.TOKEN_EXPIRED
+      ? "Token expirado"
+      : "Token inválido"
+
+  return { valid: false, reason }
 }
 
 export async function signRefreshToken(userId: string): Promise<string> {

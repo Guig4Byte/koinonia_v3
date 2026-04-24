@@ -5,24 +5,102 @@
 @layer base {
   :root {
     color-scheme: light;
+    /* Fundos */
     --bg: #faf6f1;
     --card: #ffffff;
+    --surface: #f1efea;
+
+    /* Textos */
     --text-primary: #2c2c2a;
     --text-secondary: #5f5e5a;
     --text-muted: #888780;
+
+    /* Status — Risco */
+    --risk: #993c1d;
+    --risk-bg: #faece7;
+    --risk-border: #f5c4b3;
+
+    /* Status — OK */
+    --ok: #3b6d11;
+    --ok-bg: #eaf3de;
+    --ok-border: #c0dd97;
+
+    /* Status — Atenção */
+    --warn: #854f0b;
+    --warn-bg: #fef3e8;
+    --warn-border: #fac775;
+
+    /* Status — Novo */
+    --new: #185fa5;
+    --new-bg: #e6f1fb;
+    --new-border: #b3d7f7;
+
+    /* Acento */
+    --accent: #5f4b32;
+    --accent-light: #f0e8dc;
+
+    /* Input */
+    --input-bg: #ffffff;
+    --input-border: #E8E4DE;
+
+    /* Bordas */
+    --border: #d3d1c7;
+    --border-light: #e3e0d8;
+
+    /* Pulse Card */
+    --pulse-card-bg: #3d3225;
   }
 
   .dark {
     color-scheme: dark;
+    /* Fundos */
     --bg: #141412;
     --card: #1e1e1c;
+    --surface: #2a2a28;
+
+    /* Textos */
     --text-primary: #e8e4df;
     --text-secondary: #c8c4bd;
     --text-muted: #888780;
+
+    /* Status — Risco */
+    --risk: #e07a5f;
+    --risk-bg: #3d1a0e;
+    --risk-border: #5c2615;
+
+    /* Status — OK */
+    --ok: #8fbc6b;
+    --ok-bg: #1a3008;
+    --ok-border: #2a4a0f;
+
+    /* Status — Atenção */
+    --warn: #d4a35e;
+    --warn-bg: #3d2405;
+    --warn-border: #5c3610;
+
+    /* Status — Novo */
+    --new: #5a9fd4;
+    --new-bg: #0a2640;
+    --new-border: #143d66;
+
+    /* Acento */
+    --accent: #c4a882;
+    --accent-light: #3d3225;
+
+    /* Input */
+    --input-bg: #1C1C1A;
+    --input-border: #363430;
+
+    /* Bordas */
+    --border: #3d3c39;
+    --border-light: #2a2a28;
+
+    /* Pulse Card */
+    --pulse-card-bg: #2c2c2a;
   }
 
   * {
-    @apply border-stone-200;
+    @apply border-[var(--border)];
   }
 
   html {
@@ -30,22 +108,31 @@
   }
 
   body {
-    @apply min-h-full bg-bg text-stone-800 font-sans antialiased;
+    @apply min-h-full font-sans antialiased;
+    background-color: var(--bg);
+    color: var(--text-primary);
     background-image:
-      radial-gradient(circle at top, rgba(255, 255, 255, 0.9), transparent 35%),
-      linear-gradient(180deg, rgba(250, 246, 241, 1) 0%, rgba(241, 239, 234, 1) 100%);
+      radial-gradient(circle at 50% 0%, rgba(255, 252, 245, 0.8), transparent 50%),
+      linear-gradient(180deg, #f5f0e8 0%, #ede8df 100%);
   }
 
   .dark body {
-    @apply bg-bg text-stone-100;
     background-image:
       radial-gradient(circle at top, rgba(90, 66, 43, 0.22), transparent 35%),
       linear-gradient(180deg, rgba(20, 20, 18, 1) 0%, rgba(26, 26, 24, 1) 100%);
   }
 
   ::selection {
-    @apply bg-new/20 text-stone-900;
+    background-color: rgba(24, 95, 165, 0.2);
+    color: var(--text-primary);
   }
+}
+
+/* Tema escuro — fallback direto fora do layer para garantir aplicação */
+html.dark,
+html.dark body {
+  background-color: #141412;
+  color: #e8e4df;
 }
 
 @layer utilities {

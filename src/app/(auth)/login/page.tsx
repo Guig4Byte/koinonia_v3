@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-bg px-5 py-8">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-[var(--bg)] px-5 py-8">
       <div className="w-full max-w-sm">
         {/* Header pastoral */}
         <div className="mb-8 flex flex-col items-center gap-3 text-center">
@@ -17,17 +17,17 @@ export default function LoginPage() {
             <Church className="h-7 w-7" />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold text-stone-800">
+            <h1 className="text-2xl font-semibold text-[var(--text-primary)]">
               Koinonia
             </h1>
-            <p className="mt-1 text-sm text-stone-500">
+            <p className="mt-1 text-sm text-[var(--text-muted)]">
               Cuidado pastoral em suas mãos
             </p>
           </div>
         </div>
 
         {/* Card clean */}
-        <div className="rounded-2xl bg-card p-6 shadow-sm border border-stone-200">
+        <div className="rounded-2xl bg-[var(--card)] p-6 shadow-sm border border-[var(--border-light)]">
           <LoginForm />
         </div>
       </div>

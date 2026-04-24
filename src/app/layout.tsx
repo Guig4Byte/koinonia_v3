@@ -30,7 +30,27 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${inter.variable} h-full`}
     >
-      <body className="min-h-full font-sans text-stone-900">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                var html = document.documentElement;
+                var theme = localStorage.getItem('koinonia-theme');
+                var hour = new Date().getHours();
+                var isNight = hour >= 21 || hour < 6;
+                var isDark = theme === 'dark' || (!theme && (isNight || window.matchMedia('(prefers-color-scheme: dark)').matches));
+                if (isDark) {
+                  html.classList.add('dark');
+                } else {
+                  html.classList.remove('dark');
+                }
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body className="min-h-full font-sans antialiased">
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

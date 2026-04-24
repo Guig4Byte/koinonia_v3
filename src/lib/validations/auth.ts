@@ -36,6 +36,11 @@ export const onboardingSchema = z.object({
   password: passwordSchema,
 });
 
+export const logoutSchema = z.object({
+  refreshToken: z.string().min(1, "Refresh token obrigatório."),
+});
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>;
 export type OnboardingInput = z.infer<typeof onboardingSchema>;
+export type LogoutInput = z.infer<typeof logoutSchema>;

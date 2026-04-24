@@ -44,10 +44,12 @@ model Church {
   createdAt  DateTime    @default(now())
   deletedAt  DateTime?
 
-  people     Person[]
-  groups     Group[]
-  eventTypes EventType[]
-  users      User[]
+  people          Person[]
+  groups          Group[]
+  eventTypes      EventType[]
+  users           User[]
+  tags            Tag[]
+  eventRecurrences EventRecurrence[]
 }
 
 model Person {
@@ -69,6 +71,8 @@ model Person {
   needs                 Need[]
   riskScore             RiskScore?
   user                  User?
+  tags                  PersonTag[]
+  consentLogs           ConsentLog[]
 
   @@index([churchId])
 }
@@ -83,10 +87,11 @@ model Group {
   updatedAt    DateTime     @updatedAt
   deletedAt    DateTime?
 
-  church       Church       @relation(fields: [churchId], references: [id])
-  memberships  Membership[]
-  events       Event[]
-  tasks        Task[]
+  church           Church            @relation(fields: [churchId], references: [id])
+  memberships      Membership[]
+  events           Event[]
+  tasks            Task[]
+  eventRecurrences EventRecurrence[]
 
   @@index([churchId])
   @@index([leaderId])
@@ -116,8 +121,9 @@ model EventType {
   riskWeight Int       @default(1)
   createdAt  DateTime  @default(now())
 
-  church     Church    @relation(fields: [churchId], references: [id])
-  events     Event[]
+  church           Church            @relation(fields: [churchId], references: [id])
+  events           Event[]
+  eventRecurrences EventRecurrence[]
 
   @@index([churchId])
 }
@@ -218,6 +224,89 @@ model RiskScore {
   person    Person    @relation(fields: [personId], references: [id], onDelete: Cascade)
 }
 
+model Tag {
+  id        String     @id @default(cuid())
+  churchId  String
+  name      String
+  color     String     @default("#5F4B32")
+  createdAt DateTime   @default(now())
+
+  church    Church     @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  people    PersonTag[]
+
+  @@index([churchId])
+  @@unique([churchId, name])
+}
+
+model PersonTag {
+  id        String   @id @default(cuid())
+  personId  String
+  tagId     String
+  createdAt DateTime @default(now())
+
+  person    Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([personId, tagId])
+  @@index([personId])
+  @@index([tagId])
+}
+
+model EventRecurrence {
+  id           String          @id @default(cuid())
+  churchId     String
+  groupId      String
+  eventTypeId  String
+  recurrence   RecurrenceKind
+  dayOfWeek    Int             // 0=Dom, 1=Seg, ..., 6=Sáb
+  time         String          // "20:00"
+  startDate    DateTime
+  endDate      DateTime?
+  location     String?
+  isActive     Boolean         @default(true)
+  createdAt    DateTime        @default(now())
+
+  church       Church          @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  group        Group           @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  eventType    EventType       @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
+
+  @@index([churchId])
+  @@index([groupId])
+  @@index([eventTypeId])
+  @@index([isActive])
+}
+
+model ConsentLog {
+  id         String      @id @default(cuid())
+  personId   String
+  kind       ConsentKind
+  granted    Boolean
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime    @default(now())
+
+  person     Person      @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@index([personId])
+  @@index([kind])
+}
+
+model AuditLog {
+  id         String        @id @default(cuid())
+  userId     String?
+  action     AuditAction
+  resource   AuditResource
+  resourceId String
+  details    String?
+  ip         String?
+  createdAt  DateTime      @default(now())
+
+  @@index([userId])
+  @@index([resource])
+  @@index([resourceId])
+  @@index([createdAt])
+}
+
 enum Role {
   pastor
   supervisor
@@ -268,4 +357,34 @@ enum RiskLevel {
   green
   yellow
   red
+}
+
+enum RecurrenceKind {
+  weekly
+  biweekly
+  monthly
+}
+
+enum ConsentKind {
+  data_usage
+  photo
+  contact
+}
+
+enum AuditAction {
+  read
+  create
+  update
+  delete
+}
+
+enum AuditResource {
+  person
+  group
+  event
+  attendance
+  interaction
+  task
+  need
+  tag
 }

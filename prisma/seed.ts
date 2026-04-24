@@ -14,6 +14,11 @@ async function main() {
     prisma.interaction.deleteMany(),
     prisma.attendance.deleteMany(),
     prisma.riskScore.deleteMany(),
+    prisma.personTag.deleteMany(),
+    prisma.tag.deleteMany(),
+    prisma.consentLog.deleteMany(),
+    prisma.auditLog.deleteMany(),
+    prisma.eventRecurrence.deleteMany(),
     prisma.membership.deleteMany(),
     prisma.event.deleteMany(),
     prisma.eventType.deleteMany(),
@@ -110,6 +115,7 @@ async function main() {
     }),
   ])
 
+  const robertoUser = users[0]
   const anaUser = users[1]
   const brunoUser = users[2]
   console.log('👤 Usuários criados (senha: koinonia123)')
@@ -120,24 +126,24 @@ async function main() {
       data: {
         churchId: church.id,
         name: 'Esperança',
-        leaderId: brunoPerson.id,
-        supervisorId: anaPerson.id,
+        leaderId: brunoUser.id,
+        supervisorId: anaUser.id,
       },
     }),
     prisma.group.create({
       data: {
         churchId: church.id,
         name: 'Ágape',
-        leaderId: anaPerson.id,
-        supervisorId: anaPerson.id,
+        leaderId: anaUser.id,
+        supervisorId: anaUser.id,
       },
     }),
     prisma.group.create({
       data: {
         churchId: church.id,
         name: 'Shalom',
-        leaderId: robertoPerson.id,
-        supervisorId: anaPerson.id,
+        leaderId: robertoUser.id,
+        supervisorId: anaUser.id,
       },
     }),
   ])
@@ -176,6 +182,17 @@ async function main() {
   )
   console.log('👥 Membros criados')
 
+  // ─── Memberships dos líderes/supervisores nas células ───
+  await prisma.membership.createMany({
+    data: [
+      { personId: brunoPerson.id, groupId: esperanca.id, role: 'member' },
+      { personId: anaPerson.id, groupId: agape.id, role: 'member' },
+      { personId: anaPerson.id, groupId: shalom.id, role: 'member' },
+      { personId: robertoPerson.id, groupId: shalom.id, role: 'member' },
+    ],
+  })
+  console.log('🔗 Memberships de líderes/supervisores criadas')
+
   // ─── Eventos ───
   const now = new Date()
   const events = await Promise.all([
@@ -201,6 +218,13 @@ async function main() {
         eventTypeId: emcType.id,
         scheduledAt: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000),
         occurredAt: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000),
+      },
+    }),
+    prisma.event.create({
+      data: {
+        groupId: esperanca.id,
+        eventTypeId: cellType.id,
+        scheduledAt: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000),
       },
     }),
   ])
@@ -237,11 +261,12 @@ async function main() {
     })
   })
 
+  // Evento 4 (futuro): sem presença registrada
+
   await prisma.attendance.createMany({ data: attendanceData })
   console.log('✅ Presenças registradas')
 
   // ─── Risk Scores, Interações, Needs, Tasks ───
-  // Sabemos que esperancaMembers tem 5 elementos (filtramos i < 5)
   const claudio = esperancaMembers[0]!
   const maria = esperancaMembers[1]!
   const pedro = esperancaMembers[2]!
@@ -326,6 +351,102 @@ async function main() {
     ],
   })
   console.log('✓ Tasks criadas')
+
+  // ─── Tags ───
+  const [tagNovo, tagRisco, tagVisitante] = await Promise.all([
+    prisma.tag.create({
+      data: { churchId: church.id, name: 'Novo Convertido', color: '#185FA5' },
+    }),
+    prisma.tag.create({
+      data: { churchId: church.id, name: 'Em Risco', color: '#993C1D' },
+    }),
+    prisma.tag.create({
+      data: { churchId: church.id, name: 'Visitante', color: '#854F0B' },
+    }),
+  ])
+  console.log('🏷️ Tags criadas')
+
+  // ─── PersonTags ───
+  await prisma.personTag.createMany({
+    data: [
+      { personId: claudio.id, tagId: tagRisco.id },
+      { personId: maria.id, tagId: tagVisitante.id },
+      { personId: maria.id, tagId: tagNovo.id },
+    ],
+  })
+  console.log('🏷️ PersonTags criadas')
+
+  // ─── EventRecurrences ───
+  await prisma.eventRecurrence.createMany({
+    data: [
+      {
+        churchId: church.id,
+        groupId: esperanca.id,
+        eventTypeId: cellType.id,
+        recurrence: 'weekly',
+        dayOfWeek: 4, // quinta
+        time: '20:00',
+        startDate: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
+        location: 'Casa do Bruno',
+      },
+      {
+        churchId: church.id,
+        groupId: esperanca.id,
+        eventTypeId: emcType.id,
+        recurrence: 'monthly',
+        dayOfWeek: 0, // domingo
+        time: '18:00',
+        startDate: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
+        location: 'Templo Central',
+      },
+    ],
+  })
+  console.log('🔄 EventRecurrences criadas')
+
+  // ─── ConsentLogs ───
+  await prisma.consentLog.createMany({
+    data: [
+      {
+        personId: robertoPerson.id,
+        kind: 'data_usage',
+        granted: true,
+        ip: '127.0.0.1',
+      },
+      {
+        personId: anaPerson.id,
+        kind: 'data_usage',
+        granted: true,
+      },
+      {
+        personId: brunoPerson.id,
+        kind: 'data_usage',
+        granted: true,
+      },
+    ],
+  })
+  console.log('📋 ConsentLogs criados')
+
+  // ─── AuditLogs ───
+  await prisma.auditLog.createMany({
+    data: [
+      {
+        userId: users[0].id,
+        action: 'create',
+        resource: 'person',
+        resourceId: claudio.id,
+        details: 'Criado via seed',
+        ip: '127.0.0.1',
+      },
+      {
+        userId: users[2].id,
+        action: 'read',
+        resource: 'group',
+        resourceId: esperanca.id,
+        details: 'Consulta célula Esperança',
+      },
+    ],
+  })
+  console.log('📋 AuditLogs criados')
 
   console.log('\n🎉 Seed concluído com sucesso!')
   console.log('\nUsuários de teste:')

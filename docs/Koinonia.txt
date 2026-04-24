@@ -1,0 +1,152 @@
+Koinonia – Sistema de Gerenciamento 
+de Pequenos Grupos (Células) 
+Versão: 1.0 (consolidado) 
+Autor: Maicon Banni 
+Objetivo: Descrever visão, requisitos, modelo de dados, fluxos, arquitetura, 
+analytics e wireframes conceituais do Koinonia, sistema de gestão de células 
+em igrejas. O Koinonia deve organizar reuniões/eventos e presenças, mas 
+sobretudo aproximar o relacionamento da liderança com os liderados, 
+ajudando o pastor e sua equipe a cuidar melhor de pessoas, identificar 
+necessidades e apoiar decisões com dados e analytics. 
+1) Sumário Executivo 
+O Koinonia será um sistema (web + mobile) que facilita a gestão de pequenos 
+grupos/células, com foco em presença, cuidado pastoral e analytics. Seus principais 
+pilares: 
+● Reuniões/Eventos: criação, calendário, ocorrências recorrentes. 
+● Presença: check-in simplificado com geolocalização e/ou QR e rápida identificação 
+e mapeamento da capilaridade (Onde é o grupo mais perto daqui? Onde existe uma 
+célula com meu perfil?). 
+● Organograma: estrutura hierárquica (pastor, supervisores, líderes, anfitriões, 
+membros). 
+● Cuidado Pastoral: perfil do membro, anotações, pedidos, follow-ups. 
+● Relatórios/Analytics: frequência, engajamento, retenção, membros em risco. 
+● Painéis Executivos: visão consolidada para líderes, supervisores e pastores. 
+● Registro de momentos: Com fotos e observações das células para uso do 
+engajamento e relacionamento. 
+2) Objetivos e Princípios 
+● Objetivo-fim: aproximar liderança e liderados por meio de dados acionáveis para 
+cuidar de pessoas e identificar necessidades com agilidade. 
+● Cuidado com pessoas: apoiar liderança a identificar membros que precisam de 
+atenção. 
+● Analytics para decisão: gerar relatórios que mostrem tendências, riscos e 
+oportunidades. 
+● Abstração de eventos: célula, culto, treinamento, retiro. 
+● Presença confiável: geofence, QR-code e confirmações. 
+● Governança clara: organograma refletindo autoridade. 
+● LGPD-first: consentimento, minimização de dados, auditoria. 
+Métricas norteadoras 
+● % de pessoas acompanhadas com follow-up nos últimos 30 dias. 
+● Tempo mediano entre alerta e contato pastoral. 
+● Retenção de membros em 90 dias pós-entrada. 
+● Taxa de reativação após intervenção. 
+3) Escopo do MVP 
+● Cadastro de Igrejas, Pessoas, Papéis, Grupos. 
+● Eventos, Ocorrências, Presença. 
+● Organograma navegável. 
+● Relatórios básicos. 
+● Indicadores de cuidado: faltas consecutivas, novos membros sem 
+acompanhamento, queda de frequência. 
+● CRM Pastoral leve: perfil do membro, etiquetas, necessidades/pedidos, tarefas de 
+follow-up. 
+Fora do MVP 
+● Notificações, autoatendimento do membro, integração com calendários. 
+● Modelos preditivos, BI avançado. 
+4) Casos de Uso 
+● Pastor: identificar afastados e apoiar líderes. 
+● Supervisor: monitorar líderes e dar suporte. 
+● Líder: acompanhar membros em risco. 
+● Anfitrião: facilitar check-in confiável. 
+● Membro: perceber que é acompanhado. 
+Exemplos: relatório automático de membros em risco; alertas para líderes; mapa de células 
+com menor taxa de presença. 
+5) Requisitos Funcionais 
+1. Painel de Saúde da Célula: status agregado (verde/amarelo/vermelho). 
+2. Alertas de Acompanhamento automáticos. 
+3. Anotações de Cuidado: interações, visitas, pedidos. 
+4. Perfil do Membro consolidado. 
+5. Relatórios Analíticos: tendências de queda, risco de evasão. 
+6) KPIs 
+● Membros em risco (2+ faltas). 
+● % de membros com acompanhamento ativo. 
+● Engajamento por grupo. 
+● Recuperação pós-contato. 
+7) Analytics e BI 
+● Dashboards executivos: visão consolidada por campus. 
+● Dashboards táticos: visão por supervisor/líder. 
+● Predição: modelos simples de churn. 
+● Mapas de calor: geolocalização de frequência. 
+8) Extensões do Modelo de Dados 
+● person_tag, person_tag_link: etiquetar membros. 
+● interaction: registrar contatos (ligação, WhatsApp, visita, oração, aconselhamento). 
+● need: pedidos de oração, apoio social, aconselhamento. 
+● followup_task: tarefas atribuídas a líderes/supervisores. 
+● engagement_score: cálculo periódico de engajamento. 
+9) KPIs & Relatórios 
+● Engajamento & Frequência: taxa de presença, retenção, churn. 
+● Cuidado Pastoral: tempo de resposta, follow-ups, necessidades abertas. 
+● Cortes por segmento: líder, supervisor, campus, etiquetas. 
+● Relatórios: quedas de frequência, pessoas sem contato, acompanhamentos abertos. 
+10) Segurança e LGPD 
+● Tratar fé/religião e anotações pastorais como dados sensíveis. 
+● Consentimento explícito e preferências de comunicação. 
+● Minimização: geolocalização apenas no check-in. 
+● Controles de acesso: RBAC + visibilidade restrita. 
+● Criptografia: TLS + em repouso. 
+● Retenção: presenças 24 meses; logs 12 meses; anotações conforme política local. 
+11) Analytics Avançado (pós-MVP) 
+● Pontuação de engajamento. 
+● Detecção de risco de evasão. 
+● Recomendações de ação. 
+● Segmentações (novos, visitantes, acompanhamento). 
+● Experimentos de follow-up. 
+12) Alertas & Playbooks 
+● Regras: 2 faltas consecutivas; necessidade ALTA; sem contato ≥ 21 dias. 
+● Playbooks: cada alerta gera tarefa com roteiro. 
+● SLA: líder responde em 48h; supervisor revisa semanalmente. 
+13) Painéis Executivos 
+● Pastor: funil (novos → integrados), mapa de células, top riscos, SLAs. 
+● Supervisor: evolução de presença por célula, fila de acompanhamentos. 
+14) Wireframes Conceituais 
+Painel do Líder (Mobile) 
+Minha Célula - Painel de Saúde 
+[Presença Hoje] [Membros em Risco] [Alertas] 
+Lista de Membros: - João (2 faltas) 
+⚠
+ - Maria (visitante) - Pedro (presente nas últimas 3) 
+✅
+ 
+[Botão Registrar Anotação de Cuidado] 
+Perfil do Membro (Mobile) 
+Perfil: João da Silva 
+Frequência: 5/12 últimas 
+Status: EM RISCO 
+⚠
+ 
+Anotações: - 05/08: Pedido de oração (saúde) - 28/07: Conversa após célula 
+Tarefas: - Ligação até 10/08 (Líder) 
+Painel do Pastor (Web) 
+Dashboard Executivo - Campus Recife 
+Taxa de presença geral: 72% 
+Membros em risco: 54 
+Follow-ups pendentes: 38 
+Mapa de calor de células 
+Top 5 células em risco 
+Alertas recentes 
+Painel do Supervisor (Web) 
+Painel Supervisor - Região Norte 
+Status dos Líderes: - Ana: 80% presença, 2 follow-ups atrasados - Bruno: 65% presença, 5 membros em risco 
+Alertas da Semana 
+15) Plano de Implementação 
+MVP: autenticação, cadastro, eventos, check-in, relatórios básicos. 
+M1 – Cuidado e Relacionamento: painel de saúde, relatórios de risco, anotações de 
+cuidado, alertas. 
+M2 – Analytics Avançado: dashboards comparativos, predição, mapas interativos. 
+16) Conclusão 
+O Koinonia é mais que uma ferramenta administrativa: é um instrumento pastoral de 
+cuidado, que transforma dados em ações práticas, fortalecendo vínculos e prevenindo 
+afastamentos. 
+Próximos Passos 
+1. Validar com líderes/pastores os indicadores de cuidado. 
+2. Definir relatórios e alertas do MVP. 
+3. Refinar wireframes em protótipo de alta fidelidade. 
+4. Iniciar desenvolvimento iterativo com feedback contínuo. 

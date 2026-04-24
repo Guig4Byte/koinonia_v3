@@ -44,42 +44,42 @@ export function OnboardingForm() {
     : null
 
   return (
-    <div className="w-full max-w-lg rounded-[2rem] border border-white/70 bg-card/95 p-7 shadow-[0_30px_90px_-48px_rgba(44,44,42,0.45)] backdrop-blur">
+    <div className="w-full rounded-2xl bg-[var(--card)] p-6 shadow-sm border border-[var(--border)]">
       <div className="mb-8 flex items-center gap-3">
         <div className="rounded-2xl bg-ok-bg p-3 text-ok">
           <Sparkles className="h-6 w-6" />
         </div>
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-stone-500">
+          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--text-muted)]">
             Primeiro acesso
           </p>
-          <h1 className="text-2xl font-semibold text-stone-900">Criar igreja</h1>
+          <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Criar igreja</h1>
         </div>
       </div>
 
-      <form className="space-y-5" onSubmit={submitForm}>
+      <form className="space-y-5" onSubmit={submitForm} noValidate>
         {step === 1 ? (
           <div className="space-y-5">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-stone-700" htmlFor="churchName">
+              <label className="text-sm font-medium text-[var(--text-secondary)]" htmlFor="churchName">
                 Nome da igreja
               </label>
               <input
                 {...register("churchName")}
                 id="churchName"
                 type="text"
-                className="h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 text-base text-stone-900 outline-none transition focus:border-new focus:ring-2 focus:ring-new/20"
+                className="h-12 w-full rounded-xl border border-[var(--input-border)] bg-[var(--input-bg)] px-4 text-base text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-light)]"
                 placeholder="Comunidade Esperança"
               />
               {errors.churchName ? (
-                <p className="text-sm text-stone-500">{errors.churchName.message}</p>
+                <p className="text-sm text-[var(--text-muted)]">{errors.churchName.message}</p>
               ) : null}
             </div>
 
             <button
               type="button"
               onClick={goToNextStep}
-              className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-stone-900 px-4 text-base font-semibold text-white transition hover:bg-stone-800"
+              className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-stone-800 px-4 text-base font-semibold text-white transition hover:bg-stone-700"
             >
               Continuar
             </button>
@@ -87,23 +87,23 @@ export function OnboardingForm() {
         ) : (
           <div className="space-y-5">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-stone-700" htmlFor="pastorName">
+              <label className="text-sm font-medium text-[var(--text-secondary)]" htmlFor="pastorName">
                 Nome do pastor
               </label>
               <input
                 {...register("pastorName")}
                 id="pastorName"
                 type="text"
-                className="h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 text-base text-stone-900 outline-none transition focus:border-new focus:ring-2 focus:ring-new/20"
+                className="h-12 w-full rounded-xl border border-[var(--input-border)] bg-[var(--input-bg)] px-4 text-base text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-light)]"
                 placeholder="Roberto Almeida"
               />
               {errors.pastorName ? (
-                <p className="text-sm text-stone-500">{errors.pastorName.message}</p>
+                <p className="text-sm text-[var(--text-muted)]">{errors.pastorName.message}</p>
               ) : null}
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-stone-700" htmlFor="email">
+              <label className="text-sm font-medium text-[var(--text-secondary)]" htmlFor="email">
                 E-mail
               </label>
               <input
@@ -111,16 +111,16 @@ export function OnboardingForm() {
                 id="email"
                 type="email"
                 autoComplete="email"
-                className="h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 text-base text-stone-900 outline-none transition focus:border-new focus:ring-2 focus:ring-new/20"
+                className="h-12 w-full rounded-xl border border-[var(--input-border)] bg-[var(--input-bg)] px-4 text-base text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-light)]"
                 placeholder="pastor@igreja.org"
               />
               {errors.email ? (
-                <p className="text-sm text-stone-500">{errors.email.message}</p>
+                <p className="text-sm text-[var(--text-muted)]">{errors.email.message}</p>
               ) : null}
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-stone-700" htmlFor="password">
+              <label className="text-sm font-medium text-[var(--text-secondary)]" htmlFor="password">
                 Senha
               </label>
               <input
@@ -128,11 +128,11 @@ export function OnboardingForm() {
                 id="password"
                 type="password"
                 autoComplete="new-password"
-                className="h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 text-base text-stone-900 outline-none transition focus:border-new focus:ring-2 focus:ring-new/20"
+                className="h-12 w-full rounded-xl border border-[var(--input-border)] bg-[var(--input-bg)] px-4 text-base text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-light)]"
                 placeholder="Crie uma senha"
               />
               {errors.password ? (
-                <p className="text-sm text-stone-500">{errors.password.message}</p>
+                <p className="text-sm text-[var(--text-muted)]">{errors.password.message}</p>
               ) : null}
             </div>
 
@@ -140,7 +140,7 @@ export function OnboardingForm() {
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="inline-flex h-12 w-full items-center justify-center rounded-2xl border border-stone-200 px-4 text-base font-semibold text-stone-700 transition hover:bg-stone-50"
+                className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-[var(--input-border)] px-4 text-base font-semibold text-[var(--text-secondary)] transition hover:bg-[var(--surface)]"
               >
                 Voltar
               </button>
@@ -148,7 +148,7 @@ export function OnboardingForm() {
               <button
                 type="submit"
                 disabled={onboardingMutation.isPending}
-                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-stone-900 px-4 text-base font-semibold text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-70"
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-stone-800 px-4 text-base font-semibold text-white transition hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {onboardingMutation.isPending ? (
                   <>
@@ -163,13 +163,13 @@ export function OnboardingForm() {
           </div>
         )}
 
-        {errorMessage ? <p className="text-sm text-stone-500">{errorMessage}</p> : null}
+        {errorMessage ? <p className="text-sm text-[var(--text-muted)]">{errorMessage}</p> : null}
       </form>
 
-      <div className="mt-6 border-t border-stone-200 pt-4">
+      <div className="mt-6 border-t border-[var(--border-light)] pt-4">
         <Link
           href="/login"
-          className="inline-flex h-12 items-center text-sm font-medium text-new transition hover:text-new/80"
+          className="inline-flex h-12 items-center text-sm font-medium text-[var(--new)] transition hover:opacity-80"
         >
           Já tem acesso? Entrar
         </Link>

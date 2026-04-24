@@ -13,12 +13,10 @@ const config: Config = {
     extend: {
       fontFamily: { sans: ["Inter", "system-ui", "sans-serif"] },
       colors: {
-        bg: { DEFAULT: "#FAF6F1", dark: "#141412" },
-        card: { DEFAULT: "#FFFFFF", dark: "#1E1E1C" },
-        risk: { DEFAULT: "#993C1D", bg: "#FAECE7", "bg-dark": "#3D1A0E" },
-        ok: { DEFAULT: "#3B6D11", bg: "#EAF3DE", "bg-dark": "#1A3008" },
-        warn: { DEFAULT: "#854F0B", bg: "#FEF3E8", "bg-dark": "#3D2405" },
-        new: { DEFAULT: "#185FA5", bg: "#E6F1FB", "bg-dark": "#0A2640" },
+        risk: { DEFAULT: "#993C1D", light: "#FAECE7" },
+        ok: { DEFAULT: "#3B6D11", light: "#EAF3DE" },
+        warn: { DEFAULT: "#854F0B", light: "#FEF3E8" },
+        new: { DEFAULT: "#185FA5", light: "#E6F1FB" },
         stone: {
           50: "#FAF9F7",
           100: "#F1EFEA",

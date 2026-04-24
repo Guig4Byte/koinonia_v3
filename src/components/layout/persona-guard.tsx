@@ -24,7 +24,7 @@ export function PersonaGuard() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-bg">
+      <div className="flex h-screen w-full items-center justify-center bg-[var(--bg)]">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-10 w-10 animate-spin text-stone-400" />
           <p className="text-lg font-medium text-stone-600">

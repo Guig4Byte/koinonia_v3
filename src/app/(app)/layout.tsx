@@ -27,14 +27,22 @@ export default function AuthenticatedAppLayout({
     }
 
     if (meQuery.isError) {
+      console.error("[AuthenticatedAppLayout] Auth error:", meQuery.error);
       clearStoredAuth();
       router.replace("/login");
     }
-  }, [meQuery.isError, router, sessionState.hasSession, sessionState.isHydrated]);
+  }, [meQuery.isError, meQuery.error, router, sessionState.hasSession, sessionState.isHydrated]);
 
-  if (!sessionState.isHydrated || (sessionState.hasSession && meQuery.isPending)) {
+  const isLoading =
+    !sessionState.isHydrated || (sessionState.hasSession && meQuery.isPending);
+
+  const isUnauthorized =
+    sessionState.isHydrated &&
+    (!sessionState.hasSession || meQuery.isError || !meQuery.data);
+
+  if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-bg">
+      <div className="flex h-screen items-center justify-center bg-[var(--bg)]">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-300 border-t-stone-800" />
           <p className="text-sm text-stone-500">Carregando...</p>
@@ -43,8 +51,15 @@ export default function AuthenticatedAppLayout({
     );
   }
 
-  if (!sessionState.hasSession || meQuery.isError || !meQuery.data) {
-    return null;
+  if (isUnauthorized) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[var(--bg)]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-300 border-t-stone-800" />
+          <p className="text-sm text-stone-500">Redirecionando...</p>
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;

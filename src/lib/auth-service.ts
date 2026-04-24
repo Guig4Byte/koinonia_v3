@@ -26,6 +26,7 @@ const sessionUserSelect = {
   role: true,
   personId: true,
   churchId: true,
+  deletedAt: true,
   person: {
     select: {
       id: true,
@@ -47,10 +48,6 @@ const refreshTokenSelect = {
     select: sessionUserSelect,
   },
 } satisfies Prisma.RefreshTokenSelect;
-
-type RefreshTokenRecord = Prisma.RefreshTokenGetPayload<{
-  select: typeof refreshTokenSelect;
-}>;
 
 function mapSessionUser(user: SessionUserRecord): SessionUser {
   return {
@@ -115,34 +112,25 @@ export async function loginUser(input: {
     where: {
       email: input.email,
     },
-    select: sessionUserSelect,
-  });
-
-  if (!user) {
-    return err(DomainErrors.USER_NOT_FOUND);
-  }
-
-  const passwordRecord = await prisma.user.findUnique({
-    where: {
-      id: user.id,
-    },
     select: {
+      ...sessionUserSelect,
       passwordHash: true,
     },
   });
 
-  if (!passwordRecord) {
+  if (!user || user.deletedAt) {
     return err(DomainErrors.USER_NOT_FOUND);
   }
 
-  const passwordMatches = await verifyPassword(input.password, passwordRecord.passwordHash);
+  const passwordMatches = await verifyPassword(input.password, user.passwordHash);
 
   if (!passwordMatches) {
     return err(DomainErrors.INVALID_CREDENTIALS);
   }
 
-  const tokens = await createSessionTokens(user);
-  return ok(createSessionResponse(user, tokens));
+  const { passwordHash: _, ...userWithoutPassword } = user;
+  const tokens = await createSessionTokens(userWithoutPassword);
+  return ok(createSessionResponse(userWithoutPassword, tokens));
 }
 
 export async function refreshAccessToken(input: {
@@ -154,12 +142,12 @@ export async function refreshAccessToken(input: {
     return err(verifiedRefreshToken.error);
   }
 
-  const storedToken = (await prisma.refreshToken.findUnique({
+  const storedToken = await prisma.refreshToken.findUnique({
     where: {
       token: input.refreshToken,
     },
     select: refreshTokenSelect,
-  })) as RefreshTokenRecord | null;
+  });
 
   if (!storedToken) {
     return err(DomainErrors.REFRESH_TOKEN_INVALID);
@@ -203,7 +191,7 @@ export async function getAuthenticatedUser(input: {
     select: sessionUserSelect,
   });
 
-  if (!user) {
+  if (!user || user.deletedAt) {
     return err(DomainErrors.TOKEN_INVALID);
   }
 
