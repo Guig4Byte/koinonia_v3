@@ -139,7 +139,9 @@ export function useLogin(options?: { redirectTo?: string }) {
 
       if (options?.redirectTo) {
         console.log("[useLogin] redirecting to", options.redirectTo);
-        router.replace(options.redirectTo);
+        startTransition(() => {
+          router.replace(options.redirectTo ?? "/");
+        });
       }
     },
     onError: (error) => {
@@ -166,7 +168,9 @@ export function useOnboarding(options?: { redirectTo?: string }) {
       queryClient.setQueryData(authQueryKey, response.user);
 
       if (options?.redirectTo) {
-        router.replace(options.redirectTo);
+        startTransition(() => {
+          router.replace(options.redirectTo ?? "/");
+        });
       }
     },
   });

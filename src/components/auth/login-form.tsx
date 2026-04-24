@@ -2,52 +2,66 @@
 
 import Link from "next/link"
 import { LoaderCircle } from "lucide-react"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
+import { useState, useCallback } from "react"
 import { useLogin } from "@/hooks/use-auth"
 import { isApiClientError } from "@/lib/api-client"
-import { loginSchema, type LoginInput } from "@/lib/validations/auth"
 
 export function LoginForm() {
   const loginMutation = useLogin({ redirectTo: "/" })
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [validationErrors, setValidationErrors] = useState<{email?: string; password?: string}>({})
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginInput>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  })
+  const handleSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault()
+    console.log("[LoginForm] handleSubmit called")
 
-  const submitForm = handleSubmit((values) => {
-    loginMutation.mutate(values)
-  })
+    const errors: {email?: string; password?: string} = {}
+
+    if (!email.trim()) {
+      errors.email = "Informe seu e-mail."
+    } else if (!email.includes("@")) {
+      errors.email = "E-mail inválido."
+    }
+
+    if (!password.trim()) {
+      errors.password = "Informe sua senha."
+    } else if (password.length < 8) {
+      errors.password = "A senha precisa ter pelo menos 8 caracteres."
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors)
+      return
+    }
+
+    setValidationErrors({})
+    console.log("[LoginForm] calling mutate with", { email, password })
+    loginMutation.mutate({ email, password })
+  }, [email, password, loginMutation])
 
   const errorMessage = isApiClientError(loginMutation.error)
     ? loginMutation.error.message
     : null
 
   return (
-    <form className="flex flex-col gap-5" onSubmit={submitForm}>
+    <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
       {/* E-mail */}
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium text-stone-700" htmlFor="email">
           E-mail
         </label>
         <input
-          {...register("email")}
           id="email"
           type="email"
           autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           className="h-12 w-full rounded-xl border border-stone-200 bg-white px-4 text-base text-stone-900 outline-none transition focus:border-stone-400 focus:ring-2 focus:ring-stone-100"
           placeholder="voce@igreja.org"
         />
-        {errors.email ? (
-          <p className="text-sm text-stone-500">{errors.email.message}</p>
+        {validationErrors.email ? (
+          <p className="text-sm text-risk">{validationErrors.email}</p>
         ) : null}
       </div>
 
@@ -57,15 +71,16 @@ export function LoginForm() {
           Senha
         </label>
         <input
-          {...register("password")}
           id="password"
           type="password"
           autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
           className="h-12 w-full rounded-xl border border-stone-200 bg-white px-4 text-base text-stone-900 outline-none transition focus:border-stone-400 focus:ring-2 focus:ring-stone-100"
           placeholder="Sua senha"
         />
-        {errors.password ? (
-          <p className="text-sm text-stone-500">{errors.password.message}</p>
+        {validationErrors.password ? (
+          <p className="text-sm text-risk">{validationErrors.password}</p>
         ) : null}
       </div>
 
@@ -85,9 +100,9 @@ export function LoginForm() {
         )}
       </button>
 
-      {/* Erro */}
+      {/* Erro da API */}
       {errorMessage ? (
-        <p className="text-sm text-risk">{errorMessage}</p>
+        <p className="text-sm text-risk font-medium">{errorMessage}</p>
       ) : null}
 
       {/* Link onboarding */}
