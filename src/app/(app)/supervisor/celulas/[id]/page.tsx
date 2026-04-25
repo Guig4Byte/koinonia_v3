@@ -3,9 +3,64 @@
 import { useParams, useRouter } from "next/navigation"
 import { useSupervisorGroupDetail } from "@/hooks/use-supervisor-group-detail"
 import { useCreateTask } from "@/hooks/use-create-task"
-import { TrendingUp, CalendarX, ClipboardList, User, CheckCircle, ArrowLeft } from "lucide-react"
+import { AlertTriangle, CalendarX, CheckCircle, CheckCircle2, ClipboardList, Clock3, User, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
+
+
+function getEventReading(event: { attendanceCount: number; totalAttendances: number }) {
+  if (event.totalAttendances === 0) {
+    return {
+      label: "Presença não registrada",
+      detail: "O encontro ainda não virou leitura de cuidado para a supervisão.",
+      tone: "warn" as const,
+      icon: Clock3,
+    }
+  }
+
+  const rate = Math.round((event.attendanceCount / event.totalAttendances) * 100)
+  const absentCount = Math.max(event.totalAttendances - event.attendanceCount, 0)
+
+  if (event.attendanceCount === 0) {
+    return {
+      label: "Revisar encontro",
+      detail: "Nenhuma presença registrada. Confirme com o líder se houve encontro ou erro no registro.",
+      tone: "risk" as const,
+      icon: AlertTriangle,
+    }
+  }
+
+  if (rate < 60) {
+    return {
+      label: "Queda forte",
+      detail: `${absentCount} ausência${absentCount === 1 ? "" : "s"} pedem apoio próximo ao líder.`,
+      tone: "risk" as const,
+      icon: AlertTriangle,
+    }
+  }
+
+  if (rate < 80 || absentCount > 0) {
+    return {
+      label: "Observar ausências",
+      detail: `${absentCount} pessoa${absentCount === 1 ? "" : "s"} ausente${absentCount === 1 ? "" : "s"}. Veja se o líder precisa de apoio no cuidado.`,
+      tone: "warn" as const,
+      icon: AlertTriangle,
+    }
+  }
+
+  return {
+    label: "Encontro saudável",
+    detail: "Presença registrada sem sinal urgente para a supervisão.",
+    tone: "ok" as const,
+    icon: CheckCircle2,
+  }
+}
+
+const eventReadingClasses = {
+  ok: "border-[var(--border-light)] bg-[var(--card)] text-[var(--ok)]",
+  warn: "border-[var(--warn)] bg-[var(--warn-bg)] text-[var(--warn)]",
+  risk: "border-[var(--risk)] bg-[var(--risk-bg)] text-[var(--risk)]",
+}
 
 export default function SupervisorGroupDetailPage() {
   const params = useParams()
@@ -166,31 +221,61 @@ export default function SupervisorGroupDetailPage() {
         </div>
       </section>
 
-      {/* Eventos */}
+      {/* Leituras dos encontros */}
       <section>
-        <h2 className="mb-2 text-sm font-medium text-[var(--text-secondary)]">
-          Eventos Recentes
+        <h2 className="mb-1 text-sm font-medium text-[var(--text-secondary)]">
+          O que os encontros revelaram
         </h2>
+        <p className="mb-3 text-xs text-[var(--text-muted)]">
+          Use a presença como sinal para apoiar o líder, não apenas como histórico.
+        </p>
         <div className="space-y-2">
-          {events.map((event) => (
-            <div
-              key={event.id}
-              className="flex items-center gap-3 rounded-xl border border-[var(--border-light)] bg-[var(--card)] p-3"
-            >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--surface)]">
-                <TrendingUp className="h-5 w-5 text-[var(--text-muted)]" />
+          {events.map((event) => {
+            const reading = getEventReading(event)
+            const Icon = reading.icon
+            const rate = event.totalAttendances > 0
+              ? Math.round((event.attendanceCount / event.totalAttendances) * 100)
+              : null
+
+            return (
+              <div
+                key={event.id}
+                className={`rounded-xl border p-3 ${eventReadingClasses[reading.tone]}`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/50 text-current dark:bg-black/10">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium text-[var(--text-primary)]">
+                          {event.eventTypeName}
+                        </p>
+                        <p className="text-xs text-[var(--text-muted)]">
+                          {new Date(event.scheduledAt).toLocaleDateString("pt-BR")}
+                          {rate !== null
+                            ? ` · ${event.attendanceCount}/${event.totalAttendances} presentes`
+                            : " · presença pendente"}
+                        </p>
+                      </div>
+                      {rate !== null && (
+                        <span className="rounded-lg bg-[var(--surface)] px-2 py-1 text-xs font-semibold text-[var(--text-secondary)]">
+                          {rate}%
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-2 text-sm font-medium text-[var(--text-primary)]">
+                      {reading.label}
+                    </p>
+                    <p className="mt-1 text-xs leading-relaxed text-[var(--text-muted)]">
+                      {reading.detail}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-medium">{event.eventTypeName}</p>
-                <p className="text-xs text-[var(--text-muted)]">
-                  {new Date(event.scheduledAt).toLocaleDateString("pt-BR")}
-                  {event.totalAttendances > 0
-                    ? ` · ${event.attendanceCount}/${event.totalAttendances} presentes`
-                    : " · Presença não registrada"}
-                </p>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </section>
     </div>

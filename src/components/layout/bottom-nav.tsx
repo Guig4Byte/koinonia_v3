@@ -17,7 +17,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 const defaultTabs = [
   { href: "/lider", label: "Visão", icon: "home" },
   { href: "/lider/membros", label: "Membros", icon: "users" },
-  { href: "/lider/eventos", label: "Eventos", icon: "calendar" },
+  { href: "/lider/eventos", label: "Encontro", icon: "calendar" },
   { href: "/lider/acoes", label: "Ações", icon: "zap" },
 ]
 

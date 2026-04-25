@@ -7,9 +7,19 @@ import { useEventAttendance } from "@/hooks/use-event-attendance"
 import { apiRequestWithAuth } from "@/lib/api-client"
 import { eventAttendanceQueryKey } from "@/hooks/use-event-attendance"
 import { leaderEventsQueryKey } from "@/hooks/use-leader-events"
-import { Loader2, ArrowLeft, Check, X, Circle } from "lucide-react"
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Check,
+  CheckCircle2,
+  Circle,
+  Loader2,
+  X,
+} from "lucide-react"
 
 type AttendanceValue = boolean | null
+
+type ReadingTone = "ok" | "warn" | "risk" | "muted"
 
 function getInitials(name: string): string {
   return name
@@ -33,6 +43,77 @@ function hasLocalAttendance(
   personId: string,
 ) {
   return Object.prototype.hasOwnProperty.call(attendances, personId)
+}
+
+function getAttendanceReading({
+  totalCount,
+  markedCount,
+  pendingCount,
+  absentCount,
+  riskAbsentCount,
+}: {
+  totalCount: number
+  markedCount: number
+  pendingCount: number
+  absentCount: number
+  riskAbsentCount: number
+}): {
+  title: string
+  detail: string
+  tone: ReadingTone
+} {
+  if (totalCount === 0) {
+    return {
+      title: "Nenhum membro encontrado",
+      detail: "Não há pessoas ativas para registrar neste encontro.",
+      tone: "muted",
+    }
+  }
+
+  if (markedCount === 0) {
+    return {
+      title: "O encontro ainda não virou leitura",
+      detail: "Marque presença ou ausência para todos. É esse registro que alimenta os sinais de cuidado.",
+      tone: "muted",
+    }
+  }
+
+  if (pendingCount > 0) {
+    return {
+      title: "Leitura incompleta",
+      detail: `Ainda falta marcar ${pendingCount} pessoa${pendingCount === 1 ? "" : "s"}. O cuidado só fica confiável quando todos são marcados.`,
+      tone: "warn",
+    }
+  }
+
+  if (absentCount === 0) {
+    return {
+      title: "Encontro sem ausência registrada",
+      detail: "Tudo marcado. Nenhuma ausência surgiu deste encontro, mas continue atento às conversas e pedidos. ",
+      tone: "ok",
+    }
+  }
+
+  if (riskAbsentCount > 0) {
+    return {
+      title: "Ausência pede cuidado mais próximo",
+      detail: `${riskAbsentCount} pessoa${riskAbsentCount === 1 ? "" : "s"} já estava${riskAbsentCount === 1 ? "" : "m"} em atenção e também faltou${riskAbsentCount === 1 ? "" : "ram"}. Registre o contato depois do encontro.`,
+      tone: "risk",
+    }
+  }
+
+  return {
+    title: "Ausências para observar",
+    detail: `${absentCount} pessoa${absentCount === 1 ? "" : "s"} faltou${absentCount === 1 ? "" : "ram"}. Veja se é algo pontual ou se alguém precisa de contato.`,
+    tone: "warn",
+  }
+}
+
+const readingToneClasses: Record<ReadingTone, string> = {
+  ok: "border-[var(--border)] bg-[var(--ok-bg)] text-[var(--ok)]",
+  warn: "border-[var(--warn)] bg-[var(--warn-bg)] text-[var(--warn)]",
+  risk: "border-[var(--risk)] bg-[var(--risk-bg)] text-[var(--risk)]",
+  muted: "border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)]",
 }
 
 export default function PresencaPage() {
@@ -101,6 +182,17 @@ export default function PresencaPage() {
   const pendingCount = totalCount - markedCount
   const progressPercent = totalCount > 0 ? Math.round((markedCount / totalCount) * 100) : 0
   const allMarked = totalCount > 0 && markedCount === totalCount
+  const riskAbsentCount = members.filter((member) => {
+    const attendanceValue = mergedAttendances[member.id]
+    return attendanceValue === false && (member.riskLevel === "red" || member.riskLevel === "yellow")
+  }).length
+  const reading = getAttendanceReading({
+    totalCount,
+    markedCount,
+    pendingCount,
+    absentCount,
+    riskAbsentCount,
+  })
 
   const setAttendance = (personId: string, present: boolean) => {
     setFormError(null)
@@ -126,7 +218,6 @@ export default function PresencaPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header */}
       <div className="flex items-center gap-3 opacity-0 animate-fade-up">
         <button
           onClick={() => router.back()}
@@ -135,19 +226,40 @@ export default function PresencaPage() {
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+            Encontro
+          </p>
           <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-            Presença
+            Registrar presença
           </h2>
           <p className="text-xs text-[var(--text-muted)]">
-            {formatDate(event.scheduledAt)}
+            {event.name} · {formatDate(event.scheduledAt)}
           </p>
         </div>
       </div>
 
-      {/* Barra de progresso */}
+      <section
+        className={`rounded-2xl border p-4 shadow-sm opacity-0 animate-fade-up ${readingToneClasses[reading.tone]}`}
+        style={{ animationDelay: "80ms" }}
+      >
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5">
+            {reading.tone === "ok" ? (
+              <CheckCircle2 className="h-5 w-5" />
+            ) : (
+              <AlertTriangle className="h-5 w-5" />
+            )}
+          </div>
+          <div>
+            <p className="text-sm font-semibold">{reading.title}</p>
+            <p className="mt-1 text-xs leading-relaxed opacity-90">{reading.detail}</p>
+          </div>
+        </div>
+      </section>
+
       <div
         className="rounded-2xl bg-[var(--card)] p-4 border border-[var(--border)] shadow-sm opacity-0 animate-fade-up"
-        style={{ animationDelay: "100ms" }}
+        style={{ animationDelay: "140ms" }}
       >
         <div className="mb-2 flex items-center justify-between">
           <span className="text-sm font-medium text-[var(--text-primary)]">
@@ -163,26 +275,32 @@ export default function PresencaPage() {
             style={{ width: `${progressPercent}%` }}
           />
         </div>
-        <div className="mt-3 flex flex-wrap gap-2 text-xs text-[var(--text-muted)]">
-          <span>{presentCount} presentes</span>
-          <span>•</span>
-          <span>{absentCount} ausentes</span>
-          <span>•</span>
-          <span>{pendingCount} sem marcação</span>
+        <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+          <div className="rounded-lg bg-[var(--surface)] px-2 py-2">
+            <p className="font-semibold text-[var(--ok)]">{presentCount}</p>
+            <p className="text-[var(--text-muted)]">presentes</p>
+          </div>
+          <div className="rounded-lg bg-[var(--surface)] px-2 py-2">
+            <p className="font-semibold text-[var(--risk)]">{absentCount}</p>
+            <p className="text-[var(--text-muted)]">ausentes</p>
+          </div>
+          <div className="rounded-lg bg-[var(--surface)] px-2 py-2">
+            <p className="font-semibold text-[var(--warn)]">{pendingCount}</p>
+            <p className="text-[var(--text-muted)]">pendentes</p>
+          </div>
         </div>
       </div>
 
-      {/* Lista de membros */}
       <div
         className="flex flex-col gap-3 opacity-0 animate-fade-up"
         style={{ animationDelay: "200ms" }}
       >
         <div>
           <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-            Membros
+            Pessoas do encontro
           </h3>
           <p className="mt-1 text-xs text-[var(--text-muted)]">
-            Cada pessoa precisa ser marcada explicitamente como presente ou ausente.
+            Marque todos. Uma ausência também é uma informação de cuidado.
           </p>
         </div>
 
@@ -201,7 +319,7 @@ export default function PresencaPage() {
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--surface)] text-sm font-semibold text-[var(--text-secondary)]">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--surface)] text-sm font-semibold text-[var(--text-secondary)]">
                     {member.photoUrl ? (
                       <img
                         src={member.photoUrl}
@@ -219,7 +337,7 @@ export default function PresencaPage() {
                     </span>
                     {member.riskLevel && member.riskLevel !== "green" && (
                       <span className="text-xs text-[var(--risk)]">
-                        {member.riskLevel === "red" ? "Em risco" : "Atenção"}
+                        {member.riskLevel === "red" ? "Já estava em risco" : "Já estava em atenção"}
                       </span>
                     )}
                   </div>
@@ -280,7 +398,6 @@ export default function PresencaPage() {
         </div>
       </div>
 
-      {/* Botão salvar */}
       <div className="opacity-0 animate-fade-up" style={{ animationDelay: "300ms" }}>
         {formError && (
           <p className="mb-3 rounded-xl border border-[var(--warn)] bg-[var(--warn-bg)] px-3 py-2 text-sm text-[var(--warn)]">
@@ -303,7 +420,7 @@ export default function PresencaPage() {
               Salvando...
             </>
           ) : (
-            "Salvar presença"
+            "Salvar presença e gerar leitura"
           )}
         </button>
       </div>
