@@ -18,10 +18,12 @@ model User {
   updatedAt     DateTime       @updatedAt
   deletedAt     DateTime?
 
-  person        Person         @relation(fields: [personId], references: [id])
-  church        Church         @relation(fields: [churchId], references: [id])
-  assignedTasks Task[]         @relation("Assignee")
-  refreshTokens RefreshToken[]
+  person           Person         @relation(fields: [personId], references: [id])
+  church           Church         @relation(fields: [churchId], references: [id])
+  assignedTasks    Task[]         @relation("Assignee")
+  ledGroups        Group[]        @relation("GroupLeader")
+  supervisedGroups Group[]        @relation("GroupSupervisor")
+  refreshTokens    RefreshToken[]
 
   @@index([churchId])
 }
@@ -90,6 +92,8 @@ model Group {
   deletedAt    DateTime?
 
   church           Church            @relation(fields: [churchId], references: [id])
+  leader           User?             @relation("GroupLeader", fields: [leaderId], references: [id], onDelete: SetNull)
+  supervisor       User?             @relation("GroupSupervisor", fields: [supervisorId], references: [id], onDelete: SetNull)
   memberships      Membership[]
   events           Event[]
   tasks            Task[]
