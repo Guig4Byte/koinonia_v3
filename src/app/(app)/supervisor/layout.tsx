@@ -46,8 +46,6 @@ function SupervisorLayoutInner({ children }: { children: React.ReactNode }) {
         tabs={[
           { label: "Visão", href: "/supervisor", icon: "eye" },
           { label: "Células", href: "/supervisor/celulas", icon: "users" },
-          { label: "Eventos", href: "/supervisor/eventos", icon: "calendar" },
-          { label: "Ações", href: "/supervisor/acoes", icon: "zap" },
         ]}
       />
     </div>

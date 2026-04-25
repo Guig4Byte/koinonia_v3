@@ -79,7 +79,7 @@ export default function SupervisorPage() {
           </h2>
           <div className="space-y-2">
             {alerts.map((alert) => (
-              <AlertCard key={alert.id} alert={alert} />
+              <AlertCard key={alert.id} alert={alert} groupBaseHref="/supervisor/celulas" />
             ))}
           </div>
         </section>
@@ -92,7 +92,7 @@ export default function SupervisorPage() {
         </h2>
         <div className="space-y-2">
           {groups.map((group) => (
-            <GroupCard key={group.id} group={group} />
+            <GroupCard key={group.id} group={group} href={`/supervisor/celulas/${group.id}`} />
           ))}
         </div>
       </section>

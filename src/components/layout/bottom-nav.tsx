@@ -21,6 +21,18 @@ const defaultTabs = [
   { href: "/lider/acoes", label: "Ações", icon: "zap" },
 ]
 
+const rootProfileRoutes = new Set(["/pastor", "/supervisor", "/lider"])
+
+function isActiveTab(pathname: string, href: string) {
+  if (pathname === href) return true
+
+  // A raiz do perfil não deve continuar ativa dentro das subrotas.
+  // Ex.: /lider/membros ativa "Membros", não "Visão".
+  if (rootProfileRoutes.has(href)) return false
+
+  return pathname.startsWith(`${href}/`)
+}
+
 export function BottomNav({
   tabs,
 }: {
@@ -33,12 +45,13 @@ export function BottomNav({
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-[var(--border)] bg-[var(--card)]">
       <div className="mx-auto flex max-w-[430px] items-center justify-around py-2">
         {activeTabs.map((tab) => {
-          const isActive = pathname === tab.href || pathname.startsWith(`${tab.href}/`)
+          const isActive = isActiveTab(pathname, tab.href)
           const Icon = iconMap[tab.icon] ?? Home
           return (
             <Link
               key={tab.href}
               href={tab.href}
+              aria-current={isActive ? "page" : undefined}
               className={cn(
                 "flex flex-col items-center gap-0.5 px-3 py-1 transition",
                 isActive

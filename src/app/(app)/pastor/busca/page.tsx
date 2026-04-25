@@ -89,10 +89,9 @@ export default function PastorBuscaPage() {
               </h3>
               <div className="space-y-2">
                 {data.groups.map((group) => (
-                  <Link
+                  <div
                     key={group.id}
-                    href={`/pastor/celulas/${group.id}`}
-                    className="flex items-center gap-3 rounded-xl border border-[var(--border-light)] bg-[var(--card)] p-3 transition hover:bg-[var(--surface)]"
+                    className="flex items-center gap-3 rounded-xl border border-[var(--border-light)] bg-[var(--card)] p-3"
                   >
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--surface)]">
                       <Users className="h-5 w-5 text-[var(--text-muted)]" />
@@ -103,7 +102,7 @@ export default function PastorBuscaPage() {
                         {group.memberCount} membros
                       </p>
                     </div>
-                  </Link>
+                  </div>
                 ))}
               </div>
             </section>
@@ -117,10 +116,9 @@ export default function PastorBuscaPage() {
               </h3>
               <div className="space-y-2">
                 {data.events.map((event) => (
-                  <Link
+                  <div
                     key={event.id}
-                    href={`/lider/eventos/${event.id}/presenca`}
-                    className="flex items-center gap-3 rounded-xl border border-[var(--border-light)] bg-[var(--card)] p-3 transition hover:bg-[var(--surface)]"
+                    className="flex items-center gap-3 rounded-xl border border-[var(--border-light)] bg-[var(--card)] p-3"
                   >
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--surface)]">
                       <CalendarDays className="h-5 w-5 text-[var(--text-muted)]" />
@@ -139,7 +137,7 @@ export default function PastorBuscaPage() {
                           : ""}
                       </p>
                     </div>
-                  </Link>
+                  </div>
                 ))}
               </div>
             </section>

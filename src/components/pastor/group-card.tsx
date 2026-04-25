@@ -2,14 +2,31 @@
 
 import Link from "next/link"
 import { Users, TrendingUp, AlertTriangle } from "lucide-react"
-import type { PastorDashboardGroup } from "@/hooks/use-pastor-dashboard"
+import { cn } from "@/lib/utils"
 
-export function GroupCard({ group }: { group: PastorDashboardGroup }) {
-  return (
-    <Link
-      href={`/pastor/celulas/${group.id}`}
-      className="flex items-center gap-3 rounded-xl border border-[var(--border-light)] bg-[var(--card)] p-3 transition hover:bg-[var(--surface)]"
-    >
+type DashboardGroup = {
+  id: string
+  name: string
+  memberCount: number
+  atRiskCount: number
+  lastAttendanceRate: number | null
+  leaderName: string | null
+}
+
+export function GroupCard({
+  group,
+  href,
+}: {
+  group: DashboardGroup
+  href?: string
+}) {
+  const className = cn(
+    "flex items-center gap-3 rounded-xl border border-[var(--border-light)] bg-[var(--card)] p-3",
+    href && "transition hover:bg-[var(--surface)]"
+  )
+
+  const content = (
+    <>
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--surface)] text-[var(--text-muted)]">
         <Users className="h-5 w-5" />
       </div>
@@ -38,6 +55,16 @@ export function GroupCard({ group }: { group: PastorDashboardGroup }) {
           </p>
         )}
       </div>
-    </Link>
+    </>
   )
+
+  if (href) {
+    return (
+      <Link href={href} className={className}>
+        {content}
+      </Link>
+    )
+  }
+
+  return <div className={className}>{content}</div>
 }

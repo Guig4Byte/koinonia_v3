@@ -45,9 +45,8 @@ function PastorLayoutInner({ children }: { children: React.ReactNode }) {
       <BottomNav
         tabs={[
           { label: "Visão", href: "/pastor", icon: "eye" },
-          { label: "Células", href: "/pastor/celulas", icon: "users" },
           { label: "Busca", href: "/pastor/busca", icon: "search" },
-          { label: "Equipe", href: "/pastor/equipe", icon: "zap" },
+          { label: "Equipe", href: "/pastor/equipe", icon: "users" },
         ]}
       />
     </div>
