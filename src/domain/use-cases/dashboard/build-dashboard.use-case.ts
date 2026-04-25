@@ -54,8 +54,8 @@ interface DashboardEvent {
 interface DashboardGroup {
   id: string;
   name: string;
-  leaderId: string | null;
-  supervisorId: string | null;
+  leaderUserId: string | null;
+  supervisorUserId: string | null;
   memberships: DashboardMembership[];
   events: DashboardEvent[];
 }
@@ -208,11 +208,11 @@ export function buildDashboard(
                 100,
             )
           : null,
-      supervisorName: group.supervisorId
-        ? (userNameMap.get(group.supervisorId) ?? null)
+      supervisorName: group.supervisorUserId
+        ? (userNameMap.get(group.supervisorUserId) ?? null)
         : null,
-      leaderName: group.leaderId
-        ? (userNameMap.get(group.leaderId) ?? null)
+      leaderName: group.leaderUserId
+        ? (userNameMap.get(group.leaderUserId) ?? null)
         : null,
     };
   });
@@ -220,21 +220,21 @@ export function buildDashboard(
   // Alerta: líder com tasks vencidas
   const leaderOverdueMap = new Map<string, { name: string; count: number }>();
   overdueTasks.forEach((task) => {
-    const leaderId = task.assignee.id;
-    const existing = leaderOverdueMap.get(leaderId);
+    const leaderUserId = task.assignee.id;
+    const existing = leaderOverdueMap.get(leaderUserId);
     if (existing) {
       existing.count += 1;
     } else {
-      leaderOverdueMap.set(leaderId, {
+      leaderOverdueMap.set(leaderUserId, {
         name: task.assignee.person?.name ?? "Líder",
         count: 1,
       });
     }
   });
 
-  leaderOverdueMap.forEach((data, leaderId) => {
+  leaderOverdueMap.forEach((data, leaderUserId) => {
     alerts.push({
-      id: `overdue-${leaderId}`,
+      id: `overdue-${leaderUserId}`,
       type: "leader_overdue_tasks",
       severity: data.count >= 3 ? "high" : "medium",
       title: `${data.name}: ${data.count} tarefa(s) atrasada(s)`,

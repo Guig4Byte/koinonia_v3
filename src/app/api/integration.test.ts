@@ -289,7 +289,7 @@ describe("Integração: Permission Guard", () => {
       data: {
         churchId: ctx.churchId,
         name: "Outra Célula",
-        leaderId: otherLeaderUser.id,
+        leaderUserId: otherLeaderUser.id,
       },
     });
 
@@ -578,7 +578,7 @@ describe("Integração: Perfil compartilhado de membro", () => {
       data: {
         churchId: ctx.churchId,
         name: "Outra Célula Protegida",
-        leaderId: otherLeaderUser.id,
+        leaderUserId: otherLeaderUser.id,
       },
     });
     const otherMember = await prisma.person.create({

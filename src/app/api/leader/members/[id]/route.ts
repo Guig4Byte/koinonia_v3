@@ -26,7 +26,7 @@ export async function GET(
       where: {
         churchId: user.churchId,
         deletedAt: null,
-        leaderId: user.userId,
+        leaderUserId: user.userId,
       },
       orderBy: { name: "asc" },
     });

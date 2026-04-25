@@ -10,7 +10,7 @@ export interface SupervisorProfileGroup {
   lastAttendanceRate: number | null
   supervisorName: string | null
   leaderName: string | null
-  leaderId: string | null
+  leaderUserId: string | null
 }
 
 export interface SupervisorProfileTask {

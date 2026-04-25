@@ -4,8 +4,8 @@ import { buildDashboard } from "./build-dashboard.use-case";
 function createGroup(overrides: {
   id?: string;
   name?: string;
-  leaderId?: string | null;
-  supervisorId?: string | null;
+  leaderUserId?: string | null;
+  supervisorUserId?: string | null;
   memberships?: Array<{
     person: {
       id: string;
@@ -22,8 +22,8 @@ function createGroup(overrides: {
   return {
     id: overrides.id ?? "group-1",
     name: overrides.name ?? "Célula Teste",
-    leaderId: overrides.leaderId ?? "leader-1",
-    supervisorId: overrides.supervisorId ?? null,
+    leaderUserId: overrides.leaderUserId ?? "leader-1",
+    supervisorUserId: overrides.supervisorUserId ?? null,
     memberships: overrides.memberships ?? [],
     events: overrides.events ?? [],
   };
@@ -341,8 +341,8 @@ describe("buildDashboard", () => {
 
   it("usa userNameMap para preencher nomes de líder e supervisor", () => {
     const group = createGroup({
-      leaderId: "leader-1",
-      supervisorId: "sup-1",
+      leaderUserId: "leader-1",
+      supervisorUserId: "sup-1",
       events: [],
       memberships: [],
     });

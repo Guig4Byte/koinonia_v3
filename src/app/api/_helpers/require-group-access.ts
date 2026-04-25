@@ -25,7 +25,7 @@ export async function requireGroupAccess(
   try {
     const group = await prisma.group.findUnique({
       where: { id: groupId, deletedAt: null },
-      select: { churchId: true, leaderId: true, supervisorId: true },
+      select: { churchId: true, leaderUserId: true, supervisorUserId: true },
     });
 
     if (!group) {
@@ -43,10 +43,10 @@ export async function requireGroupAccess(
     }
 
     if (hasPermission(role, "group:read:own")) {
-      if (role === "supervisor" && group.supervisorId === auth.userId) {
+      if (role === "supervisor" && group.supervisorUserId === auth.userId) {
         return { ok: true };
       }
-      if (role === "leader" && group.leaderId === auth.userId) {
+      if (role === "leader" && group.leaderUserId === auth.userId) {
         return { ok: true };
       }
     }

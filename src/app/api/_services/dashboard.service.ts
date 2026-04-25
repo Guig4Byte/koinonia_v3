@@ -6,14 +6,14 @@ import {
 
 interface DashboardScope {
   churchId: string;
-  supervisorId?: string;
+  supervisorUserId?: string;
 }
 
 async function getGroupsForDashboard(scope: DashboardScope) {
   return prisma.group.findMany({
     where: {
       churchId: scope.churchId,
-      ...(scope.supervisorId ? { supervisorId: scope.supervisorId } : {}),
+      ...(scope.supervisorUserId ? { supervisorUserId: scope.supervisorUserId } : {}),
       deletedAt: null,
     },
     include: {
@@ -50,7 +50,7 @@ function getDashboardUserIds(
 ): string[] {
   return Array.from(
     new Set(
-      groups.flatMap((group) => [group.leaderId, group.supervisorId]).filter((id): id is string =>
+      groups.flatMap((group) => [group.leaderUserId, group.supervisorUserId]).filter((id): id is string =>
         Boolean(id),
       ),
     ),
@@ -86,7 +86,7 @@ async function getOverdueTasksForDashboard(scope: DashboardScope) {
     where: {
       group: {
         churchId: scope.churchId,
-        ...(scope.supervisorId ? { supervisorId: scope.supervisorId } : {}),
+        ...(scope.supervisorUserId ? { supervisorUserId: scope.supervisorUserId } : {}),
         deletedAt: null,
       },
       assignee: { deletedAt: null, person: { deletedAt: null } },
@@ -115,7 +115,7 @@ export function getPastorDashboard(churchId: string): Promise<DashboardResult> {
 
 export function getSupervisorDashboard(
   churchId: string,
-  supervisorId: string,
+  supervisorUserId: string,
 ): Promise<DashboardResult> {
-  return getDashboard({ churchId, supervisorId });
+  return getDashboard({ churchId, supervisorUserId });
 }

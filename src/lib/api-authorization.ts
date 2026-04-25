@@ -105,8 +105,8 @@ export async function resolvePersonAccessScope(
         select: {
           group: {
             select: {
-              leaderId: true,
-              supervisorId: true,
+              leaderUserId: true,
+              supervisorUserId: true,
             },
           },
         },
@@ -124,14 +124,14 @@ export async function resolvePersonAccessScope(
 
   if (
     user.role === "supervisor" &&
-    person.memberships.some((membership) => membership.group.supervisorId === user.userId)
+    person.memberships.some((membership) => membership.group.supervisorUserId === user.userId)
   ) {
     return "full";
   }
 
   if (
     user.role === "leader" &&
-    person.memberships.some((membership) => membership.group.leaderId === user.userId)
+    person.memberships.some((membership) => membership.group.leaderUserId === user.userId)
   ) {
     return "full";
   }

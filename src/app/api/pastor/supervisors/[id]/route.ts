@@ -21,13 +21,13 @@ export async function GET(
       return domainErrorResponse(roleCheck.error);
     }
 
-    const { id: supervisorId } = await params;
+    const { id: supervisorUserId } = await params;
     const now = new Date();
 
     // Busca o supervisor
     const supervisor = await prisma.user.findFirst({
       where: {
-        id: supervisorId,
+        id: supervisorUserId,
         churchId: user.churchId,
         role: "supervisor",
         deletedAt: null,
@@ -47,13 +47,13 @@ export async function GET(
     const groups = await prisma.group.findMany({
       where: {
         churchId: user.churchId,
-        supervisorId: supervisor.id,
+        supervisorUserId: supervisor.id,
         deletedAt: null,
       },
       select: {
         id: true,
         name: true,
-        leaderId: true,
+        leaderUserId: true,
         memberships: {
           where: { leftAt: null, person: { deletedAt: null } },
           select: {
@@ -83,13 +83,13 @@ export async function GET(
     });
 
     // Busca nomes dos líderes
-    const leaderIds = groups
-      .map((g) => g.leaderId)
+    const leaderUserIds = groups
+      .map((g) => g.leaderUserId)
       .filter((id): id is string => id !== null);
 
     const leaders = await prisma.user.findMany({
       where: {
-        id: { in: leaderIds },
+        id: { in: leaderUserIds },
         deletedAt: null,
         person: { deletedAt: null },
       },
@@ -106,7 +106,7 @@ export async function GET(
       where: {
         group: {
           churchId: user.churchId,
-          supervisorId: supervisor.id,
+          supervisorUserId: supervisor.id,
           deletedAt: null,
         },
         assignee: { deletedAt: null, person: { deletedAt: null } },
@@ -161,10 +161,10 @@ export async function GET(
               )
             : null,
         supervisorName: supervisor.person?.name ?? null,
-        leaderName: group.leaderId
-          ? (leaderNameMap.get(group.leaderId) ?? null)
+        leaderName: group.leaderUserId
+          ? (leaderNameMap.get(group.leaderUserId) ?? null)
           : null,
-        leaderId: group.leaderId,
+        leaderUserId: group.leaderUserId,
       };
     });
 
@@ -173,7 +173,7 @@ export async function GET(
       churchId: user.churchId,
       action: "read",
       resource: "person",
-      resourceId: supervisorId,
+      resourceId: supervisorUserId,
       details: `Perfil do supervisor: ${supervisor.person?.name}`,
       ip: extractIp(request),
     });

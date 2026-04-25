@@ -36,7 +36,7 @@ export async function GET(
         id: event.groupId,
         churchId: user.churchId,
         deletedAt: null,
-        leaderId: user.userId,
+        leaderUserId: user.userId,
       },
     });
 

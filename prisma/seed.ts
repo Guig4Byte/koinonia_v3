@@ -126,24 +126,24 @@ async function main() {
       data: {
         churchId: church.id,
         name: 'Esperança',
-        leaderId: brunoUser.id,
-        supervisorId: anaUser.id,
+        leaderUserId: brunoUser.id,
+        supervisorUserId: anaUser.id,
       },
     }),
     prisma.group.create({
       data: {
         churchId: church.id,
         name: 'Ágape',
-        leaderId: anaUser.id,
-        supervisorId: anaUser.id,
+        leaderUserId: anaUser.id,
+        supervisorUserId: anaUser.id,
       },
     }),
     prisma.group.create({
       data: {
         churchId: church.id,
         name: 'Shalom',
-        leaderId: robertoUser.id,
-        supervisorId: anaUser.id,
+        leaderUserId: robertoUser.id,
+        supervisorUserId: anaUser.id,
       },
     }),
   ])

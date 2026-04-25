@@ -24,7 +24,7 @@ export async function GET(request: Request) {
         group: {
           churchId: user.churchId,
           deletedAt: null,
-          leaderId: user.userId,
+          leaderUserId: user.userId,
         },
       },
       orderBy: [

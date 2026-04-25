@@ -113,8 +113,8 @@ export async function setupIntegrationTest(): Promise<{
     data: {
       churchId: church.id,
       name: "Célula Esperança",
-      leaderId: leaderUser.id,
-      supervisorId: pastorUser.id,
+      leaderUserId: leaderUser.id,
+      supervisorUserId: pastorUser.id,
     },
   });
 

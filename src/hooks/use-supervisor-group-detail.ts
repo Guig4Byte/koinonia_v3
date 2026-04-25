@@ -31,7 +31,7 @@ export interface SupervisorGroupDetail {
     id: string
     name: string
     leaderName: string | null
-    leaderId: string | null
+    leaderUserId: string | null
     memberCount: number
     hasUnregisteredAttendance: boolean
   }

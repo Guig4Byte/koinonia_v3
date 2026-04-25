@@ -56,8 +56,8 @@ export async function POST(request: Request) {
       },
       select: {
         id: true,
-        leaderId: true,
-        supervisorId: true,
+        leaderUserId: true,
+        supervisorUserId: true,
       },
     });
 
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
       return domainErrorResponse("GROUP_NOT_FOUND");
     }
 
-    if (user.role === "supervisor" && group.supervisorId !== user.userId) {
+    if (user.role === "supervisor" && group.supervisorUserId !== user.userId) {
       return domainErrorResponse("UNAUTHORIZED");
     }
 
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
       return domainErrorResponse("USER_NOT_FOUND");
     }
 
-    const allowedAssigneeIds = [group.leaderId, group.supervisorId].filter(
+    const allowedAssigneeIds = [group.leaderUserId, group.supervisorUserId].filter(
       (id): id is string => Boolean(id),
     );
 
@@ -117,7 +117,7 @@ export async function POST(request: Request) {
         return domainErrorResponse("INVALID_TASK_TARGET");
       }
     } else if (targetType === "leader") {
-      if (!group.leaderId || targetId !== group.leaderId) {
+      if (!group.leaderUserId || targetId !== group.leaderUserId) {
         return domainErrorResponse("INVALID_TASK_TARGET");
       }
 

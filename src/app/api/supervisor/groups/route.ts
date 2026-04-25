@@ -23,13 +23,13 @@ export async function GET(request: Request) {
     const groups = await prisma.group.findMany({
       where: {
         churchId: user.churchId,
-        supervisorId: user.userId,
+        supervisorUserId: user.userId,
         deletedAt: null,
       },
       select: {
         id: true,
         name: true,
-        leaderId: true,
+        leaderUserId: true,
         memberships: {
           where: { leftAt: null, person: { deletedAt: null } },
           select: {
@@ -56,12 +56,12 @@ export async function GET(request: Request) {
     });
 
     // Busca nomes dos líderes
-    const leaderIds = groups
-      .map((g) => g.leaderId)
+    const leaderUserIds = groups
+      .map((g) => g.leaderUserId)
       .filter((id): id is string => id !== null);
 
     const leaders = await prisma.user.findMany({
-      where: { id: { in: leaderIds }, deletedAt: null, person: { deletedAt: null } },
+      where: { id: { in: leaderUserIds }, deletedAt: null, person: { deletedAt: null } },
       select: { id: true, person: { select: { name: true } } },
     });
 
@@ -117,8 +117,8 @@ export async function GET(request: Request) {
         averageAttendance: avgAttendance,
         lastAttendanceRate,
         hasUnregisteredAttendance,
-        leaderName: group.leaderId
-          ? (leaderNameMap.get(group.leaderId) ?? null)
+        leaderName: group.leaderUserId
+          ? (leaderNameMap.get(group.leaderUserId) ?? null)
           : null,
       };
     });

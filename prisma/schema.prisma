@@ -85,23 +85,23 @@ model Group {
   id           String       @id @default(cuid())
   churchId     String
   name         String
-  leaderId     String?
-  supervisorId String?
+  leaderUserId     String?
+  supervisorUserId String?
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   deletedAt    DateTime?
 
   church           Church            @relation(fields: [churchId], references: [id])
-  leader           User?             @relation("GroupLeader", fields: [leaderId], references: [id], onDelete: SetNull)
-  supervisor       User?             @relation("GroupSupervisor", fields: [supervisorId], references: [id], onDelete: SetNull)
+  leader           User?             @relation("GroupLeader", fields: [leaderUserId], references: [id], onDelete: SetNull)
+  supervisor       User?             @relation("GroupSupervisor", fields: [supervisorUserId], references: [id], onDelete: SetNull)
   memberships      Membership[]
   events           Event[]
   tasks            Task[]
   eventRecurrences EventRecurrence[]
 
   @@index([churchId])
-  @@index([leaderId])
-  @@index([supervisorId])
+  @@index([leaderUserId])
+  @@index([supervisorUserId])
 }
 
 model Membership {

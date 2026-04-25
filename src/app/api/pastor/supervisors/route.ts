@@ -40,8 +40,8 @@ export async function GET(request: Request) {
       select: {
         id: true,
         name: true,
-        supervisorId: true,
-        leaderId: true,
+        supervisorUserId: true,
+        leaderUserId: true,
         memberships: {
           where: { leftAt: null, person: { deletedAt: null } },
           select: {
@@ -84,7 +84,7 @@ export async function GET(request: Request) {
 
     const result = supervisors.map((supervisor) => {
       const supervisedGroups = groups.filter(
-        (g) => g.supervisorId === supervisor.id,
+        (g) => g.supervisorUserId === supervisor.id,
       );
 
       let totalMembers = 0;
@@ -92,7 +92,7 @@ export async function GET(request: Request) {
       let totalPossible = 0;
       let atRiskCount = 0;
       let overdueTasksCount = 0;
-      const leaderIds = new Set<string>();
+      const leaderUserIds = new Set<string>();
 
       supervisedGroups.forEach((group) => {
         totalMembers += group.memberships.length;
@@ -111,14 +111,14 @@ export async function GET(request: Request) {
           totalPossible += event.attendances.length;
         });
 
-        if (group.leaderId) {
-          leaderIds.add(group.leaderId);
+        if (group.leaderUserId) {
+          leaderUserIds.add(group.leaderUserId);
         }
       });
 
       // Conta tasks vencidas dos líderes desses grupos
       overdueTasks.forEach((task) => {
-        if (leaderIds.has(task.assigneeId)) {
+        if (leaderUserIds.has(task.assigneeId)) {
           overdueTasksCount++;
         }
       });

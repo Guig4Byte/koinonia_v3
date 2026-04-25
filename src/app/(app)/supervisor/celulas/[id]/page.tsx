@@ -16,14 +16,14 @@ export default function SupervisorGroupDetailPage() {
   const [cobrarSent, setCobrarSent] = useState(false)
 
   const handleCobrar = () => {
-    if (!data?.group.leaderId) return
+    if (!data?.group.leaderUserId) return
 
     const dueAt = new Date()
     dueAt.setDate(dueAt.getDate() + 2)
 
     createTask.mutate(
       {
-        assigneeId: data.group.leaderId,
+        assigneeId: data.group.leaderUserId,
         groupId: id,
         description: `Acompanhamento da supervisora: registrar presença e atualizar status da célula ${data.group.name}`,
         dueAt: dueAt.toISOString(),
@@ -77,7 +77,7 @@ export default function SupervisorGroupDetailPage() {
       </div>
 
       {/* Botão Cobrar */}
-      {group?.leaderId && (
+      {group?.leaderUserId && (
         <button
           onClick={handleCobrar}
           disabled={createTask.isPending || cobrarSent}

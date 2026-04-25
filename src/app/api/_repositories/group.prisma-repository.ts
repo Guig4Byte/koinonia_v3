@@ -6,8 +6,8 @@ function toDomainGroup(prismaGroup: {
   id: string;
   churchId: string;
   name: string;
-  leaderId: string | null;
-  supervisorId: string | null;
+  leaderUserId: string | null;
+  supervisorUserId: string | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -16,8 +16,8 @@ function toDomainGroup(prismaGroup: {
     id: prismaGroup.id,
     churchId: prismaGroup.churchId,
     name: prismaGroup.name,
-    leaderId: prismaGroup.leaderId,
-    supervisorId: prismaGroup.supervisorId,
+    leaderUserId: prismaGroup.leaderUserId,
+    supervisorUserId: prismaGroup.supervisorUserId,
     createdAt: prismaGroup.createdAt,
     updatedAt: prismaGroup.updatedAt,
     deletedAt: prismaGroup.deletedAt,
@@ -40,17 +40,17 @@ export class GroupPrismaRepository implements GroupRepository {
     return groups.map(toDomainGroup);
   }
 
-  async findBySupervisor(supervisorId: string): Promise<readonly Group[]> {
+  async findBySupervisor(supervisorUserId: string): Promise<readonly Group[]> {
     const groups = await prisma.group.findMany({
-      where: { supervisorId, deletedAt: null },
+      where: { supervisorUserId, deletedAt: null },
       orderBy: { name: "asc" },
     });
     return groups.map(toDomainGroup);
   }
 
-  async findByLeader(leaderId: string): Promise<readonly Group[]> {
+  async findByLeader(leaderUserId: string): Promise<readonly Group[]> {
     const groups = await prisma.group.findMany({
-      where: { leaderId, deletedAt: null },
+      where: { leaderUserId, deletedAt: null },
       orderBy: { name: "asc" },
     });
     return groups.map(toDomainGroup);

@@ -29,13 +29,13 @@ export async function GET(
       where: {
         id: groupId,
         churchId: user.churchId,
-        supervisorId: user.userId,
+        supervisorUserId: user.userId,
         deletedAt: null,
       },
       select: {
         id: true,
         name: true,
-        leaderId: true,
+        leaderUserId: true,
         memberships: {
           where: { leftAt: null, person: { deletedAt: null } },
           include: {
@@ -69,9 +69,9 @@ export async function GET(
     }
 
     // Busca líder
-    const leader = group.leaderId
+    const leader = group.leaderUserId
       ? await prisma.user.findFirst({
-          where: { id: group.leaderId, deletedAt: null, person: { deletedAt: null } },
+          where: { id: group.leaderUserId, deletedAt: null, person: { deletedAt: null } },
           select: { id: true, person: { select: { name: true } } },
         })
       : null;
@@ -80,7 +80,7 @@ export async function GET(
     const leaderTasks = await prisma.task.findMany({
       where: {
         groupId: group.id,
-        assigneeId: group.leaderId ?? "",
+        assigneeId: group.leaderUserId ?? "",
         completedAt: null,
         deletedAt: null,
       },
@@ -136,7 +136,7 @@ export async function GET(
         id: group.id,
         name: group.name,
         leaderName: leader?.person?.name ?? null,
-        leaderId: group.leaderId,
+        leaderUserId: group.leaderUserId,
         memberCount: members.length,
         hasUnregisteredAttendance,
       },
