@@ -559,4 +559,67 @@ describe("Integração: Criação de Tasks", () => {
     expect(response.status).toBe(400);
     expect(data.error).toBe("INVALID_TASK_TARGET");
   });
+
+  it("rejeita task com assignee da mesma igreja que não lidera nem supervisiona o grupo", async () => {
+    const person = await prisma.person.create({
+      data: { churchId: ctx.churchId, name: "Líder sem vínculo" },
+    });
+    const user = await prisma.user.create({
+      data: {
+        email: "lider-sem-vinculo@task.org",
+        passwordHash: await hashPassword("teste123"),
+        role: "leader",
+        personId: person.id,
+        churchId: ctx.churchId,
+      },
+    });
+
+    const request = createTestRequest({
+      url: "http://localhost/api/tasks",
+      method: "POST",
+      token: ctx.pastor.token,
+      user: ctx.pastor,
+      body: {
+        assigneeId: user.id,
+        groupId: ctx.groupId,
+        description: "Task para usuário sem vínculo com a célula",
+        dueAt: new Date(Date.now() + 86400000).toISOString(),
+        targetType: "group",
+        targetId: ctx.groupId,
+      },
+    });
+
+    const response = await postTask(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.error).toBe("INVALID_TASK_TARGET");
+  });
+
+  it("rejeita task para pessoa da mesma igreja fora da célula informada", async () => {
+    const person = await prisma.person.create({
+      data: { churchId: ctx.churchId, name: "Pessoa fora da célula" },
+    });
+
+    const request = createTestRequest({
+      url: "http://localhost/api/tasks",
+      method: "POST",
+      token: ctx.pastor.token,
+      user: ctx.pastor,
+      body: {
+        assigneeId: ctx.leader.userId,
+        groupId: ctx.groupId,
+        description: "Task para pessoa fora da célula",
+        dueAt: new Date(Date.now() + 86400000).toISOString(),
+        targetType: "person",
+        targetId: person.id,
+      },
+    });
+
+    const response = await postTask(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.error).toBe("INVALID_TASK_TARGET");
+  });
 });

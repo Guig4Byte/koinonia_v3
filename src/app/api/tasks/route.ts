@@ -48,31 +48,33 @@ export async function POST(request: Request) {
     const { assigneeId, groupId, description, dueAt, targetType, targetId } =
       parsed.data;
 
-    // Verifica se o grupo pertence à igreja do usuário
     const group = await prisma.group.findFirst({
       where: {
         id: groupId,
         churchId: user.churchId,
         deletedAt: null,
       },
-      select: { id: true, supervisorId: true },
+      select: {
+        id: true,
+        leaderId: true,
+        supervisorId: true,
+      },
     });
 
     if (!group) {
       return domainErrorResponse("GROUP_NOT_FOUND");
     }
 
-    // Supervisor só pode criar tasks para grupos que supervisiona
     if (user.role === "supervisor" && group.supervisorId !== user.userId) {
       return domainErrorResponse("UNAUTHORIZED");
     }
 
-    // Verifica se o assignee pertence à mesma igreja
     const assignee = await prisma.user.findFirst({
       where: {
         id: assigneeId,
         churchId: user.churchId,
         deletedAt: null,
+        person: { deletedAt: null },
       },
       select: { id: true },
     });
@@ -81,33 +83,55 @@ export async function POST(request: Request) {
       return domainErrorResponse("USER_NOT_FOUND");
     }
 
-    // Valida coerência de targetId com targetType
+    const allowedAssigneeIds = [group.leaderId, group.supervisorId].filter(
+      (id): id is string => Boolean(id),
+    );
+
+    if (!allowedAssigneeIds.includes(assigneeId)) {
+      return domainErrorResponse("INVALID_TASK_TARGET");
+    }
+
     if (targetType === "person") {
-      const person = await prisma.person.findFirst({
-        where: { id: targetId, churchId: user.churchId, deletedAt: null },
+      const personMembership = await prisma.membership.findFirst({
+        where: {
+          groupId: group.id,
+          personId: targetId,
+          leftAt: null,
+          person: {
+            churchId: user.churchId,
+            deletedAt: null,
+          },
+          group: {
+            churchId: user.churchId,
+            deletedAt: null,
+          },
+        },
         select: { id: true },
       });
-      if (!person) {
+
+      if (!personMembership) {
         return domainErrorResponse("INVALID_TASK_TARGET");
       }
     } else if (targetType === "group") {
-      const targetGroup = await prisma.group.findFirst({
-        where: { id: targetId, churchId: user.churchId, deletedAt: null },
-        select: { id: true },
-      });
-      if (!targetGroup) {
+      if (targetId !== group.id) {
         return domainErrorResponse("INVALID_TASK_TARGET");
       }
     } else if (targetType === "leader") {
+      if (!group.leaderId || targetId !== group.leaderId) {
+        return domainErrorResponse("INVALID_TASK_TARGET");
+      }
+
       const leader = await prisma.user.findFirst({
         where: {
           id: targetId,
           churchId: user.churchId,
           role: "leader",
           deletedAt: null,
+          person: { deletedAt: null },
         },
         select: { id: true },
       });
+
       if (!leader) {
         return domainErrorResponse("INVALID_TASK_TARGET");
       }

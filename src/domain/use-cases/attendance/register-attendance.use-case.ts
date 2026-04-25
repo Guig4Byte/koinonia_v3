@@ -31,12 +31,19 @@ export async function registerAttendanceUseCase(
     return err(DomainErrors.EVENT_NOT_FOUND);
   }
 
+  const personIds = input.attendances.map((a) => a.personId);
+  const uniquePersonIds = new Set(personIds);
+
+  if (uniquePersonIds.size !== personIds.length) {
+    return err(DomainErrors.INVALID_ATTENDEES);
+  }
+
   const groupMembers = await personRepository.findByGroup(event.groupId);
   const memberIds = new Set(groupMembers.map((m) => m.id));
 
-  const invalidPersonIds = input.attendances
-    .map((a) => a.personId)
-    .filter((personId) => !memberIds.has(personId));
+  const invalidPersonIds = personIds.filter(
+    (personId) => !memberIds.has(personId),
+  );
 
   if (invalidPersonIds.length > 0) {
     return err(DomainErrors.INVALID_ATTENDEES);

@@ -92,6 +92,50 @@ describe("registerAttendanceUseCase", () => {
     }
   });
 
+  it("retorna INVALID_ATTENDEES quando há pessoa duplicada no payload", async () => {
+    const eventRepository = createMockEventRepository({
+      findById: vi.fn().mockResolvedValue({
+        id: "event-1",
+        groupId: "group-1",
+        eventTypeId: "type-1",
+        scheduledAt: new Date(),
+        occurredAt: new Date(),
+        notes: null,
+        createdAt: new Date(),
+        deletedAt: null,
+      }),
+    });
+
+    const attendanceRepository = createMockAttendanceRepository({
+      upsertMany: vi.fn().mockResolvedValue(undefined),
+    });
+
+    const personRepository = createMockPersonRepository({
+      findByGroup: vi.fn().mockResolvedValue([
+        { id: "p1", churchId: "c1", name: "Ana", phone: null, photoUrl: null, birthDate: null, createdAt: new Date(), updatedAt: new Date(), deletedAt: null },
+      ]),
+    });
+
+    const result = await registerAttendanceUseCase(
+      eventRepository,
+      attendanceRepository,
+      personRepository,
+      {
+        eventId: "event-1",
+        attendances: [
+          { personId: "p1", present: true },
+          { personId: "p1", present: false },
+        ],
+      },
+    );
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) {
+      expect(result.error).toBe(DomainErrors.INVALID_ATTENDEES);
+    }
+    expect(attendanceRepository.upsertMany).not.toHaveBeenCalled();
+  });
+
   it("retorna EVENT_NOT_FOUND quando o evento não existe", async () => {
     const eventRepository = createMockEventRepository({
       findById: vi.fn().mockResolvedValue(null),
