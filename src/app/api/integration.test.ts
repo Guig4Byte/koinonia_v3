@@ -17,6 +17,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { hashPassword, signAccessToken } from "@/lib/auth";
 import { GET as getPeople } from "./people/route";
+import { GET as getFullPersonProfile } from "./people/[id]/route";
 import { POST as postLogin } from "./auth/login/route";
 import { POST as postRefresh } from "./auth/refresh/route";
 import { POST as postLogout } from "./auth/logout/route";
@@ -24,6 +25,8 @@ import { POST as postAttendance } from "./events/[id]/attendance/route";
 import { GET as getGroup } from "./groups/[id]/route";
 import { GET as getSharedMemberProfile } from "./members/[id]/route";
 import { POST as postTask } from "./tasks/route";
+import { POST as postInteraction } from "./interactions/route";
+import { GET as getLeaderDashboard } from "./leader/dashboard/route";
 import { REFRESH_TOKEN_COOKIE } from "@/lib/auth-cookies";
 
 let ctx: Awaited<ReturnType<typeof setupIntegrationTest>>;
@@ -70,10 +73,15 @@ describe("Integração: Auth", () => {
     const response = await postLogin(request);
     const data = await response.json();
 
+    const setCookie = response.headers.get("set-cookie");
+
     expect(response.status).toBe(200);
     expect(data.accessToken).toBeDefined();
     expect(data.refreshToken).toBeUndefined();
-    expect(response.headers.get("set-cookie")).toContain(REFRESH_TOKEN_COOKIE);
+    expect(setCookie).toContain(REFRESH_TOKEN_COOKIE);
+    expect(setCookie).toContain("HttpOnly");
+    expect(setCookie).toMatch(/SameSite=Lax/i);
+    expect(setCookie).toContain("Path=/");
     expect(data.user.email).toBe(ctx.pastor.email);
     expect(data.user.role).toBe("pastor");
   });
@@ -165,6 +173,20 @@ describe("Integração: Auth", () => {
     expect(refreshResponse2.status).toBe(401);
   });
 
+  it("refresh sem cookie retorna 401 e limpa cookie de sessão", async () => {
+    const refreshRequest = createTestRequest({
+      url: "http://localhost/api/auth/refresh",
+      method: "POST",
+    });
+
+    const refreshResponse = await postRefresh(refreshRequest);
+    const data = await refreshResponse.json();
+
+    expect(refreshResponse.status).toBe(401);
+    expect(data.error).toBe("REFRESH_TOKEN_INVALID");
+    expect(refreshResponse.headers.get("set-cookie")).toContain(`${REFRESH_TOKEN_COOKIE}=`);
+  });
+
   it("logout invalida refresh token no servidor e limpa cookie", async () => {
     const loginRequest = createTestRequest({
       url: "http://localhost/api/auth/login",
@@ -254,6 +276,21 @@ describe("Integração: Busca de Pessoas", () => {
 
     expect(response.status).toBe(401);
   });
+
+  it("líder não acessa busca global de pessoas", async () => {
+    const request = createTestRequest({
+      url: "http://localhost/api/people?search=Membro",
+      method: "GET",
+      token: ctx.leader.token,
+      user: ctx.leader,
+    });
+
+    const response = await getPeople(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(data.error).toBe("FORBIDDEN");
+  });
 });
 
 describe("Integração: Permission Guard", () => {
@@ -305,6 +342,21 @@ describe("Integração: Permission Guard", () => {
     });
 
     expect(response.status).toBe(403);
+  });
+
+  it("pastor não acessa endpoint específico de dashboard do líder", async () => {
+    const request = createTestRequest({
+      url: "http://localhost/api/leader/dashboard",
+      method: "GET",
+      token: ctx.pastor.token,
+      user: ctx.pastor,
+    });
+
+    const response = await getLeaderDashboard(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(data.error).toBe("FORBIDDEN");
   });
 });
 
@@ -542,6 +594,72 @@ describe("Integração: Registro de Presença", () => {
   });
 });
 
+describe("Integração: Perfil completo de pessoa", () => {
+  it("líder acessa perfil completo de pessoa da sua célula", async () => {
+    const request = createTestRequest({
+      url: `http://localhost/api/people/${ctx.member.personId}`,
+      method: "GET",
+      token: ctx.leader.token,
+      user: ctx.leader,
+    });
+
+    const response = await getFullPersonProfile(request, {
+      params: Promise.resolve({ id: ctx.member.personId }),
+    });
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.person.id).toBe(ctx.member.personId);
+  });
+
+  it("líder não acessa perfil completo de pessoa de outra célula", async () => {
+    const otherLeaderPerson = await prisma.person.create({
+      data: { churchId: ctx.churchId, name: "Líder do perfil bloqueado" },
+    });
+    const otherLeaderUser = await prisma.user.create({
+      data: {
+        email: "lider-perfil-bloqueado@teste.org",
+        passwordHash: await hashPassword("teste123"),
+        role: "leader",
+        personId: otherLeaderPerson.id,
+        churchId: ctx.churchId,
+      },
+    });
+    const otherGroup = await prisma.group.create({
+      data: {
+        churchId: ctx.churchId,
+        name: "Célula Perfil Bloqueado",
+        leaderUserId: otherLeaderUser.id,
+      },
+    });
+    const otherMember = await prisma.person.create({
+      data: { churchId: ctx.churchId, name: "Pessoa perfil bloqueado" },
+    });
+    await prisma.membership.create({
+      data: {
+        personId: otherMember.id,
+        groupId: otherGroup.id,
+        role: "member",
+      },
+    });
+
+    const request = createTestRequest({
+      url: `http://localhost/api/people/${otherMember.id}`,
+      method: "GET",
+      token: ctx.leader.token,
+      user: ctx.leader,
+    });
+
+    const response = await getFullPersonProfile(request, {
+      params: Promise.resolve({ id: otherMember.id }),
+    });
+    const data = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(data.error).toBe("FORBIDDEN");
+  });
+});
+
 describe("Integração: Perfil compartilhado de membro", () => {
   it("líder acessa perfil de membro da sua célula", async () => {
     const request = createTestRequest({
@@ -664,7 +782,171 @@ describe("Integração: Perfil compartilhado de membro", () => {
 });
 
 
+describe("Integração: Interações pastorais", () => {
+  it("líder registra interação para membro da própria célula e gera audit log", async () => {
+    const request = createTestRequest({
+      url: "http://localhost/api/interactions",
+      method: "POST",
+      token: ctx.leader.token,
+      user: ctx.leader,
+      body: {
+        personId: ctx.member.personId,
+        kind: "note",
+        content: "Contato pastoral registrado em teste",
+      },
+    });
+
+    const response = await postInteraction(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(data.interaction.personId).toBe(ctx.member.personId);
+
+    const auditLog = await prisma.auditLog.findFirst({
+      where: {
+        resource: "interaction",
+        resourceId: data.interaction.id,
+        userId: ctx.leader.userId,
+      },
+    });
+
+    expect(auditLog).toMatchObject({
+      userId: ctx.leader.userId,
+      churchId: ctx.churchId,
+      action: "create",
+      resource: "interaction",
+      resourceId: data.interaction.id,
+    });
+  });
+
+  it("líder não registra interação para pessoa fora da sua célula", async () => {
+    const otherLeaderPerson = await prisma.person.create({
+      data: { churchId: ctx.churchId, name: "Líder Interação Bloqueada" },
+    });
+    const otherLeaderUser = await prisma.user.create({
+      data: {
+        email: "lider-interacao-bloqueada@teste.org",
+        passwordHash: await hashPassword("teste123"),
+        role: "leader",
+        personId: otherLeaderPerson.id,
+        churchId: ctx.churchId,
+      },
+    });
+    const otherGroup = await prisma.group.create({
+      data: {
+        churchId: ctx.churchId,
+        name: "Célula Interação Bloqueada",
+        leaderUserId: otherLeaderUser.id,
+      },
+    });
+    const otherMember = await prisma.person.create({
+      data: { churchId: ctx.churchId, name: "Pessoa Interação Bloqueada" },
+    });
+    await prisma.membership.create({
+      data: {
+        personId: otherMember.id,
+        groupId: otherGroup.id,
+        role: "member",
+      },
+    });
+
+    const request = createTestRequest({
+      url: "http://localhost/api/interactions",
+      method: "POST",
+      token: ctx.leader.token,
+      user: ctx.leader,
+      body: {
+        personId: otherMember.id,
+        kind: "note",
+        content: "Tentativa fora do contexto",
+      },
+    });
+
+    const response = await postInteraction(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(data.error).toBe("FORBIDDEN");
+  });
+
+  it("membro não registra interação pastoral", async () => {
+    const memberPerson = await prisma.person.create({
+      data: { churchId: ctx.churchId, name: "Membro sem permissão pastoral" },
+    });
+    const memberUser = await prisma.user.create({
+      data: {
+        email: "membro-sem-interacao@teste.org",
+        passwordHash: await hashPassword("teste123"),
+        role: "member",
+        personId: memberPerson.id,
+        churchId: ctx.churchId,
+      },
+    });
+
+    const request = createTestRequest({
+      url: "http://localhost/api/interactions",
+      method: "POST",
+      user: {
+        userId: memberUser.id,
+        role: "member",
+        personId: memberPerson.id,
+        churchId: ctx.churchId,
+      },
+      body: {
+        personId: memberPerson.id,
+        kind: "note",
+        content: "Tentativa de membro",
+      },
+    });
+
+    const response = await postInteraction(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(data.error).toBe("FORBIDDEN");
+  });
+});
+
 describe("Integração: Criação de Tasks", () => {
+  it("pastor cria task válida e gera audit log completo", async () => {
+    const request = createTestRequest({
+      url: "http://localhost/api/tasks",
+      method: "POST",
+      token: ctx.pastor.token,
+      user: ctx.pastor,
+      body: {
+        assigneeId: ctx.leader.userId,
+        groupId: ctx.groupId,
+        description: "Acompanhar membro em teste",
+        dueAt: new Date(Date.now() + 86400000).toISOString(),
+        targetType: "person",
+        targetId: ctx.member.personId,
+      },
+    });
+
+    const response = await postTask(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(data.task.assigneeId).toBe(ctx.leader.userId);
+
+    const auditLog = await prisma.auditLog.findFirst({
+      where: {
+        resource: "task",
+        resourceId: data.task.id,
+        userId: ctx.pastor.userId,
+      },
+    });
+
+    expect(auditLog).toMatchObject({
+      userId: ctx.pastor.userId,
+      churchId: ctx.churchId,
+      action: "create",
+      resource: "task",
+      resourceId: data.task.id,
+    });
+    expect(auditLog?.details).toContain("Task criada");
+  });
   it("rejeita task com assignee de outra igreja", async () => {
     const otherChurch = await prisma.church.create({
       data: { name: "Outra Igreja" },
