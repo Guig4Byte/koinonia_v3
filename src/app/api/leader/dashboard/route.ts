@@ -3,6 +3,7 @@ import { domainErrorResponse, serverErrorResponse } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/get-current-user";
 import prisma from "@/lib/prisma";
 import { writeAuditLog, extractIp } from "@/app/api/_helpers/audit-log";
+import { canAccessApiRoute } from "@/lib/api-authorization";
 
 export async function GET(request: Request) {
   try {
@@ -12,20 +13,15 @@ export async function GET(request: Request) {
       return domainErrorResponse("UNAUTHORIZED");
     }
 
-    if (
-      user.role !== "leader" &&
-      user.role !== "pastor" &&
-      user.role !== "supervisor"
-    ) {
-      return domainErrorResponse("UNAUTHORIZED");
+    if (!canAccessApiRoute(user, "leader:dashboard")) {
+      return domainErrorResponse("FORBIDDEN");
     }
 
-    // Busca o grupo do líder (ou primeiro grupo se for pastor/supervisor)
     const group = await prisma.group.findFirst({
       where: {
         churchId: user.churchId,
         deletedAt: null,
-        ...(user.role === "leader" ? { leaderId: user.userId } : {}),
+        leaderId: user.userId,
       },
       orderBy: { name: "asc" },
     });
@@ -34,7 +30,6 @@ export async function GET(request: Request) {
       return domainErrorResponse("GROUP_NOT_FOUND");
     }
 
-    // Busca membros do grupo com risk score e última interação
     const memberships = await prisma.membership.findMany({
       where: { groupId: group.id, leftAt: null, person: { deletedAt: null } },
       include: {
@@ -62,7 +57,6 @@ export async function GET(request: Request) {
       lastInteractionAt: m.person.interactionsAsSubject[0]?.createdAt ?? null,
     }));
 
-    // Busca o evento mais recente
     const latestEvent = await prisma.event.findFirst({
       where: { groupId: group.id, deletedAt: null },
       orderBy: { scheduledAt: "desc" },

@@ -3,6 +3,7 @@ import { domainErrorResponse, serverErrorResponse } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/get-current-user";
 import prisma from "@/lib/prisma";
 import { writeAuditLog, extractIp } from "@/app/api/_helpers/audit-log";
+import { canAccessApiRoute } from "@/lib/api-authorization";
 
 export async function GET(request: Request) {
   try {
@@ -12,18 +13,19 @@ export async function GET(request: Request) {
       return domainErrorResponse("UNAUTHORIZED");
     }
 
-    if (
-      user.role !== "leader" &&
-      user.role !== "pastor" &&
-      user.role !== "supervisor"
-    ) {
-      return domainErrorResponse("UNAUTHORIZED");
+    if (!canAccessApiRoute(user, "leader:tasks")) {
+      return domainErrorResponse("FORBIDDEN");
     }
 
     const tasks = await prisma.task.findMany({
       where: {
         assigneeId: user.userId,
         deletedAt: null,
+        group: {
+          churchId: user.churchId,
+          deletedAt: null,
+          leaderId: user.userId,
+        },
       },
       orderBy: [
         { completedAt: { sort: "asc", nulls: "first" } },

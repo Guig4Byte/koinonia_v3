@@ -10,6 +10,7 @@ import { InteractionPrismaRepository } from "@/app/api/_repositories/interaction
 import { createInteractionUseCase } from "@/domain/use-cases/interactions/create-interaction.use-case";
 import { createInteractionSchema } from "@/lib/validations/interactions/create";
 import { writeAuditLog, extractIp } from "@/app/api/_helpers/audit-log";
+import { canCreateInteractionForPerson } from "@/lib/api-authorization";
 import prisma from "@/lib/prisma";
 
 export async function POST(request: Request) {
@@ -33,14 +34,13 @@ export async function POST(request: Request) {
       return validationErrorResponse(parsedBody.error);
     }
 
-    // Church scoping: só pode interagir com pessoas da própria igreja
-    const targetPerson = await prisma.person.findFirst({
-      where: { id: parsedBody.data.personId, deletedAt: null },
-      select: { churchId: true },
-    });
+    const canCreate = await canCreateInteractionForPerson(
+      user,
+      parsedBody.data.personId,
+    );
 
-    if (!targetPerson || targetPerson.churchId !== user.churchId) {
-      return domainErrorResponse("UNAUTHORIZED");
+    if (!canCreate) {
+      return domainErrorResponse("FORBIDDEN");
     }
 
     const interaction = await prisma.$transaction(async (tx) => {

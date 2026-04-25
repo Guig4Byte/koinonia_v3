@@ -3,6 +3,7 @@ import { domainErrorResponse, serverErrorResponse } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/get-current-user";
 import prisma from "@/lib/prisma";
 import { writeAuditLog, extractIp } from "@/app/api/_helpers/audit-log";
+import { canAccessApiRoute } from "@/lib/api-authorization";
 
 export async function GET(
   request: Request,
@@ -15,12 +16,8 @@ export async function GET(
       return domainErrorResponse("UNAUTHORIZED");
     }
 
-    if (
-      user.role !== "leader" &&
-      user.role !== "pastor" &&
-      user.role !== "supervisor"
-    ) {
-      return domainErrorResponse("UNAUTHORIZED");
+    if (!canAccessApiRoute(user, "leader:attendance:read")) {
+      return domainErrorResponse("FORBIDDEN");
     }
 
     const { id: eventId } = await params;
@@ -34,18 +31,17 @@ export async function GET(
       return domainErrorResponse("EVENT_NOT_FOUND");
     }
 
-    // Valida que o evento pertence ao grupo do líder
     const group = await prisma.group.findFirst({
       where: {
         id: event.groupId,
         churchId: user.churchId,
         deletedAt: null,
-        ...(user.role === "leader" ? { leaderId: user.userId } : {}),
+        leaderId: user.userId,
       },
     });
 
     if (!group) {
-      return domainErrorResponse("UNAUTHORIZED");
+      return domainErrorResponse("FORBIDDEN");
     }
 
     const memberships = await prisma.membership.findMany({

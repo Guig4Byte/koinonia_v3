@@ -5,6 +5,7 @@ import { PersonPrismaRepository } from "@/app/api/_repositories/person.prisma-re
 import { searchPeopleUseCase } from "@/domain/use-cases/dashboard/search-people.use-case";
 import { searchPeopleQuerySchema } from "@/lib/validations/people/search";
 import { writeAuditLog, extractIp } from "@/app/api/_helpers/audit-log";
+import { canAccessApiRoute } from "@/lib/api-authorization";
 
 export async function GET(request: Request) {
   try {
@@ -12,6 +13,10 @@ export async function GET(request: Request) {
 
     if (!user) {
       return domainErrorResponse("UNAUTHORIZED");
+    }
+
+    if (!canAccessApiRoute(user, "people:search")) {
+      return domainErrorResponse("FORBIDDEN");
     }
 
     const { searchParams } = new URL(request.url);

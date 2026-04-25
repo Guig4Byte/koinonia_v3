@@ -1,49 +1,12 @@
 import { NextResponse } from "next/server";
 import { domainErrorResponse, serverErrorResponse } from "@/lib/api-response";
-import { getCurrentUser, type CurrentUser } from "@/lib/get-current-user";
+import { getCurrentUser } from "@/lib/get-current-user";
 import prisma from "@/lib/prisma";
 import { writeAuditLog, extractIp } from "@/app/api/_helpers/audit-log";
-
-type ActiveMembershipContext = {
-  group: {
-    id: string;
-    name: string;
-    leaderId: string | null;
-    supervisorId: string | null;
-  };
-};
-
-type MemberProfileScope = "full" | "self";
-
-function resolveMemberProfileScope(
-  user: CurrentUser,
-  personId: string,
-  memberships: ActiveMembershipContext[],
-): MemberProfileScope | null {
-  if (user.role === "pastor") {
-    return "full";
-  }
-
-  if (
-    user.role === "supervisor" &&
-    memberships.some((membership) => membership.group.supervisorId === user.userId)
-  ) {
-    return "full";
-  }
-
-  if (
-    user.role === "leader" &&
-    memberships.some((membership) => membership.group.leaderId === user.userId)
-  ) {
-    return "full";
-  }
-
-  if (user.personId === personId) {
-    return "self";
-  }
-
-  return null;
-}
+import {
+  canAccessApiRoute,
+  resolvePersonAccessScope,
+} from "@/lib/api-authorization";
 
 export async function GET(
   request: Request,
@@ -56,7 +19,17 @@ export async function GET(
       return domainErrorResponse("UNAUTHORIZED");
     }
 
+    if (!canAccessApiRoute(user, "members:read")) {
+      return domainErrorResponse("FORBIDDEN");
+    }
+
     const { id: personId } = await params;
+
+    const scope = await resolvePersonAccessScope(user, personId);
+
+    if (!scope) {
+      return domainErrorResponse("FORBIDDEN");
+    }
 
     const personAccess = await prisma.person.findFirst({
       where: {
@@ -80,8 +53,6 @@ export async function GET(
               select: {
                 id: true,
                 name: true,
-                leaderId: true,
-                supervisorId: true,
               },
             },
           },
@@ -91,12 +62,6 @@ export async function GET(
 
     if (!personAccess) {
       return domainErrorResponse("PERSON_NOT_FOUND");
-    }
-
-    const scope = resolveMemberProfileScope(user, personId, personAccess.memberships);
-
-    if (!scope) {
-      return domainErrorResponse("FORBIDDEN");
     }
 
     const attendances = await prisma.attendance.findMany({
