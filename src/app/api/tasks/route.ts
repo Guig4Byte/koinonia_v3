@@ -137,24 +137,32 @@ export async function POST(request: Request) {
       }
     }
 
-    const task = await prisma.task.create({
-      data: {
-        assigneeId,
-        groupId,
-        description,
-        dueAt: new Date(dueAt),
-        targetType,
-        targetId,
-      },
-    });
+    const task = await prisma.$transaction(async (tx) => {
+      const createdTask = await tx.task.create({
+        data: {
+          assigneeId,
+          groupId,
+          description,
+          dueAt: new Date(dueAt),
+          targetType,
+          targetId,
+        },
+      });
 
-    await writeAuditLog({
-      userId: user.userId,
-      action: "create",
-      resource: "task",
-      resourceId: task.id,
-      details: `Task criada: ${description}`,
-      ip: extractIp(request),
+      await writeAuditLog(
+        {
+          userId: user.userId,
+          churchId: user.churchId,
+          action: "create",
+          resource: "task",
+          resourceId: createdTask.id,
+          details: `Task criada: ${description}`,
+          ip: extractIp(request),
+        },
+        tx,
+      );
+
+      return createdTask;
     });
 
     return NextResponse.json({ task }, { status: 201 });

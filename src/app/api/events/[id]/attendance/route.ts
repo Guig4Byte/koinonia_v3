@@ -14,6 +14,7 @@ import { registerAttendanceUseCase } from "@/domain/use-cases/attendance/registe
 import { registerAttendanceSchema } from "@/lib/validations/events/event-id";
 import { requireEventAccess } from "@/app/api/_helpers/require-event-access";
 import { writeAuditLog, extractIp } from "@/app/api/_helpers/audit-log";
+import prisma from "@/lib/prisma";
 
 export async function POST(
   request: Request,
@@ -56,33 +57,44 @@ export async function POST(
       return validationErrorResponse(parsedBody.error);
     }
 
-    const eventRepository = new EventPrismaRepository();
-    const attendanceRepository = new AttendancePrismaRepository();
-    const personRepository = new PersonPrismaRepository();
+    const result = await prisma.$transaction(async (tx) => {
+      const eventRepository = new EventPrismaRepository(tx);
+      const attendanceRepository = new AttendancePrismaRepository(tx);
+      const personRepository = new PersonPrismaRepository(tx);
 
-    const result = await registerAttendanceUseCase(
-      eventRepository,
-      attendanceRepository,
-      personRepository,
-      {
-        eventId,
-        attendances: parsedBody.data.attendances,
-      },
-    );
+      const attendanceResult = await registerAttendanceUseCase(
+        eventRepository,
+        attendanceRepository,
+        personRepository,
+        {
+          eventId,
+          attendances: parsedBody.data.attendances,
+        },
+      );
+
+      if (attendanceResult.isErr()) {
+        return attendanceResult;
+      }
+
+      await writeAuditLog(
+        {
+          userId: user.userId,
+          churchId: user.churchId,
+          action: "create",
+          resource: "attendance",
+          resourceId: eventId,
+          details: `Registro de presença: ${attendanceResult.value.present} presentes, ${attendanceResult.value.absent} faltas`,
+          ip: extractIp(request),
+        },
+        tx,
+      );
+
+      return attendanceResult;
+    });
 
     if (result.isErr()) {
       return domainErrorResponse(result.error);
     }
-
-    await writeAuditLog({
-      userId: user.userId,
-      churchId: user.churchId,
-      action: "create",
-      resource: "attendance",
-      resourceId: eventId,
-      details: `Registro de presença: ${result.value.present} presentes, ${result.value.absent} faltas`,
-      ip: extractIp(request),
-    });
 
     return NextResponse.json({ summary: result.value });
   } catch (error) {

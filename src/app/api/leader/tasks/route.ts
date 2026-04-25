@@ -41,6 +41,7 @@ export async function GET(request: Request) {
 
     await writeAuditLog({
       userId: user.userId,
+      churchId: user.churchId,
       action: "read",
       resource: "task",
       resourceId: user.userId,

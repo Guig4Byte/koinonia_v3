@@ -3,6 +3,7 @@ import { domainErrorResponse, serverErrorResponse } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/get-current-user";
 import { requireRole } from "@/lib/role-guard";
 import prisma from "@/lib/prisma";
+import { writeAuditLog, extractIp } from "@/app/api/_helpers/audit-log";
 
 export async function GET(request: Request) {
   try {
@@ -92,6 +93,16 @@ export async function GET(request: Request) {
       },
       orderBy: { scheduledAt: "desc" },
       take: 10,
+    });
+
+    await writeAuditLog({
+      userId: user.userId,
+      churchId: user.churchId,
+      action: "read",
+      resource: "person",
+      resourceId: "pastor-search",
+      details: `Busca global por "${q}" (${people.length} pessoas, ${groups.length} células, ${events.length} eventos)`,
+      ip: extractIp(request),
     });
 
     return NextResponse.json({

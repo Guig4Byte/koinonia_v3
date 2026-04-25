@@ -1,6 +1,9 @@
 import type { Person } from "@/domain/entities/person.entity";
 import type { PersonRepository } from "@/domain/repositories/person.repository";
 import prisma from "@/lib/prisma";
+import type { Prisma, PrismaClient } from "@prisma/client";
+
+type PersonPrismaClient = PrismaClient | Prisma.TransactionClient;
 
 function toDomainPerson(prismaPerson: {
   id: string;
@@ -27,15 +30,17 @@ function toDomainPerson(prismaPerson: {
 }
 
 export class PersonPrismaRepository implements PersonRepository {
+  constructor(private readonly client: PersonPrismaClient = prisma) {}
+
   async findById(id: string): Promise<Person | null> {
-    const person = await prisma.person.findFirst({
+    const person = await this.client.person.findFirst({
       where: { id, deletedAt: null },
     });
     return person ? toDomainPerson(person) : null;
   }
 
   async findByChurch(churchId: string): Promise<readonly Person[]> {
-    const people = await prisma.person.findMany({
+    const people = await this.client.person.findMany({
       where: { churchId, deletedAt: null },
       orderBy: { name: "asc" },
     });
@@ -43,7 +48,7 @@ export class PersonPrismaRepository implements PersonRepository {
   }
 
   async findByGroup(groupId: string): Promise<readonly Person[]> {
-    const memberships = await prisma.membership.findMany({
+    const memberships = await this.client.membership.findMany({
       where: { groupId, leftAt: null, person: { deletedAt: null } },
       include: { person: true },
       orderBy: { person: { name: "asc" } },
@@ -56,7 +61,7 @@ export class PersonPrismaRepository implements PersonRepository {
     query: string,
     limit = 20,
   ): Promise<readonly Person[]> {
-    const people = await prisma.person.findMany({
+    const people = await this.client.person.findMany({
       where: {
         churchId,
         deletedAt: null,
@@ -69,7 +74,7 @@ export class PersonPrismaRepository implements PersonRepository {
   }
 
   async findByUser(userId: string): Promise<Person | null> {
-    const user = await prisma.user.findFirst({
+    const user = await this.client.user.findFirst({
       where: { id: userId, deletedAt: null },
       include: { person: true },
     });

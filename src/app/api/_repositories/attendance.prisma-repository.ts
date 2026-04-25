@@ -1,6 +1,9 @@
 import type { Attendance } from "@/domain/entities/attendance.entity";
 import type { AttendanceRepository } from "@/domain/repositories/attendance.repository";
 import prisma from "@/lib/prisma";
+import type { Prisma, PrismaClient } from "@prisma/client";
+
+type AttendancePrismaClient = PrismaClient | Prisma.TransactionClient;
 
 function toDomainAttendance(prismaAttendance: {
   id: string;
@@ -20,9 +23,17 @@ function toDomainAttendance(prismaAttendance: {
   };
 }
 
+function supportsTransaction(
+  client: AttendancePrismaClient,
+): client is PrismaClient {
+  return "$transaction" in client;
+}
+
 export class AttendancePrismaRepository implements AttendanceRepository {
+  constructor(private readonly client: AttendancePrismaClient = prisma) {}
+
   async findByEvent(eventId: string): Promise<readonly Attendance[]> {
-    const attendances = await prisma.attendance.findMany({
+    const attendances = await this.client.attendance.findMany({
       where: {
         eventId,
         event: { deletedAt: null },
@@ -36,7 +47,7 @@ export class AttendancePrismaRepository implements AttendanceRepository {
     personId: string,
     limit = 20,
   ): Promise<readonly Attendance[]> {
-    const attendances = await prisma.attendance.findMany({
+    const attendances = await this.client.attendance.findMany({
       where: {
         personId,
         person: { deletedAt: null },
@@ -56,8 +67,8 @@ export class AttendancePrismaRepository implements AttendanceRepository {
       readonly present: boolean;
     }>;
   }): Promise<void> {
-    await prisma.$transaction(async (tx) => {
-      await tx.event.updateMany({
+    const register = async (client: Prisma.TransactionClient) => {
+      await client.event.updateMany({
         where: {
           id: input.eventId,
           deletedAt: null,
@@ -67,7 +78,7 @@ export class AttendancePrismaRepository implements AttendanceRepository {
       });
 
       for (const attendance of input.attendances) {
-        await tx.attendance.upsert({
+        await client.attendance.upsert({
           where: {
             eventId_personId: {
               eventId: input.eventId,
@@ -82,6 +93,13 @@ export class AttendancePrismaRepository implements AttendanceRepository {
           },
         });
       }
-    });
+    };
+
+    if (supportsTransaction(this.client)) {
+      await this.client.$transaction(register);
+      return;
+    }
+
+    await register(this.client);
   }
 }

@@ -1,51 +1,44 @@
 import { prisma } from "@/lib/prisma";
-import type { AuditAction, AuditResource } from "@prisma/client";
+import type { AuditAction, AuditResource, Prisma } from "@prisma/client";
 
 export interface AuditLogInput {
-  userId?: string;
-  churchId?: string;
+  userId: string;
+  churchId: string;
   action: AuditAction;
   resource: AuditResource;
   resourceId: string;
-  details?: string;
+  details?: string | null;
   ip?: string | null;
 }
 
-const AUDIT_TIMEOUT_MS = 500;
+type AuditClient = typeof prisma | Prisma.TransactionClient;
 
 /**
  * Grava um registro de auditoria de forma durável.
- * Usa timeout curto para não bloquear a resposta da API principal.
- * Falhas são logadas no stderr.
+ *
+ * Importante:
+ * - não usa "fire and forget";
+ * - não engole erro;
+ * - quem chama precisa dar await.
+ *
+ * Assim, leituras e alterações sensíveis não são consideradas concluídas
+ * se o registro de auditoria falhar.
  */
-export async function writeAuditLog(input: AuditLogInput): Promise<void> {
-  const timeout = new Promise<void>((_, reject) => {
-    setTimeout(() => reject(new Error("Audit log timeout")), AUDIT_TIMEOUT_MS);
+export async function writeAuditLog(
+  input: AuditLogInput,
+  client: AuditClient = prisma,
+): Promise<void> {
+  await client.auditLog.create({
+    data: {
+      userId: input.userId,
+      churchId: input.churchId,
+      action: input.action,
+      resource: input.resource,
+      resourceId: input.resourceId,
+      details: input.details ?? null,
+      ip: input.ip ?? null,
+    },
   });
-
-  const write = prisma.auditLog
-    .create({
-      data: {
-        userId: input.userId ?? null,
-        churchId: input.churchId ?? null,
-        action: input.action,
-        resource: input.resource,
-        resourceId: input.resourceId,
-        details: input.details ?? null,
-        ip: input.ip ?? null,
-      },
-    })
-    .then(() => undefined)
-    .catch((error: unknown) => {
-      console.error("[AUDIT] Falha ao gravar log:", error);
-      throw error;
-    });
-
-  try {
-    await Promise.race([write, timeout]);
-  } catch {
-    // Falha de audit não quebra a API, mas já foi logada no stderr
-  }
 }
 
 /**

@@ -1,6 +1,9 @@
 import type { Interaction } from "@/domain/entities/interaction.entity";
 import type { InteractionRepository } from "@/domain/repositories/interaction.repository";
 import prisma from "@/lib/prisma";
+import type { Prisma, PrismaClient } from "@prisma/client";
+
+type InteractionPrismaClient = PrismaClient | Prisma.TransactionClient;
 
 function toDomainInteraction(prismaInteraction: {
   id: string;
@@ -21,10 +24,12 @@ function toDomainInteraction(prismaInteraction: {
 }
 
 export class InteractionPrismaRepository implements InteractionRepository {
+  constructor(private readonly client: InteractionPrismaClient = prisma) {}
+
   async create(
     data: Omit<Interaction, "id" | "createdAt">,
   ): Promise<Interaction> {
-    const interaction = await prisma.interaction.create({
+    const interaction = await this.client.interaction.create({
       data: {
         personId: data.personId,
         authorId: data.authorId,
@@ -36,7 +41,7 @@ export class InteractionPrismaRepository implements InteractionRepository {
   }
 
   async findByPerson(personId: string): Promise<readonly Interaction[]> {
-    const interactions = await prisma.interaction.findMany({
+    const interactions = await this.client.interaction.findMany({
       where: { personId },
       orderBy: { createdAt: "desc" },
     });
@@ -44,7 +49,7 @@ export class InteractionPrismaRepository implements InteractionRepository {
   }
 
   async findByAuthor(authorId: string): Promise<readonly Interaction[]> {
-    const interactions = await prisma.interaction.findMany({
+    const interactions = await this.client.interaction.findMany({
       where: { authorId },
       orderBy: { createdAt: "desc" },
     });
@@ -52,7 +57,7 @@ export class InteractionPrismaRepository implements InteractionRepository {
   }
 
   async findLastByPerson(personId: string): Promise<Interaction | null> {
-    const interaction = await prisma.interaction.findFirst({
+    const interaction = await this.client.interaction.findFirst({
       where: { personId },
       orderBy: { createdAt: "desc" },
     });

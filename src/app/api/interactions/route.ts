@@ -43,22 +43,33 @@ export async function POST(request: Request) {
       return domainErrorResponse("UNAUTHORIZED");
     }
 
-    const interactionRepository = new InteractionPrismaRepository();
+    const interaction = await prisma.$transaction(async (tx) => {
+      const interactionRepository = new InteractionPrismaRepository(tx);
 
-    const interaction = await createInteractionUseCase(interactionRepository, {
-      personId: parsedBody.data.personId,
-      authorId: user.personId,
-      kind: parsedBody.data.kind,
-      content: parsedBody.data.content,
-    });
+      const createdInteraction = await createInteractionUseCase(
+        interactionRepository,
+        {
+          personId: parsedBody.data.personId,
+          authorId: user.personId,
+          kind: parsedBody.data.kind,
+          content: parsedBody.data.content,
+        },
+      );
 
-    await writeAuditLog({
-      userId: user.userId,
-      action: "create",
-      resource: "interaction",
-      resourceId: interaction.id,
-      details: `Interação do tipo ${interaction.kind}`,
-      ip: extractIp(request),
+      await writeAuditLog(
+        {
+          userId: user.userId,
+          churchId: user.churchId,
+          action: "create",
+          resource: "interaction",
+          resourceId: createdInteraction.id,
+          details: `Interação do tipo ${createdInteraction.kind}`,
+          ip: extractIp(request),
+        },
+        tx,
+      );
+
+      return createdInteraction;
     });
 
     return NextResponse.json({ interaction }, { status: 201 });

@@ -1,6 +1,9 @@
 import type { Event } from "@/domain/entities/event.entity";
 import type { EventRepository } from "@/domain/repositories/event.repository";
 import prisma from "@/lib/prisma";
+import type { Prisma, PrismaClient } from "@prisma/client";
+
+type EventPrismaClient = PrismaClient | Prisma.TransactionClient;
 
 function toDomainEvent(prismaEvent: {
   id: string;
@@ -25,15 +28,17 @@ function toDomainEvent(prismaEvent: {
 }
 
 export class EventPrismaRepository implements EventRepository {
+  constructor(private readonly client: EventPrismaClient = prisma) {}
+
   async findById(id: string): Promise<Event | null> {
-    const event = await prisma.event.findFirst({
+    const event = await this.client.event.findFirst({
       where: { id, deletedAt: null, group: { deletedAt: null } },
     });
     return event ? toDomainEvent(event) : null;
   }
 
   async findByGroup(groupId: string): Promise<readonly Event[]> {
-    const events = await prisma.event.findMany({
+    const events = await this.client.event.findMany({
       where: { groupId, deletedAt: null, group: { deletedAt: null } },
       orderBy: { scheduledAt: "desc" },
     });
@@ -41,7 +46,7 @@ export class EventPrismaRepository implements EventRepository {
   }
 
   async findByChurch(churchId: string): Promise<readonly Event[]> {
-    const events = await prisma.event.findMany({
+    const events = await this.client.event.findMany({
       where: { group: { churchId, deletedAt: null }, deletedAt: null },
       orderBy: { scheduledAt: "desc" },
     });
@@ -49,7 +54,7 @@ export class EventPrismaRepository implements EventRepository {
   }
 
   async findUpcomingByGroup(groupId: string): Promise<readonly Event[]> {
-    const events = await prisma.event.findMany({
+    const events = await this.client.event.findMany({
       where: {
         groupId,
         deletedAt: null,

@@ -202,7 +202,15 @@ describe("Integração: Auth", () => {
 });
 
 describe("Integração: Busca de Pessoas", () => {
-  it("pastor busca membro por nome e encontra", async () => {
+  it("pastor busca membro por nome, encontra e gera audit log completo", async () => {
+    await prisma.auditLog.deleteMany({
+      where: {
+        resource: "person",
+        resourceId: "search",
+        userId: ctx.pastor.userId,
+      },
+    });
+
     const request = createTestRequest({
       url: "http://localhost/api/people?search=Membro",
       method: "GET",
@@ -216,6 +224,24 @@ describe("Integração: Busca de Pessoas", () => {
     expect(response.status).toBe(200);
     expect(data.people).toHaveLength(1);
     expect(data.people[0]?.name).toBe("Membro Teste");
+
+    const auditLog = await prisma.auditLog.findFirst({
+      where: {
+        resource: "person",
+        resourceId: "search",
+        userId: ctx.pastor.userId,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    expect(auditLog).toMatchObject({
+      userId: ctx.pastor.userId,
+      churchId: ctx.churchId,
+      action: "read",
+      resource: "person",
+      resourceId: "search",
+    });
+    expect(auditLog?.details).toContain("Busca por");
   });
 
   it("busca sem token retorna 401", async () => {
@@ -451,8 +477,8 @@ describe("Integração: Registro de Presença", () => {
     expect(response.status).toBe(200);
   });
 
-  it("registro de presença gera audit log", async () => {
-    const beforeCount = await prisma.auditLog.count({
+  it("registro de presença gera audit log durável e verificável", async () => {
+    await prisma.auditLog.deleteMany({
       where: { resource: "attendance", resourceId: ctx.eventId },
     });
 
@@ -466,17 +492,25 @@ describe("Integração: Registro de Presença", () => {
       },
     });
 
-    await postAttendance(request, {
+    const response = await postAttendance(request, {
       params: Promise.resolve({ id: ctx.eventId }),
     });
 
-    await new Promise((r) => setTimeout(r, 200));
+    expect(response.status).toBe(200);
 
-    const afterCount = await prisma.auditLog.count({
+    const auditLog = await prisma.auditLog.findFirst({
       where: { resource: "attendance", resourceId: ctx.eventId },
+      orderBy: { createdAt: "desc" },
     });
 
-    expect(afterCount).toBeGreaterThanOrEqual(beforeCount);
+    expect(auditLog).toMatchObject({
+      userId: ctx.leader.userId,
+      churchId: ctx.churchId,
+      action: "create",
+      resource: "attendance",
+      resourceId: ctx.eventId,
+    });
+    expect(auditLog?.details).toContain("Registro de presença");
   });
 
   it("não permite registrar presença de pessoa de outro grupo", async () => {

@@ -35,21 +35,28 @@ export async function PATCH(
       return domainErrorResponse("UNAUTHORIZED");
     }
 
-    const updated = await prisma.task.update({
-      where: { id },
-      data: {
-        completedAt: task.completedAt ? null : new Date(),
-      },
-    });
+    const updated = await prisma.$transaction(async (tx) => {
+      const updatedTask = await tx.task.update({
+        where: { id },
+        data: {
+          completedAt: task.completedAt ? null : new Date(),
+        },
+      });
 
-    await writeAuditLog({
-      userId: user.userId,
-      churchId: user.churchId,
-      action: "update",
-      resource: "task",
-      resourceId: id,
-      details: task.completedAt ? "Task reaberta" : "Task concluída",
-      ip: extractIp(request),
+      await writeAuditLog(
+        {
+          userId: user.userId,
+          churchId: user.churchId,
+          action: "update",
+          resource: "task",
+          resourceId: id,
+          details: task.completedAt ? "Task reaberta" : "Task concluída",
+          ip: extractIp(request),
+        },
+        tx,
+      );
+
+      return updatedTask;
     });
 
     return NextResponse.json({ task: updated });
