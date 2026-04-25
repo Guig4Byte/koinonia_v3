@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query"
 import { apiRequestWithAuth } from "@/lib/api-client"
+import type { RiskLevel } from "@/types"
 
 export interface SupervisorGroupMember {
   id: string
   name: string
   photoUrl: string | null
-  riskLevel: string | null
+  riskLevel: RiskLevel | null
   lastInteractionDays: number | null
 }
 

@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query"
 import { apiRequestWithAuth } from "@/lib/api-client"
+import type { RiskLevel } from "@/types"
 
 export interface SharedMemberProfile {
   person: {
@@ -10,7 +11,7 @@ export interface SharedMemberProfile {
     phone: string | null
     photoUrl: string | null
     birthDate: string | null
-    riskLevel: string | null
+    riskLevel: RiskLevel | null
     riskScore: number | null
     groupName: string | null
     groupId: string | null

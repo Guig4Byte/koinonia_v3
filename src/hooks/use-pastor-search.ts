@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { apiRequestWithAuth } from "@/lib/api-client"
+import type { RiskLevel } from "@/types"
 
 export interface SearchResult {
   people: Array<{
@@ -7,7 +8,7 @@ export interface SearchResult {
     name: string
     phone: string | null
     photoUrl: string | null
-    riskLevel: string | null
+    riskLevel: RiskLevel | null
     groupName: string | null
     groupId: string | null
   }>

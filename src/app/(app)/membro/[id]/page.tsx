@@ -5,11 +5,12 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useMe } from "@/hooks/use-auth"
 import { useSharedMemberProfile } from "@/hooks/use-shared-member-profile"
+import type { RiskLevel } from "@/types"
 import { ArrowLeft, Phone, Calendar, Users, AlertTriangle, CheckCircle2, XCircle, MessageSquare } from "lucide-react"
 
 
 
-function riskLabel(level: string | null) {
+function riskLabel(level: RiskLevel | null) {
   switch (level) {
     case "green": return "Baixo"
     case "yellow": return "Médio"
@@ -18,7 +19,7 @@ function riskLabel(level: string | null) {
   }
 }
 
-function riskColor(level: string | null) {
+function riskColor(level: RiskLevel | null) {
   switch (level) {
     case "green": return "text-emerald-600"
     case "yellow": return "text-yellow-600"

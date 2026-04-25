@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query"
 import { apiRequestWithAuth } from "@/lib/api-client"
+import type { RiskLevel } from "@/types"
 
 export interface AttendanceItem {
   eventId: string
@@ -23,7 +24,7 @@ export interface MemberProfile {
   name: string
   photoUrl: string | null
   phone: string | null
-  riskLevel: "green" | "yellow" | "red" | null
+  riskLevel: RiskLevel | null
   riskScore: number | null
   riskReasons: string[]
   tags: string[]

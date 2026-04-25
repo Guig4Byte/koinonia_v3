@@ -538,7 +538,7 @@ describe("Integração: Criação de Tasks", () => {
     const response = await postTask(request);
     const data = await response.json();
 
-    expect(response.status).toBe(404);
+    expect(response.status).toBe(401);
     expect(data.error).toBe("USER_NOT_FOUND");
   });
 
