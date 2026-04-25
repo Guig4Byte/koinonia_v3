@@ -26,13 +26,15 @@ function toDomainEvent(prismaEvent: {
 
 export class EventPrismaRepository implements EventRepository {
   async findById(id: string): Promise<Event | null> {
-    const event = await prisma.event.findUnique({ where: { id } });
+    const event = await prisma.event.findFirst({
+      where: { id, deletedAt: null },
+    });
     return event ? toDomainEvent(event) : null;
   }
 
   async findByGroup(groupId: string): Promise<readonly Event[]> {
     const events = await prisma.event.findMany({
-      where: { groupId },
+      where: { groupId, deletedAt: null },
       orderBy: { scheduledAt: "desc" },
     });
     return events.map(toDomainEvent);
@@ -40,18 +42,17 @@ export class EventPrismaRepository implements EventRepository {
 
   async findByChurch(churchId: string): Promise<readonly Event[]> {
     const events = await prisma.event.findMany({
-      where: { group: { churchId } },
+      where: { group: { churchId }, deletedAt: null },
       orderBy: { scheduledAt: "desc" },
     });
     return events.map(toDomainEvent);
   }
 
-  async findUpcomingByGroup(
-    groupId: string,
-  ): Promise<readonly Event[]> {
+  async findUpcomingByGroup(groupId: string): Promise<readonly Event[]> {
     const events = await prisma.event.findMany({
       where: {
         groupId,
+        deletedAt: null,
         scheduledAt: { gte: new Date() },
       },
       orderBy: { scheduledAt: "asc" },

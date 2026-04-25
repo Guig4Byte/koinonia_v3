@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { apiRequest } from "@/lib/api-client"
-import { getStoredAccessToken } from "@/lib/auth-storage"
+import { apiRequestWithAuth } from "@/lib/api-client"
 
 export interface SupervisorProfileGroup {
   id: string
@@ -36,15 +35,8 @@ export function useSupervisorProfile(id: string) {
   return useQuery<SupervisorProfileData>({
     queryKey: ["pastor", "supervisor", id],
     queryFn: async () => {
-      const accessToken = getStoredAccessToken()
-      if (!accessToken) {
-        throw new Error("Não autenticado")
-      }
-      return apiRequest<SupervisorProfileData>(`/api/pastor/supervisors/${id}`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
+            return apiRequestWithAuth<SupervisorProfileData>(`/api/pastor/supervisors/${id}`, {
+        method: "GET"
       })
     },
     staleTime: 2 * 60 * 1000,

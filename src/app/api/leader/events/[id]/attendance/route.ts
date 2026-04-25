@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
-import {
-  domainErrorResponse,
-  serverErrorResponse,
-} from "@/lib/api-response";
+import { domainErrorResponse, serverErrorResponse } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/get-current-user";
 import prisma from "@/lib/prisma";
 import { writeAuditLog, extractIp } from "@/app/api/_helpers/audit-log";
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const user = getCurrentUser(request);
@@ -18,14 +15,18 @@ export async function GET(
       return domainErrorResponse("UNAUTHORIZED");
     }
 
-    if (user.role !== "leader" && user.role !== "pastor" && user.role !== "supervisor") {
+    if (
+      user.role !== "leader" &&
+      user.role !== "pastor" &&
+      user.role !== "supervisor"
+    ) {
       return domainErrorResponse("UNAUTHORIZED");
     }
 
     const { id: eventId } = await params;
 
-    const event = await prisma.event.findUnique({
-      where: { id: eventId },
+    const event = await prisma.event.findFirst({
+      where: { id: eventId, deletedAt: null },
       include: { group: true },
     });
 
@@ -38,6 +39,7 @@ export async function GET(
       where: {
         id: event.groupId,
         churchId: user.churchId,
+        deletedAt: null,
         ...(user.role === "leader" ? { leaderId: user.userId } : {}),
       },
     });
@@ -66,11 +68,15 @@ export async function GET(
       name: m.person.name,
       photoUrl: m.person.photoUrl,
       riskLevel: m.person.riskScore?.level ?? null,
-      present: m.person.attendances.length > 0 ? (m.person.attendances[0]?.present ?? null) : null,
+      present:
+        m.person.attendances.length > 0
+          ? (m.person.attendances[0]?.present ?? null)
+          : null,
     }));
 
-    writeAuditLog({
+    await writeAuditLog({
       userId: user.userId,
+      churchId: user.churchId,
       action: "read",
       resource: "attendance",
       resourceId: eventId,

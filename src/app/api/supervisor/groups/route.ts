@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  domainErrorResponse,
-  serverErrorResponse,
-} from "@/lib/api-response";
+import { domainErrorResponse, serverErrorResponse } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/get-current-user";
 import { requireRole } from "@/lib/role-guard";
 import prisma from "@/lib/prisma";
@@ -61,7 +58,7 @@ export async function GET(request: Request) {
       .filter((id): id is string => id !== null);
 
     const leaders = await prisma.user.findMany({
-      where: { id: { in: leaderIds } },
+      where: { id: { in: leaderIds }, deletedAt: null },
       select: { id: true, person: { select: { name: true } } },
     });
 
@@ -75,7 +72,7 @@ export async function GET(request: Request) {
       const atRiskCount = group.memberships.filter(
         (m) =>
           m.person.riskScore?.level === "red" ||
-          m.person.riskScore?.level === "yellow"
+          m.person.riskScore?.level === "yellow",
       ).length;
 
       let groupAttendances = 0;
@@ -91,7 +88,7 @@ export async function GET(request: Request) {
           : 0;
 
       const pastEvents = group.events.filter(
-        (e) => e.occurredAt && new Date(e.occurredAt) < now
+        (e) => e.occurredAt && new Date(e.occurredAt) < now,
       );
 
       const lastAttendanceRate =
@@ -99,7 +96,7 @@ export async function GET(request: Request) {
           ? Math.round(
               (pastEvents[0]!.attendances.filter((a) => a.present).length /
                 pastEvents[0]!.attendances.length) *
-                100
+                100,
             )
           : null;
 
@@ -118,12 +115,12 @@ export async function GET(request: Request) {
         lastAttendanceRate,
         hasUnregisteredAttendance,
         leaderName: group.leaderId
-          ? leaderNameMap.get(group.leaderId) ?? null
+          ? (leaderNameMap.get(group.leaderId) ?? null)
           : null,
       };
     });
 
-    writeAuditLog({
+    await writeAuditLog({
       userId: user.userId,
       action: "read",
       resource: "group",

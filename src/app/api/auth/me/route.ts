@@ -6,7 +6,9 @@ import { DomainErrors } from "@/domain/errors/domain-errors";
 
 export async function GET(request: Request) {
   try {
-    const accessToken = extractBearerToken(request.headers.get("authorization"));
+    const accessToken = extractBearerToken(
+      request.headers.get("authorization"),
+    );
 
     if (!accessToken) {
       return domainErrorResponse(DomainErrors.TOKEN_INVALID);

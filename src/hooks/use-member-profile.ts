@@ -1,8 +1,7 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { apiRequest } from "@/lib/api-client"
-import { getStoredAccessToken } from "@/lib/auth-storage"
+import { apiRequestWithAuth } from "@/lib/api-client"
 
 export interface AttendanceItem {
   eventId: string
@@ -44,15 +43,8 @@ export function useMemberProfile(memberId: string) {
   return useQuery({
     queryKey: memberProfileQueryKey(memberId),
     queryFn: async () => {
-      const accessToken = getStoredAccessToken()
-      if (!accessToken) {
-        throw new Error("Não autenticado")
-      }
-      return apiRequest<MemberProfileResponse>(`/api/leader/members/${memberId}`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
+            return apiRequestWithAuth<MemberProfileResponse>(`/api/leader/members/${memberId}`, {
+        method: "GET"
       })
     },
     enabled: !!memberId,

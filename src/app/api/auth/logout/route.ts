@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
-import { serverErrorResponse, validationErrorResponse } from "@/lib/api-response";
-import prisma from "@/lib/prisma";
+import {
+  domainErrorResponse,
+  invalidJsonResponse,
+  serverErrorResponse,
+  validationErrorResponse,
+} from "@/lib/api-response";
+import { logoutUser } from "@/lib/auth-service";
 import { logoutSchema } from "@/lib/validations/auth";
 
 export async function POST(request: Request) {
@@ -10,7 +15,7 @@ export async function POST(request: Request) {
     try {
       body = await request.json();
     } catch {
-      return NextResponse.json({ success: true });
+      return invalidJsonResponse();
     }
 
     const parsedBody = logoutSchema.safeParse(body);
@@ -19,11 +24,11 @@ export async function POST(request: Request) {
       return validationErrorResponse(parsedBody.error);
     }
 
-    await prisma.refreshToken.deleteMany({
-      where: {
-        token: parsedBody.data.refreshToken,
-      },
-    });
+    const result = await logoutUser(parsedBody.data);
+
+    if (result.isErr()) {
+      return domainErrorResponse(result.error);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

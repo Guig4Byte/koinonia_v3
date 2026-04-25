@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
-import {
-  domainErrorResponse,
-  serverErrorResponse,
-} from "@/lib/api-response";
+import { domainErrorResponse, serverErrorResponse } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/get-current-user";
 import prisma from "@/lib/prisma";
 import { writeAuditLog, extractIp } from "@/app/api/_helpers/audit-log";
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const user = getCurrentUser(request);
@@ -18,7 +15,11 @@ export async function GET(
       return domainErrorResponse("UNAUTHORIZED");
     }
 
-    if (user.role !== "leader" && user.role !== "pastor" && user.role !== "supervisor") {
+    if (
+      user.role !== "leader" &&
+      user.role !== "pastor" &&
+      user.role !== "supervisor"
+    ) {
       return domainErrorResponse("UNAUTHORIZED");
     }
 
@@ -27,6 +28,7 @@ export async function GET(
     const group = await prisma.group.findFirst({
       where: {
         churchId: user.churchId,
+        deletedAt: null,
         ...(user.role === "leader" ? { leaderId: user.userId } : {}),
       },
       orderBy: { name: "asc" },
@@ -45,8 +47,8 @@ export async function GET(
       return domainErrorResponse("UNAUTHORIZED");
     }
 
-    const person = await prisma.person.findUnique({
-      where: { id: personId },
+    const person = await prisma.person.findFirst({
+      where: { id: personId, deletedAt: null },
       include: {
         riskScore: true,
         tags: { include: { tag: true } },
@@ -70,12 +72,17 @@ export async function GET(
       },
     });
 
-    const attendanceTimeline = events.map((event) => ({
-      eventId: event.id,
-      eventName: event.eventType.name,
-      scheduledAt: event.scheduledAt,
-      present: event.attendances.length > 0 ? event.attendances[0]?.present ?? null : null,
-    })).reverse();
+    const attendanceTimeline = events
+      .map((event) => ({
+        eventId: event.id,
+        eventName: event.eventType.name,
+        scheduledAt: event.scheduledAt,
+        present:
+          event.attendances.length > 0
+            ? (event.attendances[0]?.present ?? null)
+            : null,
+      }))
+      .reverse();
 
     // Interações cronológicas
     const interactions = await prisma.interaction.findMany({
@@ -86,8 +93,9 @@ export async function GET(
       },
     });
 
-    writeAuditLog({
+    await writeAuditLog({
       userId: user.userId,
+      churchId: user.churchId,
       action: "read",
       resource: "person",
       resourceId: personId,

@@ -28,13 +28,15 @@ function toDomainPerson(prismaPerson: {
 
 export class PersonPrismaRepository implements PersonRepository {
   async findById(id: string): Promise<Person | null> {
-    const person = await prisma.person.findUnique({ where: { id } });
+    const person = await prisma.person.findFirst({
+      where: { id, deletedAt: null },
+    });
     return person ? toDomainPerson(person) : null;
   }
 
   async findByChurch(churchId: string): Promise<readonly Person[]> {
     const people = await prisma.person.findMany({
-      where: { churchId },
+      where: { churchId, deletedAt: null },
       orderBy: { name: "asc" },
     });
     return people.map(toDomainPerson);
@@ -42,7 +44,7 @@ export class PersonPrismaRepository implements PersonRepository {
 
   async findByGroup(groupId: string): Promise<readonly Person[]> {
     const memberships = await prisma.membership.findMany({
-      where: { groupId, leftAt: null },
+      where: { groupId, leftAt: null, person: { deletedAt: null } },
       include: { person: true },
       orderBy: { person: { name: "asc" } },
     });
@@ -57,6 +59,7 @@ export class PersonPrismaRepository implements PersonRepository {
     const people = await prisma.person.findMany({
       where: {
         churchId,
+        deletedAt: null,
         name: { contains: query, mode: "insensitive" },
       },
       take: limit,
@@ -66,10 +69,12 @@ export class PersonPrismaRepository implements PersonRepository {
   }
 
   async findByUser(userId: string): Promise<Person | null> {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
+    const user = await prisma.user.findFirst({
+      where: { id: userId, deletedAt: null },
       include: { person: true },
     });
-    return user?.person ? toDomainPerson(user.person) : null;
+    return user?.person && !user.person.deletedAt
+      ? toDomainPerson(user.person)
+      : null;
   }
 }

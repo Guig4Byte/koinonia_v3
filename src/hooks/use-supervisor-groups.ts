@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { apiRequest } from "@/lib/api-client"
-import { getStoredAccessToken } from "@/lib/auth-storage"
+import { apiRequestWithAuth } from "@/lib/api-client"
 
 export interface SupervisorGroup {
   id: string
@@ -23,15 +22,8 @@ export function useSupervisorGroups() {
   return useQuery<SupervisorGroupsResponse>({
     queryKey: supervisorGroupsQueryKey,
     queryFn: async () => {
-      const accessToken = getStoredAccessToken()
-      if (!accessToken) {
-        throw new Error("Não autenticado")
-      }
-      return apiRequest<SupervisorGroupsResponse>("/api/supervisor/groups", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
+            return apiRequestWithAuth<SupervisorGroupsResponse>("/api/supervisor/groups", {
+        method: "GET"
       })
     },
     staleTime: 2 * 60 * 1000,

@@ -1,8 +1,7 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { apiRequest } from "@/lib/api-client"
-import { getStoredAccessToken } from "@/lib/auth-storage"
+import { apiRequestWithAuth } from "@/lib/api-client"
 
 export interface LeaderEvent {
   id: string
@@ -24,15 +23,8 @@ export function useLeaderEvents() {
   return useQuery({
     queryKey: leaderEventsQueryKey,
     queryFn: async () => {
-      const accessToken = getStoredAccessToken()
-      if (!accessToken) {
-        throw new Error("Não autenticado")
-      }
-      return apiRequest<LeaderEventsResponse>("/api/leader/events", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
+            return apiRequestWithAuth<LeaderEventsResponse>("/api/leader/events", {
+        method: "GET"
       })
     },
   })

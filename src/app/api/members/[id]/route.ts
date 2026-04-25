@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
-import {
-  domainErrorResponse,
-  serverErrorResponse,
-} from "@/lib/api-response";
+import { domainErrorResponse, serverErrorResponse } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/get-current-user";
 import prisma from "@/lib/prisma";
 import { writeAuditLog, extractIp } from "@/app/api/_helpers/audit-log";
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const user = getCurrentUser(request);
@@ -62,8 +59,9 @@ export async function GET(
       return domainErrorResponse("PERSON_NOT_FOUND");
     }
 
-    writeAuditLog({
+    await writeAuditLog({
       userId: user.userId,
+      churchId: user.churchId,
       action: "read",
       resource: "person",
       resourceId: personId,

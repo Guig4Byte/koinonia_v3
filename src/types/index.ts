@@ -1,4 +1,10 @@
-export const APP_ROLES = ["pastor", "supervisor", "leader", "host", "member"] as const;
+export const APP_ROLES = [
+  "pastor",
+  "supervisor",
+  "leader",
+  "host",
+  "member",
+] as const;
 export const MEMBERSHIP_ROLES = ["member", "host"] as const;
 export const EVENT_KINDS = [
   "community_bond",
@@ -6,7 +12,13 @@ export const EVENT_KINDS = [
   "development",
   "commitment",
 ] as const;
-export const INTERACTION_KINDS = ["call", "whatsapp", "visit", "prayer", "note"] as const;
+export const INTERACTION_KINDS = [
+  "call",
+  "whatsapp",
+  "visit",
+  "prayer",
+  "note",
+] as const;
 export const NEED_KINDS = ["prayer", "social", "counseling"] as const;
 export const PRIORITIES = ["low", "medium", "high"] as const;
 export const TASK_TARGETS = ["person", "group", "leader"] as const;
@@ -60,6 +72,7 @@ export interface LoginResponse extends AuthTokens {
 
 export interface RefreshTokenResponse {
   accessToken: string;
+  refreshToken: string;
 }
 
 export interface MeResponse {

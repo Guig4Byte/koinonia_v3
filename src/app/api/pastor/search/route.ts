@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  domainErrorResponse,
-  serverErrorResponse,
-} from "@/lib/api-response";
+import { domainErrorResponse, serverErrorResponse } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/get-current-user";
 import { requireRole } from "@/lib/role-guard";
 import prisma from "@/lib/prisma";

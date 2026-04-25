@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { apiRequest } from "@/lib/api-client"
-import { getStoredAccessToken } from "@/lib/auth-storage"
+import { apiRequestWithAuth } from "@/lib/api-client"
 
 export interface PastorSupervisor {
   id: string
@@ -23,15 +22,8 @@ export function usePastorSupervisors() {
   return useQuery<PastorSupervisorsResponse>({
     queryKey: pastorSupervisorsQueryKey,
     queryFn: async () => {
-      const accessToken = getStoredAccessToken()
-      if (!accessToken) {
-        throw new Error("Não autenticado")
-      }
-      return apiRequest<PastorSupervisorsResponse>("/api/pastor/supervisors", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
+            return apiRequestWithAuth<PastorSupervisorsResponse>("/api/pastor/supervisors", {
+        method: "GET"
       })
     },
     staleTime: 2 * 60 * 1000,

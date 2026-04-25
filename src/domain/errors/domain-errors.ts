@@ -14,6 +14,8 @@ export const DomainErrors = {
   USER_ALREADY_EXISTS: 'USER_ALREADY_EXISTS',
   EMAIL_ALREADY_EXISTS: 'EMAIL_ALREADY_EXISTS',
   TASK_NOT_FOUND: 'TASK_NOT_FOUND',
+  INVALID_ATTENDEES: 'INVALID_ATTENDEES',
+  INVALID_TASK_TARGET: 'INVALID_TASK_TARGET',
 } as const
 
 export type DomainError = (typeof DomainErrors)[keyof typeof DomainErrors]

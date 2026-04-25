@@ -11,20 +11,18 @@ import { ArrowLeft, Phone, Calendar, Users, AlertTriangle, CheckCircle2, XCircle
 
 function riskLabel(level: string | null) {
   switch (level) {
-    case "low": return "Baixo"
-    case "medium": return "Médio"
-    case "high": return "Alto"
-    case "critical": return "Crítico"
+    case "green": return "Baixo"
+    case "yellow": return "Médio"
+    case "red": return "Alto"
     default: return "—"
   }
 }
 
 function riskColor(level: string | null) {
   switch (level) {
-    case "low": return "text-emerald-600"
-    case "medium": return "text-yellow-600"
-    case "high": return "text-orange-600"
-    case "critical": return "text-red-600"
+    case "green": return "text-emerald-600"
+    case "yellow": return "text-yellow-600"
+    case "red": return "text-red-600"
     default: return "text-[var(--text-muted)]"
   }
 }

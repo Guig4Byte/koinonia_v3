@@ -4,10 +4,12 @@ import { err, ok, type Result } from "neverthrow";
 import { DomainErrors, type DomainError } from "@/domain/errors/domain-errors";
 import {
   hashPassword,
+  hashRefreshToken,
   signAccessToken,
   signRefreshToken,
   verifyAccessTokenResult,
   verifyPassword,
+  verifyRefreshTokenHash,
   verifyRefreshTokenResult,
 } from "@/lib/auth";
 import prisma from "@/lib/prisma";
@@ -41,7 +43,8 @@ type SessionUserRecord = Prisma.UserGetPayload<{
 
 const refreshTokenSelect = {
   id: true,
-  token: true,
+  tokenId: true,
+  tokenHash: true,
   userId: true,
   expiresAt: true,
   user: {
@@ -73,11 +76,13 @@ function buildAccessTokenPayload(user: SessionUserRecord) {
 
 async function createSessionTokens(user: SessionUserRecord) {
   const accessToken = await signAccessToken(buildAccessTokenPayload(user));
-  const refreshToken = await signRefreshToken(user.id);
+  const refreshTokenResult = await signRefreshToken(user.id);
+  const tokenHash = await hashRefreshToken(refreshTokenResult.token);
 
   await prisma.refreshToken.create({
     data: {
-      token: refreshToken,
+      tokenId: refreshTokenResult.tokenId,
+      tokenHash,
       userId: user.id,
       expiresAt: new Date(Date.now() + refreshTokenLifetimeMs),
     },
@@ -85,7 +90,7 @@ async function createSessionTokens(user: SessionUserRecord) {
 
   return {
     accessToken,
-    refreshToken,
+    refreshToken: refreshTokenResult.token,
   };
 }
 
@@ -122,7 +127,10 @@ export async function loginUser(input: {
     return err(DomainErrors.USER_NOT_FOUND);
   }
 
-  const passwordMatches = await verifyPassword(input.password, user.passwordHash);
+  const passwordMatches = await verifyPassword(
+    input.password,
+    user.passwordHash,
+  );
 
   if (!passwordMatches) {
     return err(DomainErrors.INVALID_CREDENTIALS);
@@ -135,16 +143,22 @@ export async function loginUser(input: {
 
 export async function refreshAccessToken(input: {
   refreshToken: string;
-}): Promise<Result<RefreshTokenResponse, typeof DomainErrors.REFRESH_TOKEN_INVALID>> {
-  const verifiedRefreshToken = await verifyRefreshTokenResult(input.refreshToken);
+}): Promise<
+  Result<RefreshTokenResponse, typeof DomainErrors.REFRESH_TOKEN_INVALID>
+> {
+  const verifiedRefreshToken = await verifyRefreshTokenResult(
+    input.refreshToken,
+  );
 
   if (verifiedRefreshToken.isErr()) {
     return err(verifiedRefreshToken.error);
   }
 
+  const { userId, tokenId } = verifiedRefreshToken.value;
+
   const storedToken = await prisma.refreshToken.findUnique({
     where: {
-      token: input.refreshToken,
+      tokenId,
     },
     select: refreshTokenSelect,
   });
@@ -153,7 +167,7 @@ export async function refreshAccessToken(input: {
     return err(DomainErrors.REFRESH_TOKEN_INVALID);
   }
 
-  if (storedToken.expiresAt <= new Date() || storedToken.userId !== verifiedRefreshToken.value) {
+  if (storedToken.expiresAt <= new Date() || storedToken.userId !== userId) {
     await prisma.refreshToken.delete({
       where: {
         id: storedToken.id,
@@ -163,11 +177,65 @@ export async function refreshAccessToken(input: {
     return err(DomainErrors.REFRESH_TOKEN_INVALID);
   }
 
-  const accessToken = await signAccessToken(buildAccessTokenPayload(storedToken.user));
+  const hashMatches = await verifyRefreshTokenHash(
+    input.refreshToken,
+    storedToken.tokenHash,
+  );
+
+  if (!hashMatches) {
+    await prisma.refreshToken.delete({
+      where: {
+        id: storedToken.id,
+      },
+    });
+
+    return err(DomainErrors.REFRESH_TOKEN_INVALID);
+  }
+
+  // Rotação: deleta o token antigo e cria um novo
+  await prisma.refreshToken.delete({
+    where: {
+      id: storedToken.id,
+    },
+  });
+
+  const accessToken = await signAccessToken(
+    buildAccessTokenPayload(storedToken.user),
+  );
+  const newRefreshTokenResult = await signRefreshToken(storedToken.user.id);
+  const newTokenHash = await hashRefreshToken(newRefreshTokenResult.token);
+
+  await prisma.refreshToken.create({
+    data: {
+      tokenId: newRefreshTokenResult.tokenId,
+      tokenHash: newTokenHash,
+      userId: storedToken.user.id,
+      expiresAt: new Date(Date.now() + refreshTokenLifetimeMs),
+    },
+  });
 
   return ok({
     accessToken,
+    refreshToken: newRefreshTokenResult.token,
   });
+}
+
+export async function logoutUser(input: {
+  refreshToken: string;
+}): Promise<Result<void, typeof DomainErrors.REFRESH_TOKEN_INVALID>> {
+  const verified = await verifyRefreshTokenResult(input.refreshToken);
+
+  if (verified.isErr()) {
+    return err(verified.error);
+  }
+
+  await prisma.refreshToken.deleteMany({
+    where: {
+      tokenId: verified.value.tokenId,
+    },
+  });
+
+  return ok(undefined);
 }
 
 export async function getAuthenticatedUser(input: {
@@ -256,11 +324,13 @@ export async function onboardChurch(input: {
     });
 
     const accessToken = await signAccessToken(buildAccessTokenPayload(user));
-    const refreshToken = await signRefreshToken(user.id);
+    const refreshTokenResult = await signRefreshToken(user.id);
+    const tokenHash = await hashRefreshToken(refreshTokenResult.token);
 
     await transaction.refreshToken.create({
       data: {
-        token: refreshToken,
+        tokenId: refreshTokenResult.tokenId,
+        tokenHash,
         userId: user.id,
         expiresAt: new Date(Date.now() + refreshTokenLifetimeMs),
       },
@@ -268,7 +338,7 @@ export async function onboardChurch(input: {
 
     return createSessionResponse(user, {
       accessToken,
-      refreshToken,
+      refreshToken: refreshTokenResult.token,
     });
   });
 

@@ -34,8 +34,8 @@ export async function POST(request: Request) {
     }
 
     // Church scoping: só pode interagir com pessoas da própria igreja
-    const targetPerson = await prisma.person.findUnique({
-      where: { id: parsedBody.data.personId },
+    const targetPerson = await prisma.person.findFirst({
+      where: { id: parsedBody.data.personId, deletedAt: null },
       select: { churchId: true },
     });
 
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
       content: parsedBody.data.content,
     });
 
-    writeAuditLog({
+    await writeAuditLog({
       userId: user.userId,
       action: "create",
       resource: "interaction",

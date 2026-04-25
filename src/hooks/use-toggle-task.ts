@@ -1,8 +1,7 @@
 "use client"
 
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { apiRequest } from "@/lib/api-client"
-import { getStoredAccessToken } from "@/lib/auth-storage"
+import { apiRequestWithAuth } from "@/lib/api-client"
 import { leaderTasksQueryKey } from "./use-leader-tasks"
 
 export function useToggleTask() {
@@ -10,13 +9,8 @@ export function useToggleTask() {
 
   return useMutation({
     mutationFn: async (taskId: string) => {
-      const accessToken = getStoredAccessToken()
-      if (!accessToken) throw new Error("Não autenticado")
-      return apiRequest(`/api/tasks/${taskId}`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
+            return apiRequestWithAuth(`/api/tasks/${taskId}`, {
+        method: "PATCH"
       })
     },
     onSuccess: () => {

@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { domainErrorResponse, invalidJsonResponse, serverErrorResponse, validationErrorResponse } from "@/lib/api-response";
+import {
+  domainErrorResponse,
+  invalidJsonResponse,
+  serverErrorResponse,
+  validationErrorResponse,
+} from "@/lib/api-response";
 import { onboardChurch } from "@/lib/auth-service";
 import { onboardingSchema } from "@/lib/validations/auth";
 

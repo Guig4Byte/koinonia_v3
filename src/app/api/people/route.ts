@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  domainErrorResponse,
-  serverErrorResponse,
-} from "@/lib/api-response";
+import { domainErrorResponse, serverErrorResponse } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/get-current-user";
 import { PersonPrismaRepository } from "@/app/api/_repositories/person.prisma-repository";
 import { searchPeopleUseCase } from "@/domain/use-cases/dashboard/search-people.use-case";
@@ -20,7 +17,9 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const rawSearch = searchParams.get("search") ?? "";
 
-    const parsedQuery = searchPeopleQuerySchema.safeParse({ search: rawSearch });
+    const parsedQuery = searchPeopleQuerySchema.safeParse({
+      search: rawSearch,
+    });
 
     if (!parsedQuery.success) {
       return NextResponse.json(
@@ -36,7 +35,7 @@ export async function GET(request: Request) {
       limit: 20,
     });
 
-    writeAuditLog({
+    await writeAuditLog({
       userId: user.userId,
       action: "read",
       resource: "person",

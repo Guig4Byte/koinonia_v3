@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { apiRequest } from "@/lib/api-client"
-import { getStoredAccessToken } from "@/lib/auth-storage"
+import { apiRequestWithAuth } from "@/lib/api-client"
 
 export interface SupervisorDashboardAlert {
   id: string
@@ -43,15 +42,8 @@ export function useSupervisorDashboard() {
   return useQuery<SupervisorDashboardData>({
     queryKey: supervisorDashboardQueryKey,
     queryFn: async () => {
-      const accessToken = getStoredAccessToken()
-      if (!accessToken) {
-        throw new Error("Não autenticado")
-      }
-      return apiRequest<SupervisorDashboardData>("/api/supervisor/dashboard", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
+            return apiRequestWithAuth<SupervisorDashboardData>("/api/supervisor/dashboard", {
+        method: "GET"
       })
     },
     staleTime: 2 * 60 * 1000,

@@ -19,6 +19,8 @@ const domainStatusMap: Record<DomainError, number> = {
   USER_ALREADY_EXISTS: 409,
   EMAIL_ALREADY_EXISTS: 409,
   TASK_NOT_FOUND: 404,
+  INVALID_ATTENDEES: 400,
+  INVALID_TASK_TARGET: 400,
 };
 
 const domainMessageMap: Record<DomainError, string> = {
@@ -37,6 +39,8 @@ const domainMessageMap: Record<DomainError, string> = {
   USER_ALREADY_EXISTS: "Já existe um usuário com esses dados.",
   EMAIL_ALREADY_EXISTS: "Já existe um usuário com este e-mail.",
   TASK_NOT_FOUND: "Ação não encontrada.",
+  INVALID_ATTENDEES: "Um ou mais membros não pertencem ao grupo deste evento.",
+  INVALID_TASK_TARGET: "O alvo da tarefa não é válido.",
 };
 
 export function validationErrorResponse(error: ZodError) {

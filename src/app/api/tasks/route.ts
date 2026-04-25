@@ -63,11 +63,54 @@ export async function POST(request: Request) {
     }
 
     // Supervisor só pode criar tasks para grupos que supervisiona
-    if (
-      user.role === "supervisor" &&
-      group.supervisorId !== user.userId
-    ) {
+    if (user.role === "supervisor" && group.supervisorId !== user.userId) {
       return domainErrorResponse("UNAUTHORIZED");
+    }
+
+    // Verifica se o assignee pertence à mesma igreja
+    const assignee = await prisma.user.findFirst({
+      where: {
+        id: assigneeId,
+        churchId: user.churchId,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+
+    if (!assignee) {
+      return domainErrorResponse("USER_NOT_FOUND");
+    }
+
+    // Valida coerência de targetId com targetType
+    if (targetType === "person") {
+      const person = await prisma.person.findFirst({
+        where: { id: targetId, churchId: user.churchId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!person) {
+        return domainErrorResponse("INVALID_TASK_TARGET");
+      }
+    } else if (targetType === "group") {
+      const targetGroup = await prisma.group.findFirst({
+        where: { id: targetId, churchId: user.churchId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!targetGroup) {
+        return domainErrorResponse("INVALID_TASK_TARGET");
+      }
+    } else if (targetType === "leader") {
+      const leader = await prisma.user.findFirst({
+        where: {
+          id: targetId,
+          churchId: user.churchId,
+          role: "leader",
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+      if (!leader) {
+        return domainErrorResponse("INVALID_TASK_TARGET");
+      }
     }
 
     const task = await prisma.task.create({
@@ -81,7 +124,7 @@ export async function POST(request: Request) {
       },
     });
 
-    writeAuditLog({
+    await writeAuditLog({
       userId: user.userId,
       action: "create",
       resource: "task",

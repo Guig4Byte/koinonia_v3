@@ -4,7 +4,9 @@ import type { AppRole } from "@/types";
 export function requireRole(
   userRole: string,
   allowedRoles: readonly AppRole[],
-): { authorized: true } | { authorized: false; error: typeof DomainErrors.UNAUTHORIZED } {
+):
+  | { authorized: true }
+  | { authorized: false; error: typeof DomainErrors.UNAUTHORIZED } {
   if (allowedRoles.includes(userRole as AppRole)) {
     return { authorized: true };
   }

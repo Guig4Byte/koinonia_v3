@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  domainErrorResponse,
-  serverErrorResponse,
-} from "@/lib/api-response";
+import { domainErrorResponse, serverErrorResponse } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/get-current-user";
 import { GroupPrismaRepository } from "@/app/api/_repositories/group.prisma-repository";
 import { requireGroupAccess } from "@/app/api/_helpers/require-group-access";
@@ -33,8 +30,9 @@ export async function GET(
       return domainErrorResponse("GROUP_NOT_FOUND");
     }
 
-    writeAuditLog({
+    await writeAuditLog({
       userId: user.userId,
+      churchId: user.churchId,
       action: "read",
       resource: "group",
       resourceId: id,

@@ -53,6 +53,15 @@ export function updateStoredAccessToken(accessToken: string) {
   notifyAuthStorageChange();
 }
 
+export function updateStoredRefreshToken(refreshToken: string) {
+  if (!isBrowser()) {
+    return;
+  }
+
+  window.localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+  notifyAuthStorageChange();
+}
+
 export function clearStoredAuth() {
   if (!isBrowser()) {
     return;

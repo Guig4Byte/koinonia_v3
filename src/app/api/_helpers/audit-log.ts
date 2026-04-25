@@ -3,6 +3,7 @@ import type { AuditAction, AuditResource } from "@prisma/client";
 
 export interface AuditLogInput {
   userId?: string;
+  churchId?: string;
   action: AuditAction;
   resource: AuditResource;
   resourceId: string;
@@ -10,16 +11,23 @@ export interface AuditLogInput {
   ip?: string | null;
 }
 
+const AUDIT_TIMEOUT_MS = 500;
+
 /**
- * Grava um registro de auditoria de forma fire-and-forget.
- * Nunca bloqueia a resposta da API principal.
+ * Grava um registro de auditoria de forma durável.
+ * Usa timeout curto para não bloquear a resposta da API principal.
+ * Falhas são logadas no stderr.
  */
-export function writeAuditLog(input: AuditLogInput): void {
-  // Fire-and-forget: não usamos await aqui
-  prisma.auditLog
+export async function writeAuditLog(input: AuditLogInput): Promise<void> {
+  const timeout = new Promise<void>((_, reject) => {
+    setTimeout(() => reject(new Error("Audit log timeout")), AUDIT_TIMEOUT_MS);
+  });
+
+  const write = prisma.auditLog
     .create({
       data: {
         userId: input.userId ?? null,
+        churchId: input.churchId ?? null,
         action: input.action,
         resource: input.resource,
         resourceId: input.resourceId,
@@ -27,9 +35,17 @@ export function writeAuditLog(input: AuditLogInput): void {
         ip: input.ip ?? null,
       },
     })
-    .catch(() => {
-      // Silencioso: falha de audit não deve quebrar a API
+    .then(() => undefined)
+    .catch((error: unknown) => {
+      console.error("[AUDIT] Falha ao gravar log:", error);
+      throw error;
     });
+
+  try {
+    await Promise.race([write, timeout]);
+  } catch {
+    // Falha de audit não quebra a API, mas já foi logada no stderr
+  }
 }
 
 /**

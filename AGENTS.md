@@ -1,7 +1,7 @@
 # Koinonia — Instruções para Agentes de IA
 
-> **Projeto:** Koinonia v2.4 — PWA de gestão de células para igrejas
-> **Stack:** Next.js 16 + React 19 + TypeScript Strict + Tailwind CSS + Prisma + PostgreSQL
+> **Projeto:** Koinonia v2.5 — PWA de gestão de células para igrejas
+> **Stack:** Next.js 16.2.4 + React 19 + TypeScript Strict + Tailwind CSS + Prisma 6 + PostgreSQL
 > **Data da última atualização:** 24/04/2026
 
 ---
@@ -28,7 +28,30 @@ Regras não negociáveis para todo código escrito neste projeto:
 
 ---
 
-## 🏗️ Decisões Arquiteturais Críticas
+## 🏗️ Stack Definitiva
+
+```
+Frontend (Web + Mobile)  → Next.js 16.2.4 (App Router) + React 19
+Bundler dev              → Turbopack (npm run dev)
+Bundler prod             → Webpack (next-pwa requer webpack)
+Estilos                  → Tailwind CSS + variáveis CSS manuais
+Ícones                   → Lucide React
+Query/Cache              → TanStack Query
+Formulários              → React Hook Form + Zod
+Backend/API              → Next.js Route Handlers (API Routes)
+ORM                      → Prisma 6
+Banco                    → PostgreSQL (Neon)
+Auth                     → JWT (jose) + bcryptjs + Refresh Token
+Testes                   → Vitest + jsdom + Testing Library
+Deploy                   → Vercel + Neon
+PWA                      → next-pwa
+```
+
+**Requisito de ambiente:** Node.js 20 LTS+, npm 10+
+
+---
+
+## ⚠️ Decisões Arquiteturais Críticas
 
 ### Tema / Dark Mode
 - **Manual (sem `next-themes`)** — Script inline no `<head>` aplica classe `dark` antes do render
@@ -39,64 +62,53 @@ Regras não negociáveis para todo código escrito neste projeto:
 - **File MUST be `src/proxy.ts`** com `export async function proxy()` — Next.js 16 renomeou `middleware.ts` para `proxy.ts`
 - JWT em localStorage (access + refresh tokens)
 - Proxy injeta headers: `x-user-id`, `x-user-role`, `x-person-id`, `x-church-id`
+- `useLogin` faz redirect por role: pastor→`/pastor`, supervisor→`/supervisor`, leader→`/lider`
 
 ### Banco de Dados
 - Prisma + PostgreSQL (Neon)
 - **Nunca** rode `prisma migrate dev` sem confirmar com o usuário
 - Seed: `npx prisma db seed` — cria 3 usuários (senha: `koinonia123`)
+- Dados de seed: Roberto=pastor, Ana=supervisor, Bruno=leader, 3 grupos, 10 membros
 
 ### APIs
 - Todas as APIs de `/api/*` (exceto `/api/auth/*`) passam pelo proxy
 - Permission guards: `requireGroupAccess`, `requireEventAccess`
 - Audit logging: `writeAuditLog()` em todas as operações sensíveis
+- **Church scoping obrigatório** em todas as queries de dados
 
 ### Testes
 - Vitest + jsdom (32 tests passando)
-- **Sempre rode** `npm run typecheck`, `npm run build`, `npx vitest run` antes de considerar uma etapa concluída
+- **Sempre rode** `npm run build`, `npx vitest run` antes de considerar uma etapa concluída
 
 ---
 
-## 🌊 Roadmap por Ondas (v2.4)
-
-| # | Onda | Status | Descrição |
-|---|------|--------|-----------|
-| ✅ 0 | Fundação | Concluída | Config, Prisma, Tailwind, PWA base |
-| ✅ 1 | Autenticação | Concluída | Login, onboarding, JWT, proxy |
-| ✅ 2 | Domínio Core | Concluída | Entidades, repositórios, use cases |
-| ✅ 2.5 | Schema Evolution | Concluída | Tag, PersonTag, EventRecurrence, ConsentLog, AuditLog |
-| ✅ 3 | App Bruno (Líder) | **Concluída** | Visão, Membros, Perfil, Eventos, Presença, Ações, Tema, Search |
-| ✅ 4 | App Roberto (Pastor) | Concluída | Visão macro, Alertas automáticos, Busca global |
-| ⏳ 5 | App Roberto + Ana | Pendente | Equipe do pastor + Visão da supervisora |
-| ⏳ 6 | Motor de Risco v1 | Pendente | Scoring por regras (faltas, contato, etc.) |
-| ⏳ 7 | Playbooks + Polish | Pendente | Tasks automáticas, swipe "Orei", toast de oração |
-| ⏳ 8 | Analytics | Pendente | Dashboard desktop, gráficos, exportação CSV |
-| ⏳ 9 | PWA e Publicação | Pendente | App instalável, offline básico, Vercel |
-| ⏳ 10 | Recorrência | Pendente | Eventos recorrentes, job de geração |
-| ⏳ 11 | Notificações | Pendente | Push, email semanal |
-| ⏳ 12 | QR Check-in | Pendente | QR code por evento, geolocalização |
-
-**Prioridade estratégica:** Pastor (quem decide) → Supervisora (quem cobra) → Motor de Risco → Playbooks automáticos
-
----
-
-## 📁 Estrutura de Pastas Relevante
+## 🗂️ Estrutura de Pastas Relevante
 
 ```
 src/
   app/
-    (app)/           # Rotas autenticadas (lider, pastor, supervisor)
+    (app)/           # Rotas autenticadas (lider, pastor, supervisor, membro)
     (auth)/          # Login, onboarding
     api/             # API Routes
       leader/        # APIs do líder (dashboard, members, events, tasks)
-      pastor/        # APIs do pastor (dashboard, search)
-      tasks/         # APIs de tasks (PATCH para completar)
+      pastor/        # APIs do pastor (dashboard, search, supervisors)
+      supervisor/    # APIs da supervisora (dashboard, groups)
+      members/       # API compartilhada de perfil de membro (read-only)
+      tasks/         # APIs de tasks
   components/
     features/        # Componentes de domínio (MemberCard, PulseCard, RiskBadge)
-    layout/          # BottomNav, ThemeProvider
+    layout/          # BottomNav, ThemeProvider, RoleGuard
     pastor/          # Componentes do pastor (SummaryCard, AlertCard, GroupCard)
-  hooks/             # TanStack Query hooks (use-auth, use-leader-dashboard, use-pastor-dashboard, use-pastor-search)
+  hooks/             # TanStack Query hooks (use-auth, use-leader-dashboard, etc.)
   domain/            # Lógica pura (entities, repositories, use-cases)
+  lib/               # Utilitários (prisma, api-client, auth, etc.)
 ```
+
+**Rotas de persona:**
+- `/lider/*` — App do líder (Bruno)
+- `/pastor/*` — App do pastor (Roberto)
+- `/supervisor/*` — App da supervisora (Ana)
+- `/membro/[id]` — Tela compartilhada de perfil (acessível por todos os papéis)
 
 ---
 
@@ -131,7 +143,9 @@ Nunca use cores fixas do Tailwind (`text-stone-800`, `bg-white`) em novos compon
 - Nunca exponha `passwordHash` em nenhuma API
 - `AuditLog` registra TODAS as leituras e escritas em dados sensíveis
 - Pastor vê tudo. Supervisora vê suas células. Líder vê SÓ sua célula.
-- Sempre validar `groupId` pertence ao usuário logado antes de retornar dados
+- Sempre validar `churchId` antes de retornar dados
+- **CRITICAL FIX aplicado:** `leaderId` é `User.id`, não `Person.id`. Todas as APIs de permissão já foram corrigidas.
+- `RoleGuard` em todos os layouts de persona — redireciona não-autorizados
 
 ---
 
@@ -139,9 +153,20 @@ Nunca use cores fixas do Tailwind (`text-stone-800`, `bg-white`) em novos compon
 
 - **TypeScript strict:** `strict: true`, `exactOptionalPropertyTypes: true`
 - **Params é Promise** no Next.js 16: `async function Page({ params }: { params: Promise<{ id: string }> })`
-- **Hooks:** prefixo `use-`, TanStack Query com invalidação de cache
+- **Hooks:** prefixo `use-`, TanStack Query com invalidação de cache (`queryClient.clear()` no login/logout)
 - **APIs:** `route.ts` com try/catch, `domainErrorResponse` para erros conhecidos
 - **Componentes:** `export function Nome()` (não default, exceto pages)
+- **Requisições autenticadas:** Todas as chamadas de API devem incluir `Authorization: Bearer <token>` via `getStoredAccessToken()`
+
+---
+
+## 🚨 Checklist antes de entregar
+
+- [ ] `npm run build` passa com zero warnings
+- [ ] `npx vitest run` passa (32 tests)
+- [ ] TypeScript sem erros
+- [ ] Não quebrou nenhuma tela existente
+- [ ] Novos links apontam para rotas corretas
 
 ---
 

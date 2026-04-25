@@ -62,13 +62,25 @@ export async function setupIntegrationTest(): Promise<{
   // Criar pessoas
   const [pastorPerson, leaderPerson, memberPerson] = await Promise.all([
     prisma.person.create({
-      data: { churchId: church.id, name: "Pastor Teste", phone: "+55 11 99999-0001" },
+      data: {
+        churchId: church.id,
+        name: "Pastor Teste",
+        phone: "+55 11 99999-0001",
+      },
     }),
     prisma.person.create({
-      data: { churchId: church.id, name: "Líder Teste", phone: "+55 11 99999-0002" },
+      data: {
+        churchId: church.id,
+        name: "Líder Teste",
+        phone: "+55 11 99999-0002",
+      },
     }),
     prisma.person.create({
-      data: { churchId: church.id, name: "Membro Teste", phone: "+55 11 99999-0003" },
+      data: {
+        churchId: church.id,
+        name: "Membro Teste",
+        phone: "+55 11 99999-0003",
+      },
     }),
   ]);
 
@@ -124,8 +136,6 @@ export async function setupIntegrationTest(): Promise<{
       occurredAt: new Date(),
     },
   });
-
-
 
   // Gerar tokens
   const pastorToken = await signAccessToken({

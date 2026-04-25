@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  domainErrorResponse,
-  serverErrorResponse,
-} from "@/lib/api-response";
+import { domainErrorResponse, serverErrorResponse } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/get-current-user";
 import { requireRole } from "@/lib/role-guard";
 import { GroupPrismaRepository } from "@/app/api/_repositories/group.prisma-repository";
@@ -58,8 +55,9 @@ export async function GET(
       return domainErrorResponse(result.error);
     }
 
-    writeAuditLog({
+    await writeAuditLog({
       userId: user.userId,
+      churchId: user.churchId,
       action: "read",
       resource: "group",
       resourceId: id,

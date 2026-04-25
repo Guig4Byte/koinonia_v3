@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  domainErrorResponse,
-  serverErrorResponse,
-} from "@/lib/api-response";
+import { domainErrorResponse, serverErrorResponse } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/get-current-user";
 import { EventPrismaRepository } from "@/app/api/_repositories/event.prisma-repository";
 import { requireEventAccess } from "@/app/api/_helpers/require-event-access";
@@ -33,8 +30,9 @@ export async function GET(
       return domainErrorResponse("EVENT_NOT_FOUND");
     }
 
-    writeAuditLog({
+    await writeAuditLog({
       userId: user.userId,
+      churchId: user.churchId,
       action: "read",
       resource: "event",
       resourceId: id,

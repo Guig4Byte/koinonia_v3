@@ -1,8 +1,7 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { apiRequest } from "@/lib/api-client"
-import { getStoredAccessToken } from "@/lib/auth-storage"
+import { apiRequestWithAuth } from "@/lib/api-client"
 
 export interface LeaderDashboardMember {
   id: string
@@ -34,15 +33,8 @@ export function useLeaderDashboard() {
   return useQuery({
     queryKey: leaderDashboardQueryKey,
     queryFn: async () => {
-      const accessToken = getStoredAccessToken()
-      if (!accessToken) {
-        throw new Error("Não autenticado")
-      }
-      return apiRequest<LeaderDashboardResponse>("/api/leader/dashboard", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
+            return apiRequestWithAuth<LeaderDashboardResponse>("/api/leader/dashboard", {
+        method: "GET"
       })
     },
   })

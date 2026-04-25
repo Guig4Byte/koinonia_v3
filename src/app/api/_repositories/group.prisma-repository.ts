@@ -26,23 +26,23 @@ function toDomainGroup(prismaGroup: {
 
 export class GroupPrismaRepository implements GroupRepository {
   async findById(id: string): Promise<Group | null> {
-    const group = await prisma.group.findUnique({ where: { id } });
+    const group = await prisma.group.findFirst({
+      where: { id, deletedAt: null },
+    });
     return group ? toDomainGroup(group) : null;
   }
 
   async findByChurch(churchId: string): Promise<readonly Group[]> {
     const groups = await prisma.group.findMany({
-      where: { churchId },
+      where: { churchId, deletedAt: null },
       orderBy: { name: "asc" },
     });
     return groups.map(toDomainGroup);
   }
 
-  async findBySupervisor(
-    supervisorId: string,
-  ): Promise<readonly Group[]> {
+  async findBySupervisor(supervisorId: string): Promise<readonly Group[]> {
     const groups = await prisma.group.findMany({
-      where: { supervisorId },
+      where: { supervisorId, deletedAt: null },
       orderBy: { name: "asc" },
     });
     return groups.map(toDomainGroup);
@@ -50,7 +50,7 @@ export class GroupPrismaRepository implements GroupRepository {
 
   async findByLeader(leaderId: string): Promise<readonly Group[]> {
     const groups = await prisma.group.findMany({
-      where: { leaderId },
+      where: { leaderId, deletedAt: null },
       orderBy: { name: "asc" },
     });
     return groups.map(toDomainGroup);

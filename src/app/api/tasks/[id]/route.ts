@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
-import {
-  domainErrorResponse,
-  serverErrorResponse,
-} from "@/lib/api-response";
+import { domainErrorResponse, serverErrorResponse } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/get-current-user";
 import prisma from "@/lib/prisma";
 import { writeAuditLog, extractIp } from "@/app/api/_helpers/audit-log";
 
 export async function PATCH(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const user = getCurrentUser(request);
@@ -20,12 +17,18 @@ export async function PATCH(
 
     const { id } = await params;
 
-    const task = await prisma.task.findUnique({
-      where: { id },
+    const task = await prisma.task.findFirst({
+      where: { id, deletedAt: null },
+      include: { group: { select: { churchId: true } } },
     });
 
     if (!task) {
       return domainErrorResponse("TASK_NOT_FOUND");
+    }
+
+    // Church scoping: só pode acessar tasks da própria igreja
+    if (!task.group || task.group.churchId !== user.churchId) {
+      return domainErrorResponse("UNAUTHORIZED");
     }
 
     if (task.assigneeId !== user.userId && user.role !== "pastor") {
@@ -39,8 +42,9 @@ export async function PATCH(
       },
     });
 
-    writeAuditLog({
+    await writeAuditLog({
       userId: user.userId,
+      churchId: user.churchId,
       action: "update",
       resource: "task",
       resourceId: id,

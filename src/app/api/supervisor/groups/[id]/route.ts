@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  domainErrorResponse,
-  serverErrorResponse,
-} from "@/lib/api-response";
+import { domainErrorResponse, serverErrorResponse } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/get-current-user";
 import { requireRole } from "@/lib/role-guard";
 import prisma from "@/lib/prisma";
@@ -10,7 +7,7 @@ import { writeAuditLog, extractIp } from "@/app/api/_helpers/audit-log";
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const user = getCurrentUser(request);
@@ -71,8 +68,8 @@ export async function GET(
 
     // Busca líder
     const leader = group.leaderId
-      ? await prisma.user.findUnique({
-          where: { id: group.leaderId },
+      ? await prisma.user.findFirst({
+          where: { id: group.leaderId, deletedAt: null },
           select: { id: true, person: { select: { name: true } } },
         })
       : null;
@@ -99,7 +96,7 @@ export async function GET(
       const daysSinceContact = lastContact
         ? Math.floor(
             (now.getTime() - new Date(lastContact).getTime()) /
-              (1000 * 60 * 60 * 24)
+              (1000 * 60 * 60 * 24),
           )
         : null;
 
@@ -113,7 +110,7 @@ export async function GET(
     });
 
     const pastEvents = group.events.filter(
-      (e) => e.occurredAt && new Date(e.occurredAt) < now
+      (e) => e.occurredAt && new Date(e.occurredAt) < now,
     );
 
     const hasUnregisteredAttendance =
@@ -122,8 +119,9 @@ export async function GET(
       pastEvents[0]!.occurredAt &&
       new Date(pastEvents[0]!.occurredAt) < now;
 
-    writeAuditLog({
+    await writeAuditLog({
       userId: user.userId,
+      churchId: user.churchId,
       action: "read",
       resource: "group",
       resourceId: groupId,

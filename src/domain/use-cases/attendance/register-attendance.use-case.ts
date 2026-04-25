@@ -1,6 +1,7 @@
 import { err, ok, type Result } from "neverthrow";
 import type { AttendanceRepository } from "@/domain/repositories/attendance.repository";
 import type { EventRepository } from "@/domain/repositories/event.repository";
+import type { PersonRepository } from "@/domain/repositories/person.repository";
 import { DomainErrors } from "@/domain/errors/domain-errors";
 
 export interface AttendanceSummary {
@@ -13,15 +14,32 @@ export interface AttendanceSummary {
 export async function registerAttendanceUseCase(
   eventRepository: EventRepository,
   attendanceRepository: AttendanceRepository,
+  personRepository: PersonRepository,
   input: {
     eventId: string;
     attendances: ReadonlyArray<{ personId: string; present: boolean }>;
   },
-): Promise<Result<AttendanceSummary, typeof DomainErrors.EVENT_NOT_FOUND>> {
+): Promise<
+  Result<
+    AttendanceSummary,
+    typeof DomainErrors.EVENT_NOT_FOUND | typeof DomainErrors.INVALID_ATTENDEES
+  >
+> {
   const event = await eventRepository.findById(input.eventId);
 
   if (!event) {
     return err(DomainErrors.EVENT_NOT_FOUND);
+  }
+
+  const groupMembers = await personRepository.findByGroup(event.groupId);
+  const memberIds = new Set(groupMembers.map((m) => m.id));
+
+  const invalidPersonIds = input.attendances
+    .map((a) => a.personId)
+    .filter((personId) => !memberIds.has(personId));
+
+  if (invalidPersonIds.length > 0) {
+    return err(DomainErrors.INVALID_ATTENDEES);
   }
 
   await attendanceRepository.upsertMany(

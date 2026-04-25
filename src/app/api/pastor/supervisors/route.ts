@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  domainErrorResponse,
-  serverErrorResponse,
-} from "@/lib/api-response";
+import { domainErrorResponse, serverErrorResponse } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/get-current-user";
 import { requireRole } from "@/lib/role-guard";
 import prisma from "@/lib/prisma";
@@ -82,7 +79,7 @@ export async function GET(request: Request) {
 
     const result = supervisors.map((supervisor) => {
       const supervisedGroups = groups.filter(
-        (g) => g.supervisorId === supervisor.id
+        (g) => g.supervisorId === supervisor.id,
       );
 
       let totalMembers = 0;
@@ -138,7 +135,7 @@ export async function GET(request: Request) {
       };
     });
 
-    writeAuditLog({
+    await writeAuditLog({
       userId: user.userId,
       action: "read",
       resource: "person",

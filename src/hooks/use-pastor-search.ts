@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { apiRequest } from "@/lib/api-client"
-import { getStoredAccessToken } from "@/lib/auth-storage"
+import { apiRequestWithAuth } from "@/lib/api-client"
 
 export interface SearchResult {
   people: Array<{
@@ -33,17 +32,10 @@ export function usePastorSearch(query: string) {
   return useQuery<SearchResult>({
     queryKey: ["pastor", "search", query],
     queryFn: async () => {
-      const accessToken = getStoredAccessToken()
-      if (!accessToken) {
-        throw new Error("Não autenticado")
-      }
-      return apiRequest<SearchResult>(
+            return apiRequestWithAuth<SearchResult>(
         `/api/pastor/search?q=${encodeURIComponent(query)}`,
         {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
+          method: "GET"
         }
       )
     },

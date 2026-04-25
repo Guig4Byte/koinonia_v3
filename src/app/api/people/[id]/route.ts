@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  domainErrorResponse,
-  serverErrorResponse,
-} from "@/lib/api-response";
+import { domainErrorResponse, serverErrorResponse } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/get-current-user";
 import { PersonPrismaRepository } from "@/app/api/_repositories/person.prisma-repository";
 import { getPersonProfileUseCase } from "@/domain/use-cases/people/get-person-profile.use-case";
@@ -33,8 +30,9 @@ export async function GET(
       return domainErrorResponse("UNAUTHORIZED");
     }
 
-    writeAuditLog({
+    await writeAuditLog({
       userId: user.userId,
+      churchId: user.churchId,
       action: "read",
       resource: "person",
       resourceId: id,

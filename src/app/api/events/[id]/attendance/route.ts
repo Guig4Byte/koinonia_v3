@@ -9,6 +9,7 @@ import { getCurrentUser } from "@/lib/get-current-user";
 import { requireRole } from "@/lib/role-guard";
 import { EventPrismaRepository } from "@/app/api/_repositories/event.prisma-repository";
 import { AttendancePrismaRepository } from "@/app/api/_repositories/attendance.prisma-repository";
+import { PersonPrismaRepository } from "@/app/api/_repositories/person.prisma-repository";
 import { registerAttendanceUseCase } from "@/domain/use-cases/attendance/register-attendance.use-case";
 import { registerAttendanceSchema } from "@/lib/validations/events/event-id";
 import { requireEventAccess } from "@/app/api/_helpers/require-event-access";
@@ -57,10 +58,12 @@ export async function POST(
 
     const eventRepository = new EventPrismaRepository();
     const attendanceRepository = new AttendancePrismaRepository();
+    const personRepository = new PersonPrismaRepository();
 
     const result = await registerAttendanceUseCase(
       eventRepository,
       attendanceRepository,
+      personRepository,
       {
         eventId,
         attendances: parsedBody.data.attendances,
@@ -71,8 +74,9 @@ export async function POST(
       return domainErrorResponse(result.error);
     }
 
-    writeAuditLog({
+    await writeAuditLog({
       userId: user.userId,
+      churchId: user.churchId,
       action: "create",
       resource: "attendance",
       resourceId: eventId,

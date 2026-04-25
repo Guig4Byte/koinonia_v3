@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  domainErrorResponse,
-  serverErrorResponse,
-} from "@/lib/api-response";
+import { domainErrorResponse, serverErrorResponse } from "@/lib/api-response";
 import { getCurrentUser } from "@/lib/get-current-user";
 import { requireRole } from "@/lib/role-guard";
 import prisma from "@/lib/prisma";
@@ -10,7 +7,7 @@ import { writeAuditLog, extractIp } from "@/app/api/_helpers/audit-log";
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const user = getCurrentUser(request);
@@ -87,7 +84,7 @@ export async function GET(
       .filter((id): id is string => id !== null);
 
     const leaders = await prisma.user.findMany({
-      where: { id: { in: leaderIds } },
+      where: { id: { in: leaderIds }, deletedAt: null },
       select: { id: true, person: { select: { name: true } } },
     });
 
@@ -117,7 +114,7 @@ export async function GET(
       const members = group.memberships.map((m) => m.person);
       const memberCount = members.length;
       const atRiskMembers = members.filter(
-        (m) => m.riskScore?.level === "red" || m.riskScore?.level === "yellow"
+        (m) => m.riskScore?.level === "red" || m.riskScore?.level === "yellow",
       );
 
       let groupAttendances = 0;
@@ -133,7 +130,7 @@ export async function GET(
           : 0;
 
       const pastEvents = group.events.filter(
-        (e) => e.occurredAt && new Date(e.occurredAt) < now
+        (e) => e.occurredAt && new Date(e.occurredAt) < now,
       );
 
       return {
@@ -147,19 +144,20 @@ export async function GET(
             ? Math.round(
                 (pastEvents[0]!.attendances.filter((a) => a.present).length /
                   pastEvents[0]!.attendances.length) *
-                  100
+                  100,
               )
             : null,
         supervisorName: supervisor.person?.name ?? null,
         leaderName: group.leaderId
-          ? leaderNameMap.get(group.leaderId) ?? null
+          ? (leaderNameMap.get(group.leaderId) ?? null)
           : null,
         leaderId: group.leaderId,
       };
     });
 
-    writeAuditLog({
+    await writeAuditLog({
       userId: user.userId,
+      churchId: user.churchId,
       action: "read",
       resource: "person",
       resourceId: supervisorId,

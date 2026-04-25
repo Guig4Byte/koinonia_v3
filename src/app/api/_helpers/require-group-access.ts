@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { forbiddenResponse, serverErrorResponse } from "@/lib/api-response";
+import { hasPermission } from "@/lib/permissions";
 
 export interface AuthContext {
   userId: string;
@@ -11,10 +12,10 @@ export interface AuthContext {
 /**
  * Verifica se o usuário logado tem permissão para acessar um grupo específico.
  *
- * Regras:
- * - pastor: acesso a todos os grupos da igreja
- * - supervisor: acesso aos grupos onde é supervisor
- * - leader: acesso aos grupos onde é líder
+ * Regras (matriz RBAC):
+ * - pastor: acesso a todos os grupos da igreja (group:read:all)
+ * - supervisor: acesso aos grupos onde é supervisor (group:read:own)
+ * - leader: acesso aos grupos onde é líder (group:read:own)
  * - host/member: sem acesso
  */
 export async function requireGroupAccess(
@@ -35,16 +36,19 @@ export async function requireGroupAccess(
       return { ok: false, response: forbiddenResponse("IGREJA_DIFERENTE") };
     }
 
-    if (auth.role === "pastor") {
+    const role = auth.role as import("@/types").AppRole;
+
+    if (hasPermission(role, "group:read:all")) {
       return { ok: true };
     }
 
-    if (auth.role === "supervisor" && group.supervisorId === auth.userId) {
-      return { ok: true };
-    }
-
-    if (auth.role === "leader" && group.leaderId === auth.userId) {
-      return { ok: true };
+    if (hasPermission(role, "group:read:own")) {
+      if (role === "supervisor" && group.supervisorId === auth.userId) {
+        return { ok: true };
+      }
+      if (role === "leader" && group.leaderId === auth.userId) {
+        return { ok: true };
+      }
     }
 
     return { ok: false, response: forbiddenResponse("SEM_PERMISSAO") };

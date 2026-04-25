@@ -15,6 +15,8 @@ import {
   extractBearerToken,
   hashPassword,
   verifyPassword,
+  hashRefreshToken,
+  verifyRefreshTokenHash,
   signAccessToken,
   verifyAccessToken,
   verifyAccessTokenResult,
@@ -59,6 +61,27 @@ describe("hashPassword + verifyPassword", () => {
     const hash = await hashPassword(password);
 
     const isValid = await verifyPassword("senha-errada", hash);
+    expect(isValid).toBe(false);
+  });
+});
+
+describe("hashRefreshToken + verifyRefreshTokenHash", () => {
+  it("hasheia um refresh token e consegue verificar", async () => {
+    const token = "refresh-token-exemplo-123";
+    const hash = await hashRefreshToken(token);
+
+    expect(hash).not.toBe(token);
+    expect(hash).toMatch(/^\$2[aby]\$/);
+
+    const isValid = await verifyRefreshTokenHash(token, hash);
+    expect(isValid).toBe(true);
+  });
+
+  it("rejeita um refresh token incorreto", async () => {
+    const token = "refresh-token-correto";
+    const hash = await hashRefreshToken(token);
+
+    const isValid = await verifyRefreshTokenHash("refresh-token-errado", hash);
     expect(isValid).toBe(false);
   });
 });
@@ -128,33 +151,37 @@ describe("verifyAccessTokenResult", () => {
 });
 
 describe("signRefreshToken + verifyRefreshToken", () => {
-  it("gera um refresh token válido", async () => {
-    const token = await signRefreshToken("user-123");
-    expect(typeof token).toBe("string");
-    expect(token.split(".")).toHaveLength(3);
+  it("gera um refresh token válido com tokenId", async () => {
+    const result = await signRefreshToken("user-123");
+    expect(typeof result.token).toBe("string");
+    expect(typeof result.tokenId).toBe("string");
+    expect(result.token.split(".")).toHaveLength(3);
   });
 
-  it("verifica e retorna o userId de um refresh token válido", async () => {
-    const token = await signRefreshToken("user-123");
-    const userId = await verifyRefreshToken(token);
+  it("verifica e retorna userId e tokenId de um refresh token válido", async () => {
+    const result = await signRefreshToken("user-123");
+    const verified = await verifyRefreshToken(result.token);
 
-    expect(userId).toBe("user-123");
+    expect(verified).not.toBeNull();
+    expect(verified!.userId).toBe("user-123");
+    expect(verified!.tokenId).toBe(result.tokenId);
   });
 
   it("retorna null para um refresh token inválido", async () => {
-    const userId = await verifyRefreshToken("token-invalido");
-    expect(userId).toBeNull();
+    const verified = await verifyRefreshToken("token-invalido");
+    expect(verified).toBeNull();
   });
 });
 
 describe("verifyRefreshTokenResult", () => {
   it("retorna ok para refresh token válido", async () => {
-    const token = await signRefreshToken("user-456");
-    const result = await verifyRefreshTokenResult(token);
+    const result = await signRefreshToken("user-456");
+    const verified = await verifyRefreshTokenResult(result.token);
 
-    expect(result.isOk()).toBe(true);
-    if (result.isOk()) {
-      expect(result.value).toBe("user-456");
+    expect(verified.isOk()).toBe(true);
+    if (verified.isOk()) {
+      expect(verified.value.userId).toBe("user-456");
+      expect(verified.value.tokenId).toBe(result.tokenId);
     }
   });
 

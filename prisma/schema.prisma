@@ -28,7 +28,8 @@ model User {
 
 model RefreshToken {
   id        String   @id @default(cuid())
-  token     String   @unique
+  tokenId   String   @unique
+  tokenHash String
   userId    String
   expiresAt DateTime
   createdAt DateTime @default(now())
@@ -36,6 +37,7 @@ model RefreshToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([tokenId])
 }
 
 model Church {
@@ -294,6 +296,7 @@ model ConsentLog {
 model AuditLog {
   id         String        @id @default(cuid())
   userId     String?
+  churchId   String?
   action     AuditAction
   resource   AuditResource
   resourceId String
@@ -302,6 +305,7 @@ model AuditLog {
   createdAt  DateTime      @default(now())
 
   @@index([userId])
+  @@index([churchId])
   @@index([resource])
   @@index([resourceId])
   @@index([createdAt])
