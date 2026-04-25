@@ -1,8 +1,49 @@
 import { NextResponse } from "next/server";
 import { domainErrorResponse, serverErrorResponse } from "@/lib/api-response";
-import { getCurrentUser } from "@/lib/get-current-user";
+import { getCurrentUser, type CurrentUser } from "@/lib/get-current-user";
 import prisma from "@/lib/prisma";
 import { writeAuditLog, extractIp } from "@/app/api/_helpers/audit-log";
+
+type ActiveMembershipContext = {
+  group: {
+    id: string;
+    name: string;
+    leaderId: string | null;
+    supervisorId: string | null;
+  };
+};
+
+type MemberProfileScope = "full" | "self";
+
+function resolveMemberProfileScope(
+  user: CurrentUser,
+  personId: string,
+  memberships: ActiveMembershipContext[],
+): MemberProfileScope | null {
+  if (user.role === "pastor") {
+    return "full";
+  }
+
+  if (
+    user.role === "supervisor" &&
+    memberships.some((membership) => membership.group.supervisorId === user.userId)
+  ) {
+    return "full";
+  }
+
+  if (
+    user.role === "leader" &&
+    memberships.some((membership) => membership.group.leaderId === user.userId)
+  ) {
+    return "full";
+  }
+
+  if (user.personId === personId) {
+    return "self";
+  }
+
+  return null;
+}
 
 export async function GET(
   request: Request,
@@ -17,38 +58,30 @@ export async function GET(
 
     const { id: personId } = await params;
 
-    // Busca a pessoa com church scoping
-    const person = await prisma.person.findFirst({
+    const personAccess = await prisma.person.findFirst({
       where: {
         id: personId,
         churchId: user.churchId,
         deletedAt: null,
       },
-      include: {
-        riskScore: true,
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        photoUrl: true,
+        birthDate: true,
         memberships: {
-          where: { leftAt: null, group: { deletedAt: null } },
-          include: {
-            group: { select: { id: true, name: true } },
+          where: {
+            leftAt: null,
+            group: { deletedAt: null },
           },
-        },
-        interactionsAsSubject: {
-          orderBy: { createdAt: "desc" },
-          take: 10,
-          include: {
-            author: { select: { name: true } },
-          },
-        },
-        attendances: {
-          where: { event: { deletedAt: null, group: { deletedAt: null } } },
-          orderBy: { event: { scheduledAt: "desc" } },
-          take: 6,
-          include: {
-            event: {
+          select: {
+            group: {
               select: {
-                scheduledAt: true,
-                eventType: { select: { name: true } },
-                group: { select: { name: true } },
+                id: true,
+                name: true,
+                leaderId: true,
+                supervisorId: true,
               },
             },
           },
@@ -56,9 +89,50 @@ export async function GET(
       },
     });
 
-    if (!person) {
+    if (!personAccess) {
       return domainErrorResponse("PERSON_NOT_FOUND");
     }
+
+    const scope = resolveMemberProfileScope(user, personId, personAccess.memberships);
+
+    if (!scope) {
+      return domainErrorResponse("FORBIDDEN");
+    }
+
+    const attendances = await prisma.attendance.findMany({
+      where: {
+        personId,
+        event: { deletedAt: null, group: { deletedAt: null } },
+      },
+      orderBy: { event: { scheduledAt: "desc" } },
+      take: 6,
+      include: {
+        event: {
+          select: {
+            scheduledAt: true,
+            eventType: { select: { name: true } },
+            group: { select: { name: true } },
+          },
+        },
+      },
+    });
+
+    const sensitiveData =
+      scope === "full"
+        ? await prisma.person.findUnique({
+            where: { id: personId },
+            select: {
+              riskScore: true,
+              interactionsAsSubject: {
+                orderBy: { createdAt: "desc" },
+                take: 10,
+                include: {
+                  author: { select: { name: true } },
+                },
+              },
+            },
+          })
+        : null;
 
     await writeAuditLog({
       userId: user.userId,
@@ -66,33 +140,37 @@ export async function GET(
       action: "read",
       resource: "person",
       resourceId: personId,
-      details: "Perfil compartilhado do membro",
+      details:
+        scope === "full"
+          ? "Perfil compartilhado do membro com dados pastorais"
+          : "Perfil próprio do membro sem dados pastorais sensíveis",
       ip: extractIp(request),
     });
 
     return NextResponse.json({
       person: {
-        id: person.id,
-        name: person.name,
-        phone: person.phone,
-        photoUrl: person.photoUrl,
-        birthDate: person.birthDate,
-        riskLevel: person.riskScore?.level ?? null,
-        riskScore: person.riskScore?.score ?? null,
-        groupName: person.memberships[0]?.group.name ?? null,
-        groupId: person.memberships[0]?.group.id ?? null,
-        interactions: person.interactionsAsSubject.map((i) => ({
-          id: i.id,
-          kind: i.kind,
-          content: i.content,
-          createdAt: i.createdAt,
-          authorName: i.author.name,
-        })),
-        attendances: person.attendances.map((a) => ({
-          present: a.present,
-          eventDate: a.event.scheduledAt,
-          eventTypeName: a.event.eventType.name,
-          groupName: a.event.group.name,
+        id: personAccess.id,
+        name: personAccess.name,
+        phone: personAccess.phone,
+        photoUrl: personAccess.photoUrl,
+        birthDate: personAccess.birthDate,
+        riskLevel: sensitiveData?.riskScore?.level ?? null,
+        riskScore: sensitiveData?.riskScore?.score ?? null,
+        groupName: personAccess.memberships[0]?.group.name ?? null,
+        groupId: personAccess.memberships[0]?.group.id ?? null,
+        interactions:
+          sensitiveData?.interactionsAsSubject.map((interaction) => ({
+            id: interaction.id,
+            kind: interaction.kind,
+            content: interaction.content,
+            createdAt: interaction.createdAt,
+            authorName: interaction.author.name,
+          })) ?? [],
+        attendances: attendances.map((attendance) => ({
+          present: attendance.present,
+          eventDate: attendance.event.scheduledAt,
+          eventTypeName: attendance.event.eventType.name,
+          groupName: attendance.event.group.name,
         })),
       },
     });

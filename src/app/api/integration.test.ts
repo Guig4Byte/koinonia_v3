@@ -22,6 +22,7 @@ import { POST as postRefresh } from "./auth/refresh/route";
 import { POST as postLogout } from "./auth/logout/route";
 import { POST as postAttendance } from "./events/[id]/attendance/route";
 import { GET as getGroup } from "./groups/[id]/route";
+import { GET as getSharedMemberProfile } from "./members/[id]/route";
 import { POST as postTask } from "./tasks/route";
 
 let ctx: Awaited<ReturnType<typeof setupIntegrationTest>>;
@@ -496,6 +497,128 @@ describe("Integração: Registro de Presença", () => {
     expect(data.error).toBe("INVALID_ATTENDEES");
   });
 });
+
+describe("Integração: Perfil compartilhado de membro", () => {
+  it("líder acessa perfil de membro da sua célula", async () => {
+    const request = createTestRequest({
+      url: `http://localhost/api/members/${ctx.member.personId}`,
+      method: "GET",
+      token: ctx.leader.token,
+      user: ctx.leader,
+    });
+
+    const response = await getSharedMemberProfile(request, {
+      params: Promise.resolve({ id: ctx.member.personId }),
+    });
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.person.id).toBe(ctx.member.personId);
+    expect(data.person.phone).toBe("+55 11 99999-0003");
+  });
+
+  it("líder não acessa perfil de membro de outra célula da mesma igreja", async () => {
+    const otherLeaderPerson = await prisma.person.create({
+      data: { churchId: ctx.churchId, name: "Líder de outra célula" },
+    });
+    const otherLeaderUser = await prisma.user.create({
+      data: {
+        email: "lider-outra-celula@teste.org",
+        passwordHash: await hashPassword("teste123"),
+        role: "leader",
+        personId: otherLeaderPerson.id,
+        churchId: ctx.churchId,
+      },
+    });
+    const otherGroup = await prisma.group.create({
+      data: {
+        churchId: ctx.churchId,
+        name: "Outra Célula Protegida",
+        leaderId: otherLeaderUser.id,
+      },
+    });
+    const otherMember = await prisma.person.create({
+      data: { churchId: ctx.churchId, name: "Membro de outra célula" },
+    });
+    await prisma.membership.create({
+      data: {
+        personId: otherMember.id,
+        groupId: otherGroup.id,
+        role: "member",
+      },
+    });
+
+    const request = createTestRequest({
+      url: `http://localhost/api/members/${otherMember.id}`,
+      method: "GET",
+      token: ctx.leader.token,
+      user: ctx.leader,
+    });
+
+    const response = await getSharedMemberProfile(request, {
+      params: Promise.resolve({ id: otherMember.id }),
+    });
+
+    expect(response.status).toBe(403);
+  });
+
+  it("membro acessa apenas o próprio perfil sem risco e interações pastorais", async () => {
+    await prisma.riskScore.upsert({
+      where: { personId: ctx.member.personId },
+      create: {
+        personId: ctx.member.personId,
+        score: 80,
+        level: "red",
+        reasons: ["Teste sensível"],
+      },
+      update: {
+        score: 80,
+        level: "red",
+        reasons: ["Teste sensível"],
+      },
+    });
+    await prisma.interaction.create({
+      data: {
+        personId: ctx.member.personId,
+        authorId: ctx.leader.personId,
+        kind: "note",
+        content: "Interação pastoral sensível",
+      },
+    });
+
+    const memberUser = await prisma.user.create({
+      data: {
+        email: "membro-com-login@teste.org",
+        passwordHash: await hashPassword("teste123"),
+        role: "member",
+        personId: ctx.member.personId,
+        churchId: ctx.churchId,
+      },
+    });
+
+    const request = createTestRequest({
+      url: `http://localhost/api/members/${ctx.member.personId}`,
+      method: "GET",
+      user: {
+        userId: memberUser.id,
+        role: "member",
+        personId: ctx.member.personId,
+        churchId: ctx.churchId,
+      },
+    });
+
+    const response = await getSharedMemberProfile(request, {
+      params: Promise.resolve({ id: ctx.member.personId }),
+    });
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.person.riskLevel).toBeNull();
+    expect(data.person.riskScore).toBeNull();
+    expect(data.person.interactions).toHaveLength(0);
+  });
+});
+
 
 describe("Integração: Criação de Tasks", () => {
   it("rejeita task com assignee de outra igreja", async () => {
