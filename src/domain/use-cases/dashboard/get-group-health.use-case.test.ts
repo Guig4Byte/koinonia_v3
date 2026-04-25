@@ -51,7 +51,7 @@ function createMockAttendanceRepository(
   return {
     findByEvent: vi.fn(),
     findByPerson: vi.fn(),
-    upsertMany: vi.fn(),
+    registerForEvent: vi.fn(),
     ...overrides,
   };
 }

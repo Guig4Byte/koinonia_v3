@@ -37,37 +37,51 @@ export class AttendancePrismaRepository implements AttendanceRepository {
     limit = 20,
   ): Promise<readonly Attendance[]> {
     const attendances = await prisma.attendance.findMany({
-      where: { personId, person: { deletedAt: null }, event: { deletedAt: null } },
+      where: {
+        personId,
+        person: { deletedAt: null },
+        event: { deletedAt: null },
+      },
       take: limit,
       orderBy: { createdAt: "desc" },
     });
     return attendances.map(toDomainAttendance);
   }
 
-  async upsertMany(
-    attendances: ReadonlyArray<{
-      eventId: string;
-      personId: string;
-      present: boolean;
-    }>,
-  ): Promise<void> {
-    await prisma.$transaction(
-      attendances.map((a) =>
-        prisma.attendance.upsert({
+  async registerForEvent(input: {
+    readonly eventId: string;
+    readonly occurredAt: Date;
+    readonly attendances: ReadonlyArray<{
+      readonly personId: string;
+      readonly present: boolean;
+    }>;
+  }): Promise<void> {
+    await prisma.$transaction(async (tx) => {
+      await tx.event.updateMany({
+        where: {
+          id: input.eventId,
+          deletedAt: null,
+          occurredAt: null,
+        },
+        data: { occurredAt: input.occurredAt },
+      });
+
+      for (const attendance of input.attendances) {
+        await tx.attendance.upsert({
           where: {
             eventId_personId: {
-              eventId: a.eventId,
-              personId: a.personId,
+              eventId: input.eventId,
+              personId: attendance.personId,
             },
           },
-          update: { present: a.present },
+          update: { present: attendance.present },
           create: {
-            eventId: a.eventId,
-            personId: a.personId,
-            present: a.present,
+            eventId: input.eventId,
+            personId: attendance.personId,
+            present: attendance.present,
           },
-        }),
-      ),
-    );
+        });
+      }
+    });
   }
 }

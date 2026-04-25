@@ -25,7 +25,7 @@ function createMockAttendanceRepository(
   return {
     findByEvent: vi.fn(),
     findByPerson: vi.fn(),
-    upsertMany: vi.fn(),
+    registerForEvent: vi.fn(),
     ...overrides,
   };
 }
@@ -43,15 +43,30 @@ function createMockPersonRepository(
   };
 }
 
+function createPerson(id: string) {
+  return {
+    id,
+    churchId: "c1",
+    name: id,
+    phone: null,
+    photoUrl: null,
+    birthDate: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    deletedAt: null,
+  };
+}
+
 describe("registerAttendanceUseCase", () => {
   it("registra presenças e retorna resumo", async () => {
+    const occurredAt = new Date("2024-01-10T19:00:00.000Z");
     const eventRepository = createMockEventRepository({
       findById: vi.fn().mockResolvedValue({
         id: "event-1",
         groupId: "group-1",
         eventTypeId: "type-1",
-        scheduledAt: new Date(),
-        occurredAt: new Date(),
+        scheduledAt: occurredAt,
+        occurredAt,
         notes: null,
         createdAt: new Date(),
         deletedAt: null,
@@ -59,16 +74,20 @@ describe("registerAttendanceUseCase", () => {
     });
 
     const attendanceRepository = createMockAttendanceRepository({
-      upsertMany: vi.fn().mockResolvedValue(undefined),
+      registerForEvent: vi.fn().mockResolvedValue(undefined),
     });
 
     const personRepository = createMockPersonRepository({
-      findByGroup: vi.fn().mockResolvedValue([
-        { id: "p1", churchId: "c1", name: "Ana", phone: null, photoUrl: null, birthDate: null, createdAt: new Date(), updatedAt: new Date(), deletedAt: null },
-        { id: "p2", churchId: "c1", name: "Bruno", phone: null, photoUrl: null, birthDate: null, createdAt: new Date(), updatedAt: new Date(), deletedAt: null },
-        { id: "p3", churchId: "c1", name: "Carlos", phone: null, photoUrl: null, birthDate: null, createdAt: new Date(), updatedAt: new Date(), deletedAt: null },
-      ]),
+      findByGroup: vi
+        .fn()
+        .mockResolvedValue([createPerson("p1"), createPerson("p2"), createPerson("p3")]),
     });
+
+    const attendances = [
+      { personId: "p1", present: true },
+      { personId: "p2", present: false },
+      { personId: "p3", present: true },
+    ];
 
     const result = await registerAttendanceUseCase(
       eventRepository,
@@ -76,20 +95,64 @@ describe("registerAttendanceUseCase", () => {
       personRepository,
       {
         eventId: "event-1",
-        attendances: [
-          { personId: "p1", present: true },
-          { personId: "p2", present: false },
-          { personId: "p3", present: true },
-        ],
+        attendances,
       },
     );
 
     expect(result.isOk()).toBe(true);
+    expect(attendanceRepository.registerForEvent).toHaveBeenCalledWith({
+      eventId: "event-1",
+      occurredAt,
+      attendances,
+    });
     if (result.isOk()) {
       expect(result.value.total).toBe(3);
       expect(result.value.present).toBe(2);
       expect(result.value.absent).toBe(1);
     }
+  });
+
+  it("marca o evento como realizado quando a presença é registrada pela primeira vez", async () => {
+    const scheduledAt = new Date("2024-01-10T19:00:00.000Z");
+    const eventRepository = createMockEventRepository({
+      findById: vi.fn().mockResolvedValue({
+        id: "event-1",
+        groupId: "group-1",
+        eventTypeId: "type-1",
+        scheduledAt,
+        occurredAt: null,
+        notes: null,
+        createdAt: new Date(),
+        deletedAt: null,
+      }),
+    });
+
+    const attendanceRepository = createMockAttendanceRepository({
+      registerForEvent: vi.fn().mockResolvedValue(undefined),
+    });
+
+    const personRepository = createMockPersonRepository({
+      findByGroup: vi.fn().mockResolvedValue([createPerson("p1")]),
+    });
+
+    const attendances = [{ personId: "p1", present: true }];
+
+    const result = await registerAttendanceUseCase(
+      eventRepository,
+      attendanceRepository,
+      personRepository,
+      {
+        eventId: "event-1",
+        attendances,
+      },
+    );
+
+    expect(result.isOk()).toBe(true);
+    expect(attendanceRepository.registerForEvent).toHaveBeenCalledWith({
+      eventId: "event-1",
+      occurredAt: scheduledAt,
+      attendances,
+    });
   });
 
   it("retorna INVALID_ATTENDEES quando há pessoa duplicada no payload", async () => {
@@ -107,13 +170,11 @@ describe("registerAttendanceUseCase", () => {
     });
 
     const attendanceRepository = createMockAttendanceRepository({
-      upsertMany: vi.fn().mockResolvedValue(undefined),
+      registerForEvent: vi.fn().mockResolvedValue(undefined),
     });
 
     const personRepository = createMockPersonRepository({
-      findByGroup: vi.fn().mockResolvedValue([
-        { id: "p1", churchId: "c1", name: "Ana", phone: null, photoUrl: null, birthDate: null, createdAt: new Date(), updatedAt: new Date(), deletedAt: null },
-      ]),
+      findByGroup: vi.fn().mockResolvedValue([createPerson("p1")]),
     });
 
     const result = await registerAttendanceUseCase(
@@ -133,7 +194,7 @@ describe("registerAttendanceUseCase", () => {
     if (result.isErr()) {
       expect(result.error).toBe(DomainErrors.INVALID_ATTENDEES);
     }
-    expect(attendanceRepository.upsertMany).not.toHaveBeenCalled();
+    expect(attendanceRepository.registerForEvent).not.toHaveBeenCalled();
   });
 
   it("retorna EVENT_NOT_FOUND quando o evento não existe", async () => {
@@ -172,9 +233,7 @@ describe("registerAttendanceUseCase", () => {
     });
 
     const personRepository = createMockPersonRepository({
-      findByGroup: vi.fn().mockResolvedValue([
-        { id: "p1", churchId: "c1", name: "Ana", phone: null, photoUrl: null, birthDate: null, createdAt: new Date(), updatedAt: new Date(), deletedAt: null },
-      ]),
+      findByGroup: vi.fn().mockResolvedValue([createPerson("p1")]),
     });
 
     const result = await registerAttendanceUseCase(
@@ -185,7 +244,7 @@ describe("registerAttendanceUseCase", () => {
         eventId: "event-1",
         attendances: [
           { personId: "p1", present: true },
-          { personId: "p2", present: false }, // p2 não pertence ao grupo
+          { personId: "p2", present: false },
         ],
       },
     );

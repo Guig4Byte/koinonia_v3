@@ -49,13 +49,15 @@ export async function registerAttendanceUseCase(
     return err(DomainErrors.INVALID_ATTENDEES);
   }
 
-  await attendanceRepository.upsertMany(
-    input.attendances.map((a) => ({
-      eventId: input.eventId,
-      personId: a.personId,
-      present: a.present,
-    })),
-  );
+  const now = new Date();
+  const occurredAt =
+    event.occurredAt ?? (event.scheduledAt <= now ? event.scheduledAt : now);
+
+  await attendanceRepository.registerForEvent({
+    eventId: input.eventId,
+    occurredAt,
+    attendances: input.attendances,
+  });
 
   const present = input.attendances.filter((a) => a.present).length;
   const absent = input.attendances.length - present;
