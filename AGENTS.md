@@ -1,173 +1,289 @@
 # Koinonia — Instruções para Agentes de IA
 
-> **Projeto:** Koinonia v2.5 — PWA de gestão de células para igrejas
+> **Projeto:** Koinonia — PWA de gestão pastoral de células para igrejas
 > **Stack:** Next.js 16.2.4 + React 19 + TypeScript Strict + Tailwind CSS + Prisma 6 + PostgreSQL
-> **Data da última atualização:** 24/04/2026
+> **Documento oficial de estado:** [`docs/estado-atual-do-projeto.md`](docs/estado-atual-do-projeto.md)
+> **Última revisão documental:** 25/04/2026
 
 ---
 
-## 🧭 Princípios de Desenvolvimento
+## 1. Fonte de verdade
 
-Regras não negociáveis para todo código escrito neste projeto:
+Antes de qualquer alteração, leia:
 
-1. **Clareza > esperteza** — Código que outro dev entende em 10 segundos é melhor que código "genial" que demora 5 minutos.
-2. **Funções com uma única responsabilidade** — Uma função faz uma coisa. Se o nome precisa de "e", é duas funções.
-3. **Não repetir código (DRY)** — Se repete 3 vezes, extrai. Se repete 2 vezes, avalia.
-4. **Simplicidade sempre (KISS)** — A solução mais simples que funciona é a correta.
-5. **Não antecipar necessidade (YAGNI)** — Não constrói para um futuro hipotético. Constrói para o problema de hoje.
-6. **Baixo acoplamento, alta coesão** — Módulos devem ser independentes. Componentes devem ser focados.
-7. **Nomes claros e do domínio** — `registerAttendance` > `handleClick`. `MemberCard` > `ItemComponent`.
-8. **Código fácil de testar** — Se é difícil de testar, está mal projetado.
-9. **Comportamento previsível** — Mesma entrada, mesma saída. Sem surpresas laterais.
-10. **Refatorar só quando agrega valor** — Não muda código que funciona só por estética. Muda quando adiciona clareza, performance ou remove duplicação.
+1. `docs/estado-atual-do-projeto.md`
+2. `prisma/schema.prisma`
+3. O arquivo/rota/hook/teste diretamente envolvido na tarefa
 
-**Protocolo de execução por etapa:**
-- Uma etapa por vez. Terminou, revalida (build + typecheck + tests).
-- Revisou o que fez. Perguntou ao usuário se está bom.
-- Só então passa para a próxima.
+Os documentos antigos em `docs/koinonia-plano-completo-v*.md`, `docs/Koinonia.txt` e `docs/Perfil.txt` são referência histórica/de produto. Eles **não** substituem o estado atual nem o código real.
 
----
+Quando houver divergência:
 
-## 🏗️ Stack Definitiva
-
-```
-Frontend (Web + Mobile)  → Next.js 16.2.4 (App Router) + React 19
-Bundler dev              → Turbopack (npm run dev)
-Bundler prod             → Webpack (next-pwa requer webpack)
-Estilos                  → Tailwind CSS + variáveis CSS manuais
-Ícones                   → Lucide React
-Query/Cache              → TanStack Query
-Formulários              → React Hook Form + Zod
-Backend/API              → Next.js Route Handlers (API Routes)
-ORM                      → Prisma 6
-Banco                    → PostgreSQL (Neon)
-Auth                     → JWT (jose) + bcryptjs + Refresh Token
-Testes                   → Vitest + jsdom + Testing Library
-Deploy                   → Vercel + Neon
-PWA                      → next-pwa
+```txt
+Código atual + schema.prisma + docs/estado-atual-do-projeto.md > planos antigos
 ```
 
-**Requisito de ambiente:** Node.js 20 LTS+, npm 10+
-
 ---
 
-## ⚠️ Decisões Arquiteturais Críticas
+## 2. Princípios de desenvolvimento
 
-### Tema / Dark Mode
-- **Manual (sem `next-themes`)** — Script inline no `<head>` aplica classe `dark` antes do render
-- Variáveis CSS em `:root` e `.dark` — nunca use `dark:` prefix do Tailwind em novos componentes
-- Cores sensíveis: `bg`, `card`, `text`, `border` são nomes reservados do Tailwind — usar `bg-[var(--bg)]`, `text-[var(--text-primary)]`
+1. **Clareza > esperteza** — código legível vence solução “genial”.
+2. **Uma responsabilidade por função** — se o nome precisa de “e”, provavelmente são duas funções.
+3. **DRY com bom senso** — extraia repetição real, não crie abstração prematura.
+4. **Simplicidade sempre** — resolva o problema de hoje com a menor superfície segura.
+5. **YAGNI** — não implemente futuro hipotético.
+6. **Baixo acoplamento, alta coesão** — domínio, API e UI devem ter limites claros.
+7. **Nomes do domínio** — prefira nomes pastorais e explícitos.
+8. **Código testável** — regra sensível precisa ser coberta por teste.
+9. **Comportamento previsível** — sem efeitos colaterais ocultos.
+10. **Refatore só com ganho real** — clareza, segurança, consistência ou remoção de duplicação.
 
-### Auth / Proxy (Next.js 16)
-- **File MUST be `src/proxy.ts`** com `export async function proxy()` — Next.js 16 renomeou `middleware.ts` para `proxy.ts`
-- JWT em localStorage (access + refresh tokens)
-- Proxy injeta headers: `x-user-id`, `x-user-role`, `x-person-id`, `x-church-id`
-- `useLogin` faz redirect por role: pastor→`/pastor`, supervisor→`/supervisor`, leader→`/lider`
+Protocolo por etapa:
 
-### Banco de Dados
-- Prisma + PostgreSQL (Neon)
-- **Nunca** rode `prisma migrate dev` sem confirmar com o usuário
-- Seed: `npx prisma db seed` — cria 3 usuários (senha: `koinonia123`)
-- Dados de seed: Roberto=pastor, Ana=supervisor, Bruno=leader, 3 grupos, 10 membros
-
-### APIs
-- Todas as APIs de `/api/*` (exceto `/api/auth/*`) passam pelo proxy
-- Permission guards: `requireGroupAccess`, `requireEventAccess`
-- Audit logging: `writeAuditLog()` em todas as operações sensíveis
-- **Church scoping obrigatório** em todas as queries de dados
-
-### Testes
-- Vitest + jsdom (32 tests passando)
-- **Sempre rode** `npm run build`, `npx vitest run` antes de considerar uma etapa concluída
-
----
-
-## 🗂️ Estrutura de Pastas Relevante
-
+```txt
+alterar pouco -> validar -> revisar -> só então avançar
 ```
+
+---
+
+## 3. Stack atual
+
+```txt
+Frontend                Next.js 16.2.4 + React 19 + App Router
+Dev bundler             Turbopack
+Prod build              Webpack, por causa do next-pwa
+Estilos                 Tailwind CSS + variáveis CSS
+Ícones                  Lucide React
+Query/cache             TanStack Query
+Formulários             React Hook Form + Zod
+Backend/API             Next.js Route Handlers
+ORM                     Prisma 6
+Banco                   PostgreSQL / Neon
+Auth                    JWT access token + refresh token em cookie HttpOnly
+Senha                   bcryptjs
+Testes                  Vitest + jsdom + Testing Library
+PWA                     next-pwa, sem cache de respostas de API
+```
+
+Requisito recomendado: Node.js 20 LTS+ e npm 10+.
+
+---
+
+## 4. Autenticação e sessão
+
+Estado atual correto:
+
+- Access token fica **apenas em memória** no frontend.
+- Refresh token fica em cookie **HttpOnly**.
+- Cookie de refresh usa `HttpOnly`, `SameSite=Lax`, `Path=/` e `Secure` em produção.
+- Refresh token é persistido no banco por `tokenId` + `tokenHash`.
+- Refresh token é rotacionado.
+- Reutilização de refresh token revogado deve invalidar sessões remanescentes do usuário.
+- Chamadas autenticadas no frontend devem usar `apiRequestWithAuth`.
+- Não reintroduza `refreshToken` no `localStorage`.
+- Não crie header manual `Authorization` em tela/hook comum; centralize no `api-client`.
+
+Arquivos relevantes:
+
+```txt
+src/lib/auth.ts
+src/lib/auth-service.ts
+src/lib/auth-cookies.ts
+src/lib/auth-storage.ts
+src/lib/api-client.ts
+src/app/api/auth/*
+```
+
+---
+
+## 5. Autorização
+
+Existe matriz explícita em:
+
+```txt
+src/lib/api-authorization.ts
+```
+
+Regras de escopo:
+
+- Pastor: vê dados ativos da própria igreja.
+- Supervisor: vê células supervisionadas por `supervisorUserId`.
+- Líder: vê célula liderada por `leaderUserId`.
+- Host/membro: acesso restrito ao próprio perfil quando a rota permitir.
+
+Regras importantes:
+
+- `Group.leaderUserId` aponta para `User.id`.
+- `Group.supervisorUserId` aponta para `User.id`.
+- Não usar `leaderId`/`supervisorId` em código novo.
+- Não confundir `User` com `Person`: usuário é conta de login; pessoa é entidade pastoral.
+- Toda leitura/escrita sensível precisa validar `churchId` e contexto real.
+
+---
+
+## 6. Auditoria
+
+Operações sensíveis devem registrar `AuditLog` de forma aguardada e verificável.
+
+Regras:
+
+- Não usar fire-and-forget para auditoria sensível.
+- Não engolir erro silenciosamente.
+- Logs devem ter `churchId`.
+- Escritas sensíveis devem, quando possível, gravar operação e auditoria de forma transacional.
+- Testes devem validar campos reais do audit log, não apenas contagem.
+
+Helper principal:
+
+```txt
+src/app/api/_helpers/audit-log.ts
+```
+
+---
+
+## 7. Banco e domínio
+
+Pontos de domínio já decididos:
+
+- `RiskLevel` é somente `green | yellow | red`.
+- `Group.leaderUserId` e `Group.supervisorUserId` têm relação Prisma explícita com `User`.
+- Soft delete deve ser respeitado em leituras de `Person`, `Group`, `Event` e `Task`.
+- Membership ativa exige `leftAt: null` e pessoa/grupo ativos.
+- Registro de presença deve marcar evento como realizado em `occurredAt` quando necessário.
+- Tela de presença não pode assumir todos como presentes por padrão.
+- Criação de task precisa validar coerência entre `groupId`, `assigneeId`, `targetType` e `targetId`.
+
+Para desenvolvimento, se os dados puderem ser descartados:
+
+```bash
+npx prisma db push --force-reset
+npx prisma generate
+npm run db:seed
+```
+
+Para validar histórico versionado:
+
+```bash
+npm run db:migrate
+```
+
+---
+
+## 8. PWA e cache
+
+Regras atuais:
+
+- Service worker não deve cachear respostas de `/api/*`.
+- Rotas `/api/:path*` devem ter `Cache-Control: no-store`.
+- `public/sw.js` e `public/workbox-*.js` são artefatos gerados e não devem ser tratados como fonte de verdade.
+- Use `npm run pwa:clean` quando precisar remover artefatos gerados.
+
+Arquivos relevantes:
+
+```txt
+next.config.mjs
+scripts/clean-pwa-artifacts.mjs
+public/manifest.json
+```
+
+---
+
+## 9. Estrutura relevante
+
+```txt
 src/
   app/
-    (app)/           # Rotas autenticadas (lider, pastor, supervisor, membro)
-    (auth)/          # Login, onboarding
-    api/             # API Routes
-      leader/        # APIs do líder (dashboard, members, events, tasks)
-      pastor/        # APIs do pastor (dashboard, search, supervisors)
-      supervisor/    # APIs da supervisora (dashboard, groups)
-      members/       # API compartilhada de perfil de membro (read-only)
-      tasks/         # APIs de tasks
+    (app)/           rotas autenticadas de persona
+    (auth)/          login/onboarding
+    api/             route handlers
+      auth/
+      leader/
+      pastor/
+      supervisor/
+      members/
+      people/
+      tasks/
+      interactions/
+      events/
+      groups/
   components/
-    features/        # Componentes de domínio (MemberCard, PulseCard, RiskBadge)
-    layout/          # BottomNav, ThemeProvider, RoleGuard
-    pastor/          # Componentes do pastor (SummaryCard, AlertCard, GroupCard)
-  hooks/             # TanStack Query hooks (use-auth, use-leader-dashboard, etc.)
-  domain/            # Lógica pura (entities, repositories, use-cases)
-  lib/               # Utilitários (prisma, api-client, auth, etc.)
+  hooks/
+  domain/
+    entities/
+    repositories/
+    use-cases/
+  lib/
+  types/
+prisma/
+  schema.prisma
+  seed.ts
+  migrations/
+docs/
+  estado-atual-do-projeto.md
 ```
 
-**Rotas de persona:**
-- `/lider/*` — App do líder (Bruno)
-- `/pastor/*` — App do pastor (Roberto)
-- `/supervisor/*` — App da supervisora (Ana)
-- `/membro/[id]` — Tela compartilhada de perfil (acessível por todos os papéis)
+Rotas de persona:
 
----
-
-## 🎨 Sistema de Cores (via CSS Variables)
-
-Nunca use cores fixas do Tailwind (`text-stone-800`, `bg-white`) em novos componentes. Sempre use as variáveis CSS:
-
-```css
-/* Fundos */
---bg, --card, --surface
-
-/* Textos */
---text-primary, --text-secondary, --text-muted
-
-/* Status */
---risk, --risk-bg  |  --warn, --warn-bg  |  --ok, --ok-bg  |  --new, --new-bg
-
-/* Acento */
---accent, --accent-light
-
-/* Input / Bordas */
---input-bg, --input-border, --border, --border-light
-
-/* Pulse Card (escuro) */
---pulse-card-bg
+```txt
+/lider/*
+/pastor/*
+/supervisor/*
+/membro/[id]
 ```
 
 ---
 
-## 🔐 Regras de Segurança
+## 10. Testes e validação
 
-- Nunca exponha `passwordHash` em nenhuma API
-- `AuditLog` registra TODAS as leituras e escritas em dados sensíveis
-- Pastor vê tudo. Supervisora vê suas células. Líder vê SÓ sua célula.
-- Sempre validar `churchId` antes de retornar dados
-- **CRITICAL FIX aplicado:** `leaderId` é `User.id`, não `Person.id`. Todas as APIs de permissão já foram corrigidas.
-- `RoleGuard` em todos os layouts de persona — redireciona não-autorizados
+Antes de entregar mudança:
 
----
+```bash
+npm run typecheck
+npm test
+npm run build
+```
 
-## 📝 Convenções de Código
+Não mantenha testes passando “sem testes”. O script de teste deve falhar se houver erro real.
 
-- **TypeScript strict:** `strict: true`, `exactOptionalPropertyTypes: true`
-- **Params é Promise** no Next.js 16: `async function Page({ params }: { params: Promise<{ id: string }> })`
-- **Hooks:** prefixo `use-`, TanStack Query com invalidação de cache (`queryClient.clear()` no login/logout)
-- **APIs:** `route.ts` com try/catch, `domainErrorResponse` para erros conhecidos
-- **Componentes:** `export function Nome()` (não default, exceto pages)
-- **Requisições autenticadas:** Todas as chamadas de API devem incluir `Authorization: Bearer <token>` via `getStoredAccessToken()`
+Coberturas sensíveis esperadas:
 
----
-
-## 🚨 Checklist antes de entregar
-
-- [ ] `npm run build` passa com zero warnings
-- [ ] `npx vitest run` passa (32 tests)
-- [ ] TypeScript sem erros
-- [ ] Não quebrou nenhuma tela existente
-- [ ] Novos links apontam para rotas corretas
+- login, logout, refresh e reutilização de refresh token;
+- cookies de sessão;
+- autorização por papel;
+- cross-church access;
+- acesso contextual a pessoa/membro;
+- criação de interação;
+- criação/atualização de task;
+- presença e evento realizado;
+- auditoria detalhada.
 
 ---
 
-> **Quando em dúvida:** pergunte ao usuário. Não suponha. Clareza > esperteza.
+## 11. Convenções de UI/produto
+
+- Mobile-first.
+- Linguagem pastoral, não administrativa.
+- Líder precisa saber “o que faço agora?”.
+- Supervisor precisa saber “quais células precisam de apoio?”.
+- Pastor precisa saber “onde há risco pastoral sistêmico?”.
+- Evitar telas com excesso de tabela, métrica ou formulário longo.
+- Priorizar estados vazios, loading, erro, permissão negada e sessão expirada.
+
+---
+
+## 12. Checklist rápido para agentes
+
+Antes de alterar:
+
+- [ ] Li `docs/estado-atual-do-projeto.md`.
+- [ ] Conferi o código real envolvido.
+- [ ] Não estou seguindo plano antigo como se fosse estado atual.
+
+Antes de devolver:
+
+- [ ] Mantive nomes `leaderUserId`/`supervisorUserId`.
+- [ ] Não reintroduzi refresh token no localStorage.
+- [ ] Usei `apiRequestWithAuth` em chamadas protegidas do frontend.
+- [ ] Respeitei soft delete e church scope.
+- [ ] Atualizei/adaptei testes se mexi em regra sensível.
+- [ ] Recomendei rodar `npm run typecheck`, `npm test` e `npm run build`.
