@@ -65,11 +65,11 @@ export function isApiClientError(error: unknown): error is ApiClientError {
   return error instanceof ApiClientError;
 }
 
-// --- Refresh token com mutex para evitar race conditions ---
+// --- Refresh token centralizado com mutex para evitar race conditions ---
 
-let refreshPromise: Promise<void> | null = null;
+let refreshPromise: Promise<RefreshTokenResponse> | null = null;
 
-async function performRefresh(): Promise<void> {
+async function performRefresh(): Promise<RefreshTokenResponse> {
   const refreshToken = getStoredRefreshToken();
 
   if (!refreshToken) {
@@ -91,9 +91,11 @@ async function performRefresh(): Promise<void> {
 
   updateStoredAccessToken(response.accessToken);
   updateStoredRefreshToken(response.refreshToken);
+
+  return response;
 }
 
-async function refreshTokenWithLock(): Promise<void> {
+async function refreshTokenWithLock(): Promise<RefreshTokenResponse> {
   if (refreshPromise) {
     return refreshPromise;
   }
@@ -105,10 +107,37 @@ async function refreshTokenWithLock(): Promise<void> {
   return refreshPromise;
 }
 
+export async function refreshStoredSession(): Promise<RefreshTokenResponse> {
+  try {
+    return await refreshTokenWithLock();
+  } catch (error) {
+    clearStoredAuth();
+    throw error;
+  }
+}
+
+function buildAuthHeaders(init: RequestInit | undefined, accessToken: string): Headers {
+  const headers = new Headers(init?.headers);
+  headers.set("Authorization", `Bearer ${accessToken}`);
+  return headers;
+}
+
+async function getUsableAccessToken(): Promise<string> {
+  const accessToken = getStoredAccessToken();
+
+  if (accessToken) {
+    return accessToken;
+  }
+
+  const refreshedSession = await refreshStoredSession();
+  return refreshedSession.accessToken;
+}
+
 /**
  * Faz requisições autenticadas automaticamente.
  *
  * - Injeta o header Authorization com o access token atual
+ * - Se não houver access token, tenta renovar usando o refresh token armazenado
  * - Se receber 401/TOKEN_EXPIRED, tenta renovar o token e re-executa a chamada
  * - Se o refresh falhar, limpa a sessão e propaga o erro
  * - Usa mutex para evitar múltiplos refreshes paralelos
@@ -117,53 +146,25 @@ export async function apiRequestWithAuth<T>(
   input: RequestInfo | URL,
   init?: RequestInit,
 ): Promise<T> {
-  const accessToken = getStoredAccessToken();
-
-  if (!accessToken) {
-    throw new ApiClientError({
-      status: 401,
-      code: "TOKEN_INVALID",
-      message: "Você precisa entrar para continuar.",
-    });
-  }
+  const accessToken = await getUsableAccessToken();
 
   const authedInit: RequestInit = {
     ...init,
-    headers: {
-      ...init?.headers,
-      Authorization: `Bearer ${accessToken}`,
-    },
+    headers: buildAuthHeaders(init, accessToken),
   };
 
   try {
     return await apiRequest<T>(input, authedInit);
   } catch (error) {
     if (isApiClientError(error) && error.code === "TOKEN_EXPIRED") {
-      try {
-        await refreshTokenWithLock();
-        const newToken = getStoredAccessToken();
+      const refreshedSession = await refreshStoredSession();
 
-        if (!newToken) {
-          throw new ApiClientError({
-            status: 401,
-            code: "TOKEN_INVALID",
-            message: "Você precisa entrar para continuar.",
-          });
-        }
+      const retriedInit: RequestInit = {
+        ...init,
+        headers: buildAuthHeaders(init, refreshedSession.accessToken),
+      };
 
-        const retriedInit: RequestInit = {
-          ...init,
-          headers: {
-            ...init?.headers,
-            Authorization: `Bearer ${newToken}`,
-          },
-        };
-
-        return await apiRequest<T>(input, retriedInit);
-      } catch (refreshError) {
-        clearStoredAuth();
-        throw refreshError;
-      }
+      return apiRequest<T>(input, retriedInit);
     }
 
     if (

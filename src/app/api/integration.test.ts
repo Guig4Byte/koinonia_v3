@@ -15,12 +15,7 @@ import {
   createTestRequest,
 } from "./_test/integration-setup";
 import { prisma } from "@/lib/prisma";
-import {
-  hashPassword,
-  signAccessToken,
-  signRefreshToken,
-  hashRefreshToken,
-} from "@/lib/auth";
+import { hashPassword, signAccessToken } from "@/lib/auth";
 import { GET as getPeople } from "./people/route";
 import { POST as postLogin } from "./auth/login/route";
 import { POST as postRefresh } from "./auth/refresh/route";

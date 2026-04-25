@@ -4,8 +4,7 @@ import { useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useEventAttendance } from "@/hooks/use-event-attendance"
-import { apiRequest } from "@/lib/api-client"
-import { getStoredAccessToken } from "@/lib/auth-storage"
+import { apiRequestWithAuth } from "@/lib/api-client"
 import { eventAttendanceQueryKey } from "@/hooks/use-event-attendance"
 import { leaderEventsQueryKey } from "@/hooks/use-leader-events"
 import { Loader2, ArrowLeft, Check, X } from "lucide-react"
@@ -38,12 +37,9 @@ export default function PresencaPage() {
 
   const saveMutation = useMutation({
     mutationFn: async (attendancesList: { personId: string; present: boolean }[]) => {
-      const accessToken = getStoredAccessToken()
-      if (!accessToken) throw new Error("Não autenticado")
-      return apiRequest("/api/events/" + eventId + "/attendance", {
+      return apiRequestWithAuth("/api/events/" + eventId + "/attendance", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ attendances: attendancesList }),

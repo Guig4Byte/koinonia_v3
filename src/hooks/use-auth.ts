@@ -4,21 +4,18 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { startTransition, useSyncExternalStore } from "react";
 import type { LoginInput, OnboardingInput } from "@/lib/validations/auth";
-import { apiRequest, apiRequestWithAuth, ApiClientError } from "@/lib/api-client";
+import { apiRequest, apiRequestWithAuth, refreshStoredSession } from "@/lib/api-client";
 import {
   clearStoredAuth,
   getStoredRefreshToken,
   hasStoredSession,
   persistAuthTokens,
   subscribeToAuthStorage,
-  updateStoredAccessToken,
-  updateStoredRefreshToken,
 } from "@/lib/auth-storage";
 import type {
   LoginResponse,
   MeResponse,
   OnboardingResponse,
-  RefreshTokenResponse,
 } from "@/types";
 
 export const authQueryKey = ["auth", "me"] as const;
@@ -127,31 +124,7 @@ export function useRefreshToken() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (refreshToken?: string) => {
-      const selectedRefreshToken = refreshToken ?? getStoredRefreshToken();
-
-      if (!selectedRefreshToken) {
-        throw new ApiClientError({
-          status: 401,
-          code: "REFRESH_TOKEN_INVALID",
-          message: "Sua sessão não pode ser renovada.",
-        });
-      }
-
-      const response = await apiRequest<RefreshTokenResponse>("/api/auth/refresh", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          refreshToken: selectedRefreshToken,
-        }),
-      });
-
-      updateStoredAccessToken(response.accessToken);
-      updateStoredRefreshToken(response.refreshToken);
-      return response;
-    },
+    mutationFn: () => refreshStoredSession(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: authQueryKey });
     },
