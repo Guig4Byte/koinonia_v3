@@ -24,6 +24,7 @@ import { POST as postAttendance } from "./events/[id]/attendance/route";
 import { GET as getGroup } from "./groups/[id]/route";
 import { GET as getSharedMemberProfile } from "./members/[id]/route";
 import { POST as postTask } from "./tasks/route";
+import { REFRESH_TOKEN_COOKIE } from "@/lib/auth-cookies";
 
 let ctx: Awaited<ReturnType<typeof setupIntegrationTest>>;
 
@@ -34,6 +35,28 @@ beforeAll(async () => {
 afterAll(async () => {
   await prisma.$disconnect();
 });
+
+function extractRefreshCookie(response: Response) {
+  const setCookie = response.headers.get("set-cookie");
+  const escapedCookieName = REFRESH_TOKEN_COOKIE.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  expect(setCookie).toContain(REFRESH_TOKEN_COOKIE);
+
+  const match = setCookie?.match(new RegExp(`${escapedCookieName}=[^;,]+`));
+
+  expect(match?.[0]).toBeDefined();
+
+  return match![0];
+}
+
+function createAuthCookieRequest(url: string, refreshCookie: string) {
+  return new Request(url, {
+    method: "POST",
+    headers: {
+      cookie: refreshCookie,
+    },
+  });
+}
 
 describe("Integração: Auth", () => {
   it("login com credenciais válidas retorna tokens e usuário", async () => {
@@ -49,7 +72,8 @@ describe("Integração: Auth", () => {
 
     expect(response.status).toBe(200);
     expect(data.accessToken).toBeDefined();
-    expect(data.refreshToken).toBeDefined();
+    expect(data.refreshToken).toBeUndefined();
+    expect(response.headers.get("set-cookie")).toContain(REFRESH_TOKEN_COOKIE);
     expect(data.user.email).toBe(ctx.pastor.email);
     expect(data.user.role).toBe("pastor");
   });
@@ -94,100 +118,86 @@ describe("Integração: Auth", () => {
     expect(data.error).toBe("RATE_LIMIT_EXCEEDED");
   });
 
-  it("refresh token rotation gera novo par de tokens", async () => {
-    // Login para obter tokens reais
+  it("refresh token rotation gera novo access token e novo cookie HttpOnly", async () => {
     const loginRequest = createTestRequest({
       url: "http://localhost/api/auth/login",
       method: "POST",
       body: { email: ctx.leader.email, password: "teste123" },
     });
     const loginResponse = await postLogin(loginRequest);
-    const loginData = await loginResponse.json();
-    const originalRefreshToken = loginData.refreshToken;
+    const originalRefreshCookie = extractRefreshCookie(loginResponse);
 
-    // Refresh
-    const refreshRequest = createTestRequest({
-      url: "http://localhost/api/auth/refresh",
-      method: "POST",
-      body: { refreshToken: originalRefreshToken },
-    });
+    const refreshRequest = createAuthCookieRequest(
+      "http://localhost/api/auth/refresh",
+      originalRefreshCookie,
+    );
     const refreshResponse = await postRefresh(refreshRequest);
     const refreshData = await refreshResponse.json();
+    const rotatedRefreshCookie = extractRefreshCookie(refreshResponse);
 
     expect(refreshResponse.status).toBe(200);
     expect(refreshData.accessToken).toBeDefined();
-    expect(refreshData.refreshToken).toBeDefined();
-    expect(refreshData.refreshToken).not.toBe(originalRefreshToken);
+    expect(refreshData.refreshToken).toBeUndefined();
+    expect(rotatedRefreshCookie).not.toBe(originalRefreshCookie);
   });
 
   it("reutilização de refresh token revogado retorna 401", async () => {
-    // Login para obter tokens reais
     const loginRequest = createTestRequest({
       url: "http://localhost/api/auth/login",
       method: "POST",
       body: { email: ctx.pastor.email, password: "teste123" },
     });
     const loginResponse = await postLogin(loginRequest);
-    const loginData = await loginResponse.json();
-    const refreshToken = loginData.refreshToken;
+    const refreshCookie = extractRefreshCookie(loginResponse);
 
-    // Primeiro refresh (vai rotacionar)
-    const refreshRequest1 = createTestRequest({
-      url: "http://localhost/api/auth/refresh",
-      method: "POST",
-      body: { refreshToken },
-    });
+    const refreshRequest1 = createAuthCookieRequest(
+      "http://localhost/api/auth/refresh",
+      refreshCookie,
+    );
     const refreshResponse1 = await postRefresh(refreshRequest1);
     expect(refreshResponse1.status).toBe(200);
 
-    // Segundo refresh com o mesmo token (deve falhar)
-    const refreshRequest2 = createTestRequest({
-      url: "http://localhost/api/auth/refresh",
-      method: "POST",
-      body: { refreshToken },
-    });
+    const refreshRequest2 = createAuthCookieRequest(
+      "http://localhost/api/auth/refresh",
+      refreshCookie,
+    );
     const refreshResponse2 = await postRefresh(refreshRequest2);
     expect(refreshResponse2.status).toBe(401);
   });
 
-  it("logout invalida refresh token no servidor", async () => {
-    // Login
+  it("logout invalida refresh token no servidor e limpa cookie", async () => {
     const loginRequest = createTestRequest({
       url: "http://localhost/api/auth/login",
       method: "POST",
       body: { email: ctx.pastor.email, password: "teste123" },
     });
     const loginResponse = await postLogin(loginRequest);
-    const loginData = await loginResponse.json();
-    const refreshToken = loginData.refreshToken;
+    const refreshCookie = extractRefreshCookie(loginResponse);
 
-    // Logout
-    const logoutRequest = createTestRequest({
-      url: "http://localhost/api/auth/logout",
-      method: "POST",
-      body: { refreshToken },
-    });
+    const logoutRequest = createAuthCookieRequest(
+      "http://localhost/api/auth/logout",
+      refreshCookie,
+    );
     const logoutResponse = await postLogout(logoutRequest);
     expect(logoutResponse.status).toBe(200);
+    expect(logoutResponse.headers.get("set-cookie")).toContain(`${REFRESH_TOKEN_COOKIE}=`);
 
-    // Tentar refresh após logout
-    const refreshRequest = createTestRequest({
-      url: "http://localhost/api/auth/refresh",
-      method: "POST",
-      body: { refreshToken },
-    });
+    const refreshRequest = createAuthCookieRequest(
+      "http://localhost/api/auth/refresh",
+      refreshCookie,
+    );
     const refreshResponse = await postRefresh(refreshRequest);
     expect(refreshResponse.status).toBe(401);
   });
 
-  it("logout com body inválido retorna 400", async () => {
+  it("logout sem cookie retorna 200 e limpa cookie local", async () => {
     const logoutRequest = createTestRequest({
       url: "http://localhost/api/auth/logout",
       method: "POST",
-      body: { invalid: true },
     });
     const logoutResponse = await postLogout(logoutRequest);
-    expect(logoutResponse.status).toBe(400);
+    expect(logoutResponse.status).toBe(200);
+    expect(logoutResponse.headers.get("set-cookie")).toContain(`${REFRESH_TOKEN_COOKIE}=`);
   });
 });
 

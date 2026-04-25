@@ -63,7 +63,6 @@ export interface SessionUser extends AuthUser {
 
 export interface AuthTokens {
   accessToken: string;
-  refreshToken: string;
 }
 
 export interface LoginResponse extends AuthTokens {
@@ -72,7 +71,6 @@ export interface LoginResponse extends AuthTokens {
 
 export interface RefreshTokenResponse {
   accessToken: string;
-  refreshToken: string;
 }
 
 export interface MeResponse {

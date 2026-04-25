@@ -1,36 +1,25 @@
 import { NextResponse } from "next/server";
-import {
-  domainErrorResponse,
-  invalidJsonResponse,
-  serverErrorResponse,
-  validationErrorResponse,
-} from "@/lib/api-response";
+import { serverErrorResponse } from "@/lib/api-response";
+import { clearAuthCookies, getRefreshTokenFromRequest } from "@/lib/auth-cookies";
 import { logoutUser } from "@/lib/auth-service";
-import { logoutSchema } from "@/lib/validations/auth";
 
 export async function POST(request: Request) {
   try {
-    let body: unknown;
+    const refreshToken = getRefreshTokenFromRequest(request);
 
-    try {
-      body = await request.json();
-    } catch {
-      return invalidJsonResponse();
+    if (refreshToken) {
+      const result = await logoutUser({ refreshToken });
+
+      if (result.isErr()) {
+        // Logout deve limpar a sessão local/cookie mesmo quando o token já foi revogado.
+        console.warn("POST /api/auth/logout received an invalid refresh token");
+      }
     }
 
-    const parsedBody = logoutSchema.safeParse(body);
+    const response = NextResponse.json({ success: true });
+    clearAuthCookies(response);
 
-    if (!parsedBody.success) {
-      return validationErrorResponse(parsedBody.error);
-    }
-
-    const result = await logoutUser(parsedBody.data);
-
-    if (result.isErr()) {
-      return domainErrorResponse(result.error);
-    }
-
-    return NextResponse.json({ success: true });
+    return response;
   } catch (error) {
     console.error("POST /api/auth/logout failed", error);
     return serverErrorResponse();

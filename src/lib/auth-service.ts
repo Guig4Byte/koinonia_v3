@@ -22,6 +22,19 @@ import type {
 
 const refreshTokenLifetimeMs = 7 * 24 * 60 * 60 * 1000;
 
+export type LoginSessionResponse = LoginResponse & {
+  refreshToken: string;
+};
+
+export type RefreshSessionResponse = RefreshTokenResponse & {
+  refreshToken: string;
+};
+
+export type OnboardingSessionResponse = OnboardingResponse & {
+  refreshToken: string;
+};
+
+
 const sessionUserSelect = {
   id: true,
   email: true,
@@ -97,7 +110,7 @@ async function createSessionTokens(user: SessionUserRecord) {
 function createSessionResponse(
   user: SessionUserRecord,
   tokens: { accessToken: string; refreshToken: string },
-): LoginResponse {
+): LoginSessionResponse {
   return {
     ...tokens,
     user: mapSessionUser(user),
@@ -109,7 +122,7 @@ export async function loginUser(input: {
   password: string;
 }): Promise<
   Result<
-    LoginResponse,
+    LoginSessionResponse,
     typeof DomainErrors.USER_NOT_FOUND | typeof DomainErrors.INVALID_CREDENTIALS
   >
 > {
@@ -144,7 +157,7 @@ export async function loginUser(input: {
 export async function refreshAccessToken(input: {
   refreshToken: string;
 }): Promise<
-  Result<RefreshTokenResponse, typeof DomainErrors.REFRESH_TOKEN_INVALID>
+  Result<RefreshSessionResponse, typeof DomainErrors.REFRESH_TOKEN_INVALID>
 > {
   const verifiedRefreshToken = await verifyRefreshTokenResult(
     input.refreshToken,
@@ -164,13 +177,21 @@ export async function refreshAccessToken(input: {
   });
 
   if (!storedToken) {
+    // Possível reutilização de token já rotacionado/revogado.
+    // Revoga as demais sessões do usuário para reduzir o impacto de token roubado.
+    await prisma.refreshToken.deleteMany({
+      where: {
+        userId,
+      },
+    });
+
     return err(DomainErrors.REFRESH_TOKEN_INVALID);
   }
 
   if (storedToken.expiresAt <= new Date() || storedToken.userId !== userId) {
-    await prisma.refreshToken.delete({
+    await prisma.refreshToken.deleteMany({
       where: {
-        id: storedToken.id,
+        userId,
       },
     });
 
@@ -183,21 +204,14 @@ export async function refreshAccessToken(input: {
   );
 
   if (!hashMatches) {
-    await prisma.refreshToken.delete({
+    await prisma.refreshToken.deleteMany({
       where: {
-        id: storedToken.id,
+        userId,
       },
     });
 
     return err(DomainErrors.REFRESH_TOKEN_INVALID);
   }
-
-  // Rotação: deleta o token antigo e cria um novo
-  await prisma.refreshToken.delete({
-    where: {
-      id: storedToken.id,
-    },
-  });
 
   const accessToken = await signAccessToken(
     buildAccessTokenPayload(storedToken.user),
@@ -205,14 +219,40 @@ export async function refreshAccessToken(input: {
   const newRefreshTokenResult = await signRefreshToken(storedToken.user.id);
   const newTokenHash = await hashRefreshToken(newRefreshTokenResult.token);
 
-  await prisma.refreshToken.create({
-    data: {
-      tokenId: newRefreshTokenResult.tokenId,
-      tokenHash: newTokenHash,
-      userId: storedToken.user.id,
-      expiresAt: new Date(Date.now() + refreshTokenLifetimeMs),
-    },
+  const rotationResult = await prisma.$transaction(async (transaction) => {
+    const deleted = await transaction.refreshToken.deleteMany({
+      where: {
+        id: storedToken.id,
+        tokenId,
+        userId,
+      },
+    });
+
+    if (deleted.count !== 1) {
+      await transaction.refreshToken.deleteMany({
+        where: {
+          userId,
+        },
+      });
+
+      return false;
+    }
+
+    await transaction.refreshToken.create({
+      data: {
+        tokenId: newRefreshTokenResult.tokenId,
+        tokenHash: newTokenHash,
+        userId: storedToken.user.id,
+        expiresAt: new Date(Date.now() + refreshTokenLifetimeMs),
+      },
+    });
+
+    return true;
   });
+
+  if (!rotationResult) {
+    return err(DomainErrors.REFRESH_TOKEN_INVALID);
+  }
 
   return ok({
     accessToken,
@@ -273,7 +313,7 @@ export async function onboardChurch(input: {
   password: string;
 }): Promise<
   Result<
-    OnboardingResponse,
+    OnboardingSessionResponse,
     typeof DomainErrors.FORBIDDEN | typeof DomainErrors.EMAIL_ALREADY_EXISTS
   >
 > {

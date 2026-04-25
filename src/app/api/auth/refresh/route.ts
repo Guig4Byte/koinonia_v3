@@ -1,36 +1,35 @@
 import { NextResponse } from "next/server";
 import {
   domainErrorResponse,
-  invalidJsonResponse,
   serverErrorResponse,
-  validationErrorResponse,
 } from "@/lib/api-response";
+import { clearAuthCookies, getRefreshTokenFromRequest, setRefreshTokenCookie } from "@/lib/auth-cookies";
 import { refreshAccessToken } from "@/lib/auth-service";
-import { refreshTokenSchema } from "@/lib/validations/auth";
+import { DomainErrors } from "@/domain/errors/domain-errors";
 
 export async function POST(request: Request) {
   try {
-    let body: unknown;
+    const refreshToken = getRefreshTokenFromRequest(request);
 
-    try {
-      body = await request.json();
-    } catch {
-      return invalidJsonResponse();
+    if (!refreshToken) {
+      const response = domainErrorResponse(DomainErrors.REFRESH_TOKEN_INVALID);
+      clearAuthCookies(response);
+      return response;
     }
 
-    const parsedBody = refreshTokenSchema.safeParse(body);
-
-    if (!parsedBody.success) {
-      return validationErrorResponse(parsedBody.error);
-    }
-
-    const result = await refreshAccessToken(parsedBody.data);
+    const result = await refreshAccessToken({ refreshToken });
 
     if (result.isErr()) {
-      return domainErrorResponse(result.error);
+      const response = domainErrorResponse(result.error);
+      clearAuthCookies(response);
+      return response;
     }
 
-    return NextResponse.json(result.value);
+    const { refreshToken: rotatedRefreshToken, ...responseBody } = result.value;
+    const response = NextResponse.json(responseBody);
+    setRefreshTokenCookie(response, rotatedRefreshToken);
+
+    return response;
   } catch (error) {
     console.error("POST /api/auth/refresh failed", error);
     return serverErrorResponse();

@@ -7,7 +7,6 @@ import type { LoginInput, OnboardingInput } from "@/lib/validations/auth";
 import { apiRequest, apiRequestWithAuth, refreshStoredSession } from "@/lib/api-client";
 import {
   clearStoredAuth,
-  getStoredRefreshToken,
   hasStoredSession,
   persistAuthTokens,
   subscribeToAuthStorage,
@@ -60,6 +59,7 @@ export function useLogin(options?: { redirectTo?: string }) {
     mutationFn: (input: LoginInput) =>
       apiRequest<LoginResponse>("/api/auth/login", {
         method: "POST",
+        credentials: "same-origin",
         headers: {
           "Content-Type": "application/json",
         },
@@ -94,6 +94,7 @@ export function useOnboarding(options?: { redirectTo?: string }) {
     mutationFn: (input: OnboardingInput) =>
       apiRequest<OnboardingResponse>("/api/auth/onboarding", {
         method: "POST",
+        credentials: "same-origin",
         headers: {
           "Content-Type": "application/json",
         },
@@ -136,20 +137,13 @@ export function useLogout() {
   const queryClient = useQueryClient();
 
   return async () => {
-    const refreshToken = getStoredRefreshToken();
-
-    if (refreshToken) {
-      try {
-        await apiRequest("/api/auth/logout", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ refreshToken }),
-        });
-      } catch {
-        // Ignora erro de logout no servidor — logout local sempre deve funcionar
-      }
+    try {
+      await apiRequest("/api/auth/logout", {
+        method: "POST",
+        credentials: "same-origin",
+      });
+    } catch {
+      // Ignora erro de logout no servidor — logout local sempre deve funcionar
     }
 
     clearStoredAuth();

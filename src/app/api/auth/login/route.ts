@@ -7,6 +7,7 @@ import {
 } from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limiter";
 import { loginUser } from "@/lib/auth-service";
+import { setRefreshTokenCookie } from "@/lib/auth-cookies";
 import { loginSchema } from "@/lib/validations/auth";
 
 export async function POST(request: Request) {
@@ -48,7 +49,11 @@ export async function POST(request: Request) {
       return domainErrorResponse(result.error);
     }
 
-    return NextResponse.json(result.value);
+    const { refreshToken, ...responseBody } = result.value;
+    const response = NextResponse.json(responseBody);
+    setRefreshTokenCookie(response, refreshToken);
+
+    return response;
   } catch (error) {
     console.error("POST /api/auth/login failed", error);
     return serverErrorResponse();

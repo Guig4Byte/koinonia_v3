@@ -6,6 +6,7 @@ import {
   validationErrorResponse,
 } from "@/lib/api-response";
 import { onboardChurch } from "@/lib/auth-service";
+import { setRefreshTokenCookie } from "@/lib/auth-cookies";
 import { onboardingSchema } from "@/lib/validations/auth";
 
 export async function POST(request: Request) {
@@ -30,7 +31,11 @@ export async function POST(request: Request) {
       return domainErrorResponse(result.error);
     }
 
-    return NextResponse.json(result.value, { status: 201 });
+    const { refreshToken, ...responseBody } = result.value;
+    const response = NextResponse.json(responseBody, { status: 201 });
+    setRefreshTokenCookie(response, refreshToken);
+
+    return response;
   } catch (error) {
     console.error("POST /api/auth/onboarding failed", error);
     return serverErrorResponse();

@@ -1,8 +1,9 @@
 import type { AuthTokens } from "@/types";
 
-const ACCESS_TOKEN_KEY = "koinonia.access-token";
-const REFRESH_TOKEN_KEY = "koinonia.refresh-token";
+const SESSION_MARKER_KEY = "koinonia.session-active";
 const AUTH_STORAGE_EVENT = "koinonia-auth-storage";
+
+let inMemoryAccessToken: string | null = null;
 
 const isBrowser = () => typeof window !== "undefined";
 
@@ -14,61 +15,65 @@ function notifyAuthStorageChange() {
   window.dispatchEvent(new Event(AUTH_STORAGE_EVENT));
 }
 
-export function getStoredAccessToken() {
-  if (!isBrowser()) {
-    return null;
-  }
-
-  return window.localStorage.getItem(ACCESS_TOKEN_KEY);
-}
-
-export function getStoredRefreshToken() {
-  if (!isBrowser()) {
-    return null;
-  }
-
-  return window.localStorage.getItem(REFRESH_TOKEN_KEY);
-}
-
-export function hasStoredSession() {
-  return Boolean(getStoredAccessToken() || getStoredRefreshToken());
-}
-
-export function persistAuthTokens(tokens: AuthTokens) {
+function setSessionMarker() {
   if (!isBrowser()) {
     return;
   }
 
-  window.localStorage.setItem(ACCESS_TOKEN_KEY, tokens.accessToken);
-  window.localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
+  window.localStorage.setItem(SESSION_MARKER_KEY, "1");
+}
+
+function clearSessionMarker() {
+  if (!isBrowser()) {
+    return;
+  }
+
+  window.localStorage.removeItem(SESSION_MARKER_KEY);
+}
+
+export function getStoredAccessToken() {
+  return inMemoryAccessToken;
+}
+
+export function getStoredRefreshToken() {
+  // Refresh token fica em cookie HttpOnly e não deve ser acessível ao JavaScript.
+  return null;
+}
+
+export function hasStoredSession() {
+  if (inMemoryAccessToken) {
+    return true;
+  }
+
+  if (!isBrowser()) {
+    return false;
+  }
+
+  return window.localStorage.getItem(SESSION_MARKER_KEY) === "1";
+}
+
+export function persistAuthTokens(tokens: AuthTokens) {
+  inMemoryAccessToken = tokens.accessToken;
+  setSessionMarker();
   notifyAuthStorageChange();
 }
 
 export function updateStoredAccessToken(accessToken: string) {
-  if (!isBrowser()) {
-    return;
-  }
-
-  window.localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+  inMemoryAccessToken = accessToken;
+  setSessionMarker();
   notifyAuthStorageChange();
 }
 
-export function updateStoredRefreshToken(refreshToken: string) {
-  if (!isBrowser()) {
-    return;
-  }
-
-  window.localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+export function updateStoredRefreshToken(_refreshToken: string) {
+  // Mantido por compatibilidade com chamadas antigas.
+  // O refresh token real é gravado pelo servidor em cookie HttpOnly.
+  setSessionMarker();
   notifyAuthStorageChange();
 }
 
 export function clearStoredAuth() {
-  if (!isBrowser()) {
-    return;
-  }
-
-  window.localStorage.removeItem(ACCESS_TOKEN_KEY);
-  window.localStorage.removeItem(REFRESH_TOKEN_KEY);
+  inMemoryAccessToken = null;
+  clearSessionMarker();
   notifyAuthStorageChange();
 }
 

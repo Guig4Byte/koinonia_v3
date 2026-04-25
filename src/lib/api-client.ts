@@ -2,9 +2,7 @@ import type { ApiErrorResponse, RefreshTokenResponse } from "@/types";
 import {
   clearStoredAuth,
   getStoredAccessToken,
-  getStoredRefreshToken,
   updateStoredAccessToken,
-  updateStoredRefreshToken,
 } from "@/lib/auth-storage";
 
 export class ApiClientError<ErrorCode extends string = string> extends Error {
@@ -70,27 +68,12 @@ export function isApiClientError(error: unknown): error is ApiClientError {
 let refreshPromise: Promise<RefreshTokenResponse> | null = null;
 
 async function performRefresh(): Promise<RefreshTokenResponse> {
-  const refreshToken = getStoredRefreshToken();
-
-  if (!refreshToken) {
-    clearStoredAuth();
-    throw new ApiClientError({
-      status: 401,
-      code: "REFRESH_TOKEN_INVALID",
-      message: "Sua sessão não pode ser renovada.",
-    });
-  }
-
   const response = await apiRequest<RefreshTokenResponse>("/api/auth/refresh", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ refreshToken }),
+    credentials: "same-origin",
   });
 
   updateStoredAccessToken(response.accessToken);
-  updateStoredRefreshToken(response.refreshToken);
 
   return response;
 }
@@ -137,7 +120,7 @@ async function getUsableAccessToken(): Promise<string> {
  * Faz requisições autenticadas automaticamente.
  *
  * - Injeta o header Authorization com o access token atual
- * - Se não houver access token, tenta renovar usando o refresh token armazenado
+ * - Se não houver access token, tenta renovar usando o refresh token em cookie HttpOnly
  * - Se receber 401/TOKEN_EXPIRED, tenta renovar o token e re-executa a chamada
  * - Se o refresh falhar, limpa a sessão e propaga o erro
  * - Usa mutex para evitar múltiplos refreshes paralelos
