@@ -7,7 +7,9 @@ import { useEventAttendance } from "@/hooks/use-event-attendance"
 import { apiRequestWithAuth } from "@/lib/api-client"
 import { eventAttendanceQueryKey } from "@/hooks/use-event-attendance"
 import { leaderEventsQueryKey } from "@/hooks/use-leader-events"
-import { Loader2, ArrowLeft, Check, X } from "lucide-react"
+import { Loader2, ArrowLeft, Check, X, Circle } from "lucide-react"
+
+type AttendanceValue = boolean | null
 
 function getInitials(name: string): string {
   return name
@@ -26,6 +28,13 @@ function formatDate(dateStr: string): string {
   })
 }
 
+function hasLocalAttendance(
+  attendances: Record<string, AttendanceValue>,
+  personId: string,
+) {
+  return Object.prototype.hasOwnProperty.call(attendances, personId)
+}
+
 export default function PresencaPage() {
   const params = useParams()
   const router = useRouter()
@@ -33,7 +42,8 @@ export default function PresencaPage() {
   const { data, isLoading, isError } = useEventAttendance(eventId)
   const queryClient = useQueryClient()
 
-  const [attendances, setAttendances] = useState<Record<string, boolean>>({})
+  const [attendances, setAttendances] = useState<Record<string, AttendanceValue>>({})
+  const [formError, setFormError] = useState<string | null>(null)
 
   const saveMutation = useMutation({
     mutationFn: async (attendancesList: { personId: string; present: boolean }[]) => {
@@ -76,31 +86,41 @@ export default function PresencaPage() {
 
   const { event, members } = data
 
-  // Merge dados do servidor com estado local
-  const mergedAttendances: Record<string, boolean> = {}
-  members.forEach((m) => {
-    mergedAttendances[m.id] =
-      attendances[m.id] !== undefined
-        ? (attendances[m.id] as boolean)
-        : (m.present ?? true) // default true se nunca registrado
+  const mergedAttendances: Record<string, AttendanceValue> = {}
+  members.forEach((member) => {
+    mergedAttendances[member.id] = hasLocalAttendance(attendances, member.id)
+      ? (attendances[member.id] as AttendanceValue)
+      : member.present
   })
 
-  const presentCount = Object.values(mergedAttendances).filter(Boolean).length
+  const attendanceValues = Object.values(mergedAttendances)
+  const presentCount = attendanceValues.filter((value) => value === true).length
+  const absentCount = attendanceValues.filter((value) => value === false).length
+  const markedCount = attendanceValues.filter((value) => value !== null).length
   const totalCount = members.length
-  const progressPercent = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0
+  const pendingCount = totalCount - markedCount
+  const progressPercent = totalCount > 0 ? Math.round((markedCount / totalCount) * 100) : 0
+  const allMarked = totalCount > 0 && markedCount === totalCount
 
-  const toggleAttendance = (personId: string) => {
+  const setAttendance = (personId: string, present: boolean) => {
+    setFormError(null)
     setAttendances((prev) => ({
       ...prev,
-      [personId]: !mergedAttendances[personId],
+      [personId]: present,
     }))
   }
 
   const handleSave = () => {
-    const list = members.map((m) => ({
-      personId: m.id,
-      present: mergedAttendances[m.id] ?? true,
+    if (!allMarked) {
+      setFormError("Marque presença ou ausência para todos antes de salvar.")
+      return
+    }
+
+    const list = members.map((member) => ({
+      personId: member.id,
+      present: mergedAttendances[member.id] === true,
     }))
+
     saveMutation.mutate(list)
   }
 
@@ -131,7 +151,7 @@ export default function PresencaPage() {
       >
         <div className="mb-2 flex items-center justify-between">
           <span className="text-sm font-medium text-[var(--text-primary)]">
-            {presentCount} de {totalCount} presentes
+            {markedCount} de {totalCount} marcados
           </span>
           <span className="text-sm font-semibold text-[var(--ok)]">
             {progressPercent}%
@@ -143,6 +163,13 @@ export default function PresencaPage() {
             style={{ width: `${progressPercent}%` }}
           />
         </div>
+        <div className="mt-3 flex flex-wrap gap-2 text-xs text-[var(--text-muted)]">
+          <span>{presentCount} presentes</span>
+          <span>•</span>
+          <span>{absentCount} ausentes</span>
+          <span>•</span>
+          <span>{pendingCount} sem marcação</span>
+        </div>
       </div>
 
       {/* Lista de membros */}
@@ -150,56 +177,104 @@ export default function PresencaPage() {
         className="flex flex-col gap-3 opacity-0 animate-fade-up"
         style={{ animationDelay: "200ms" }}
       >
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-          Membros
-        </h3>
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+            Membros
+          </h3>
+          <p className="mt-1 text-xs text-[var(--text-muted)]">
+            Cada pessoa precisa ser marcada explicitamente como presente ou ausente.
+          </p>
+        </div>
 
         <div className="flex flex-col gap-2">
           {members.map((member) => {
-            const isPresent = mergedAttendances[member.id] ?? true
+            const attendanceValue = mergedAttendances[member.id]
+            const isPresent = attendanceValue === true
+            const isAbsent = attendanceValue === false
+            const isPending = attendanceValue === null
+
             return (
-              <button
+              <div
                 key={member.id}
-                onClick={() => toggleAttendance(member.id)}
-                className="flex items-center gap-3 rounded-2xl bg-[var(--card)] p-3 border border-[var(--border)] shadow-sm transition active:scale-[0.98]"
+                className={`rounded-2xl bg-[var(--card)] p-3 border shadow-sm transition ${
+                  isPending ? "border-[var(--warn)]" : "border-[var(--border)]"
+                }`}
               >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--surface)] text-sm font-semibold text-[var(--text-secondary)]">
-                  {member.photoUrl ? (
-                    <img
-                      src={member.photoUrl}
-                      alt={member.name}
-                      className="h-full w-full rounded-full object-cover"
-                    />
-                  ) : (
-                    getInitials(member.name)
-                  )}
-                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--surface)] text-sm font-semibold text-[var(--text-secondary)]">
+                    {member.photoUrl ? (
+                      <img
+                        src={member.photoUrl}
+                        alt={member.name}
+                        className="h-full w-full rounded-full object-cover"
+                      />
+                    ) : (
+                      getInitials(member.name)
+                    )}
+                  </div>
 
-                <div className="flex flex-1 flex-col text-left">
-                  <span className="text-sm font-medium text-[var(--text-primary)]">
-                    {member.name}
-                  </span>
-                  {member.riskLevel && member.riskLevel !== "green" && (
-                    <span className="text-xs text-[var(--risk)]">
-                      {member.riskLevel === "red" ? "Em risco" : "Atenção"}
+                  <div className="flex flex-1 flex-col text-left">
+                    <span className="text-sm font-medium text-[var(--text-primary)]">
+                      {member.name}
                     </span>
-                  )}
+                    {member.riskLevel && member.riskLevel !== "green" && (
+                      <span className="text-xs text-[var(--risk)]">
+                        {member.riskLevel === "red" ? "Em risco" : "Atenção"}
+                      </span>
+                    )}
+                  </div>
+
+                  <div
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition ${
+                      isPresent
+                        ? "bg-[var(--ok-bg)] text-[var(--ok)]"
+                        : isAbsent
+                          ? "bg-[var(--risk-bg)] text-[var(--risk)]"
+                          : "bg-[var(--surface)] text-[var(--text-muted)]"
+                    }`}
+                    aria-label={
+                      isPresent
+                        ? "Presente"
+                        : isAbsent
+                          ? "Ausente"
+                          : "Não marcado"
+                    }
+                  >
+                    {isPresent ? (
+                      <Check className="h-4 w-4" />
+                    ) : isAbsent ? (
+                      <X className="h-4 w-4" />
+                    ) : (
+                      <Circle className="h-4 w-4" />
+                    )}
+                  </div>
                 </div>
 
-                <div
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition ${
-                    isPresent
-                      ? "bg-[var(--ok-bg)] text-[var(--ok)]"
-                      : "bg-[var(--risk-bg)] text-[var(--risk)]"
-                  }`}
-                >
-                  {isPresent ? (
-                    <Check className="h-4 w-4" />
-                  ) : (
-                    <X className="h-4 w-4" />
-                  )}
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setAttendance(member.id, true)}
+                    className={`h-10 rounded-xl border px-3 text-sm font-medium transition active:scale-[0.98] ${
+                      isPresent
+                        ? "border-[var(--ok)] bg-[var(--ok-bg)] text-[var(--ok)]"
+                        : "border-[var(--border)] bg-[var(--surface)] text-[var(--text-secondary)]"
+                    }`}
+                  >
+                    Presente
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAttendance(member.id, false)}
+                    className={`h-10 rounded-xl border px-3 text-sm font-medium transition active:scale-[0.98] ${
+                      isAbsent
+                        ? "border-[var(--risk)] bg-[var(--risk-bg)] text-[var(--risk)]"
+                        : "border-[var(--border)] bg-[var(--surface)] text-[var(--text-secondary)]"
+                    }`}
+                  >
+                    Ausente
+                  </button>
                 </div>
-              </button>
+              </div>
             )
           })}
         </div>
@@ -207,10 +282,20 @@ export default function PresencaPage() {
 
       {/* Botão salvar */}
       <div className="opacity-0 animate-fade-up" style={{ animationDelay: "300ms" }}>
+        {formError && (
+          <p className="mb-3 rounded-xl border border-[var(--warn)] bg-[var(--warn-bg)] px-3 py-2 text-sm text-[var(--warn)]">
+            {formError}
+          </p>
+        )}
+        {!allMarked && !formError && (
+          <p className="mb-3 rounded-xl bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-muted)]">
+            Ainda há {pendingCount} pessoa{pendingCount === 1 ? "" : "s"} sem marcação.
+          </p>
+        )}
         <button
           onClick={handleSave}
-          disabled={saveMutation.isPending}
-          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 text-base font-semibold text-white transition hover:opacity-90 disabled:opacity-70"
+          disabled={!allMarked || saveMutation.isPending}
+          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 text-base font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {saveMutation.isPending ? (
             <>
