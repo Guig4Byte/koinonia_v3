@@ -39,6 +39,7 @@ export async function GET(request: Request) {
       include: {
         eventType: true,
         attendances: {
+          where: { person: { deletedAt: null } },
           select: { present: true },
         },
       },

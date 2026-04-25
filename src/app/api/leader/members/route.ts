@@ -34,7 +34,7 @@ export async function GET(request: Request) {
     }
 
     const memberships = await prisma.membership.findMany({
-      where: { groupId: group.id, leftAt: null },
+      where: { groupId: group.id, leftAt: null, person: { deletedAt: null } },
       include: {
         person: {
           include: {

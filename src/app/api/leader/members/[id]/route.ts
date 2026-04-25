@@ -40,7 +40,12 @@ export async function GET(
 
     // Valida que o membro pertence ao grupo do líder
     const membership = await prisma.membership.findFirst({
-      where: { personId, groupId: group.id, leftAt: null },
+      where: {
+        personId,
+        groupId: group.id,
+        leftAt: null,
+        person: { deletedAt: null },
+      },
     });
 
     if (!membership) {
@@ -67,7 +72,7 @@ export async function GET(
       include: {
         eventType: true,
         attendances: {
-          where: { personId },
+          where: { personId, person: { deletedAt: null } },
         },
       },
     });
@@ -86,7 +91,7 @@ export async function GET(
 
     // Interações cronológicas
     const interactions = await prisma.interaction.findMany({
-      where: { personId },
+      where: { personId, person: { deletedAt: null } },
       orderBy: { createdAt: "desc" },
       include: {
         author: { select: { name: true } },

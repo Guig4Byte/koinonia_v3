@@ -31,7 +31,7 @@ export async function GET(request: Request) {
         name: true,
         leaderId: true,
         memberships: {
-          where: { leftAt: null },
+          where: { leftAt: null, person: { deletedAt: null } },
           select: {
             person: {
               select: {
@@ -45,7 +45,10 @@ export async function GET(request: Request) {
           orderBy: { scheduledAt: "desc" },
           take: 6,
           select: {
-            attendances: { select: { present: true } },
+            attendances: {
+              where: { person: { deletedAt: null } },
+              select: { present: true },
+            },
             occurredAt: true,
           },
         },
@@ -58,7 +61,7 @@ export async function GET(request: Request) {
       .filter((id): id is string => id !== null);
 
     const leaders = await prisma.user.findMany({
-      where: { id: { in: leaderIds }, deletedAt: null },
+      where: { id: { in: leaderIds }, deletedAt: null, person: { deletedAt: null } },
       select: { id: true, person: { select: { name: true } } },
     });
 

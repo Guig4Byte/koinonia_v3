@@ -37,7 +37,7 @@ export async function GET(
         name: true,
         leaderId: true,
         memberships: {
-          where: { leftAt: null },
+          where: { leftAt: null, person: { deletedAt: null } },
           include: {
             person: {
               include: {
@@ -55,7 +55,9 @@ export async function GET(
           orderBy: { scheduledAt: "desc" },
           take: 6,
           include: {
-            attendances: true,
+            attendances: {
+              where: { person: { deletedAt: null } },
+            },
             eventType: { select: { name: true } },
           },
         },
@@ -69,7 +71,7 @@ export async function GET(
     // Busca líder
     const leader = group.leaderId
       ? await prisma.user.findFirst({
-          where: { id: group.leaderId, deletedAt: null },
+          where: { id: group.leaderId, deletedAt: null, person: { deletedAt: null } },
           select: { id: true, person: { select: { name: true } } },
         })
       : null;

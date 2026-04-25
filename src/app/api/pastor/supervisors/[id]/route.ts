@@ -31,6 +31,7 @@ export async function GET(
         churchId: user.churchId,
         role: "supervisor",
         deletedAt: null,
+        person: { deletedAt: null },
       },
       select: {
         id: true,
@@ -54,7 +55,7 @@ export async function GET(
         name: true,
         leaderId: true,
         memberships: {
-          where: { leftAt: null },
+          where: { leftAt: null, person: { deletedAt: null } },
           select: {
             person: {
               select: {
@@ -71,7 +72,10 @@ export async function GET(
           orderBy: { scheduledAt: "desc" },
           take: 6,
           select: {
-            attendances: { select: { present: true } },
+            attendances: {
+              where: { person: { deletedAt: null } },
+              select: { present: true },
+            },
             occurredAt: true,
           },
         },
@@ -84,7 +88,11 @@ export async function GET(
       .filter((id): id is string => id !== null);
 
     const leaders = await prisma.user.findMany({
-      where: { id: { in: leaderIds }, deletedAt: null },
+      where: {
+        id: { in: leaderIds },
+        deletedAt: null,
+        person: { deletedAt: null },
+      },
       select: { id: true, person: { select: { name: true } } },
     });
 
@@ -96,7 +104,12 @@ export async function GET(
     // Busca tasks vencidas dos líderes desses grupos
     const overdueTasks = await prisma.task.findMany({
       where: {
-        group: { churchId: user.churchId, supervisorId: supervisor.id },
+        group: {
+          churchId: user.churchId,
+          supervisorId: supervisor.id,
+          deletedAt: null,
+        },
+        assignee: { deletedAt: null, person: { deletedAt: null } },
         completedAt: null,
         dueAt: { lt: now },
         deletedAt: null,

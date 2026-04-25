@@ -27,14 +27,14 @@ function toDomainEvent(prismaEvent: {
 export class EventPrismaRepository implements EventRepository {
   async findById(id: string): Promise<Event | null> {
     const event = await prisma.event.findFirst({
-      where: { id, deletedAt: null },
+      where: { id, deletedAt: null, group: { deletedAt: null } },
     });
     return event ? toDomainEvent(event) : null;
   }
 
   async findByGroup(groupId: string): Promise<readonly Event[]> {
     const events = await prisma.event.findMany({
-      where: { groupId, deletedAt: null },
+      where: { groupId, deletedAt: null, group: { deletedAt: null } },
       orderBy: { scheduledAt: "desc" },
     });
     return events.map(toDomainEvent);
@@ -42,7 +42,7 @@ export class EventPrismaRepository implements EventRepository {
 
   async findByChurch(churchId: string): Promise<readonly Event[]> {
     const events = await prisma.event.findMany({
-      where: { group: { churchId }, deletedAt: null },
+      where: { group: { churchId, deletedAt: null }, deletedAt: null },
       orderBy: { scheduledAt: "desc" },
     });
     return events.map(toDomainEvent);

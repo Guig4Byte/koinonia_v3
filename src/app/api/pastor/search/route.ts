@@ -45,7 +45,7 @@ export async function GET(request: Request) {
         photoUrl: true,
         riskScore: { select: { level: true } },
         memberships: {
-          where: { leftAt: null },
+          where: { leftAt: null, group: { deletedAt: null } },
           select: {
             group: { select: { id: true, name: true } },
           },
@@ -65,7 +65,7 @@ export async function GET(request: Request) {
         id: true,
         name: true,
         memberships: {
-          where: { leftAt: null },
+          where: { leftAt: null, person: { deletedAt: null } },
           select: { personId: true },
         },
       },
@@ -75,7 +75,7 @@ export async function GET(request: Request) {
     // Busca eventos por tipo
     const events = await prisma.event.findMany({
       where: {
-        group: { churchId: user.churchId },
+        group: { churchId: user.churchId, deletedAt: null },
         deletedAt: null,
         eventType: { name: { contains: q, mode: "insensitive" } },
       },
@@ -85,7 +85,10 @@ export async function GET(request: Request) {
         occurredAt: true,
         group: { select: { id: true, name: true } },
         eventType: { select: { name: true } },
-        attendances: { select: { present: true } },
+        attendances: {
+          where: { person: { deletedAt: null } },
+          select: { present: true },
+        },
       },
       orderBy: { scheduledAt: "desc" },
       take: 10,

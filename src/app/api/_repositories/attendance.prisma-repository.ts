@@ -23,7 +23,11 @@ function toDomainAttendance(prismaAttendance: {
 export class AttendancePrismaRepository implements AttendanceRepository {
   async findByEvent(eventId: string): Promise<readonly Attendance[]> {
     const attendances = await prisma.attendance.findMany({
-      where: { eventId },
+      where: {
+        eventId,
+        event: { deletedAt: null },
+        person: { deletedAt: null },
+      },
     });
     return attendances.map(toDomainAttendance);
   }
@@ -33,7 +37,7 @@ export class AttendancePrismaRepository implements AttendanceRepository {
     limit = 20,
   ): Promise<readonly Attendance[]> {
     const attendances = await prisma.attendance.findMany({
-      where: { personId },
+      where: { personId, person: { deletedAt: null }, event: { deletedAt: null } },
       take: limit,
       orderBy: { createdAt: "desc" },
     });

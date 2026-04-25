@@ -27,7 +27,7 @@ export async function GET(
       include: {
         riskScore: true,
         memberships: {
-          where: { leftAt: null },
+          where: { leftAt: null, group: { deletedAt: null } },
           include: {
             group: { select: { id: true, name: true } },
           },
@@ -40,6 +40,7 @@ export async function GET(
           },
         },
         attendances: {
+          where: { event: { deletedAt: null, group: { deletedAt: null } } },
           orderBy: { event: { scheduledAt: "desc" } },
           take: 6,
           include: {

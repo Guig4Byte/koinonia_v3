@@ -36,7 +36,7 @@ export async function GET(request: Request) {
 
     // Busca membros do grupo com risk score e última interação
     const memberships = await prisma.membership.findMany({
-      where: { groupId: group.id, leftAt: null },
+      where: { groupId: group.id, leftAt: null, person: { deletedAt: null } },
       include: {
         person: {
           include: {
@@ -67,7 +67,9 @@ export async function GET(request: Request) {
       where: { groupId: group.id, deletedAt: null },
       orderBy: { scheduledAt: "desc" },
       include: {
-        attendances: true,
+        attendances: {
+          where: { person: { deletedAt: null } },
+        },
       },
     });
 
