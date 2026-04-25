@@ -107,8 +107,8 @@ export default function PastorPage() {
     : overdueTasksCount > 0
       ? `${overdueTasksCount} ${pluralize(
           overdueTasksCount,
-          "acompanhamento atrasado pede",
-          "acompanhamentos atrasados pedem",
+          "ação de cuidado atrasada pede",
+          "ações de cuidado atrasadas pedem",
         )} revisão.`
       : "Nenhum sinal urgente pedindo intervenção imediata."
 
@@ -122,19 +122,6 @@ export default function PastorPage() {
           {mainPulse}
         </h2>
         <p className="mt-3 text-sm leading-6 text-stone-300">{supportPulse}</p>
-
-        <div className="mt-5 grid grid-cols-2 gap-2 text-xs text-stone-200">
-          <div className="rounded-xl bg-white/10 px-3 py-2">
-            <span className="block text-stone-400">Presença média</span>
-            <strong className="text-base text-white">{averageAttendance}%</strong>
-          </div>
-          <div className="rounded-xl bg-white/10 px-3 py-2">
-            <span className="block text-stone-400">Acompanhamentos</span>
-            <strong className="text-base text-white">
-              {overdueTasksCount > 0 ? `${overdueTasksCount} atrasado(s)` : "em dia"}
-            </strong>
-          </div>
-        </div>
       </section>
 
       <section className="grid grid-cols-2 gap-3">
@@ -145,24 +132,30 @@ export default function PastorPage() {
           accent={atRiskCount > 0 ? "risk" : "ok"}
         />
         <SummaryCard
-          label="Frentes sensíveis"
+          label="Células sensíveis"
           value={attentionGroups.length}
           icon={<Users className="h-5 w-5" />}
           accent={attentionGroups.length > 0 ? "risk" : "ok"}
         />
         <SummaryCard
-          label="Presença média"
+          label="Presença dos encontros"
           value={`${averageAttendance}%`}
           icon={<TrendingUp className="h-5 w-5" />}
           accent={getAttendanceAccent(averageAttendance)}
         />
         <SummaryCard
-          label="Atrasados"
+          label="Ações atrasadas"
           value={overdueTasksCount}
           icon={<ClipboardList className="h-5 w-5" />}
           accent={overdueTasksCount > 0 ? "risk" : "ok"}
         />
       </section>
+
+      <p className="-mt-3 text-xs leading-5 text-[var(--text-muted)]">
+        Presença dos encontros é a média das presenças registradas nas células.
+        Pessoas em risco, células sensíveis e ações atrasadas mostram onde o
+        cuidado pastoral precisa de atenção agora.
+      </p>
 
       <section className="rounded-2xl border border-[var(--border-light)] bg-[var(--card)] p-4">
         <div className="flex items-start gap-3">

@@ -15,7 +15,6 @@ import {
 } from "@/hooks/use-supervisor-dashboard"
 import { SummaryCard } from "@/components/pastor/summary-card"
 import { AlertCard } from "@/components/pastor/alert-card"
-import { GroupCard } from "@/components/pastor/group-card"
 
 function pluralize(count: number, singular: string, plural: string) {
   return count === 1 ? singular : plural
@@ -201,7 +200,7 @@ export default function SupervisorPage() {
           accent={atRiskCount > 0 ? "risk" : "ok"}
         />
         <SummaryCard
-          label="Presença média"
+          label="Presença dos encontros"
           value={`${averageAttendance}%`}
           icon={<TrendingUp className="h-5 w-5" />}
           accent={getAttendanceAccent(averageAttendance)}
@@ -227,21 +226,6 @@ export default function SupervisorPage() {
         </section>
       )}
 
-      <section>
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 className="text-sm font-medium text-[var(--text-secondary)]">
-            Todas as células da região
-          </h2>
-          <Link href="/supervisor/celulas" className="text-xs font-medium text-[var(--accent)]">
-            Abrir lista
-          </Link>
-        </div>
-        <div className="space-y-2">
-          {sortGroupsForSupervisor(groups).slice(0, 4).map((group) => (
-            <GroupCard key={group.id} group={group} href={`/supervisor/celulas/${group.id}`} />
-          ))}
-        </div>
-      </section>
     </div>
   )
 }
