@@ -41,6 +41,25 @@ export async function GET(request: Request) {
       },
     });
 
+    const personTargetIds = tasks
+      .filter((task) => task.targetType === "person")
+      .map((task) => task.targetId);
+
+    const targetPeople = personTargetIds.length > 0
+      ? await prisma.person.findMany({
+          where: {
+            id: { in: personTargetIds },
+            churchId: user.churchId,
+            deletedAt: null,
+          },
+          select: { id: true, name: true },
+        })
+      : [];
+
+    const targetPeopleById = new Map(
+      targetPeople.map((person) => [person.id, person]),
+    );
+
     await writeAuditLog({
       userId: user.userId,
       churchId: user.churchId,
@@ -52,17 +71,23 @@ export async function GET(request: Request) {
     });
 
     return NextResponse.json({
-      tasks: tasks.map((task) => ({
-        id: task.id,
-        description: task.description,
-        dueAt: task.dueAt,
-        completedAt: task.completedAt,
-        targetType: task.targetType,
-        targetId: task.targetId,
-        groupName: task.group?.name ?? null,
-        personName: task.need?.person.name ?? null,
-        personId: task.need?.person.id ?? null,
-      })),
+      tasks: tasks.map((task) => {
+        const targetPerson = task.targetType === "person"
+          ? targetPeopleById.get(task.targetId)
+          : null;
+
+        return {
+          id: task.id,
+          description: task.description,
+          dueAt: task.dueAt,
+          completedAt: task.completedAt,
+          targetType: task.targetType,
+          targetId: task.targetId,
+          groupName: task.group?.name ?? null,
+          personName: targetPerson?.name ?? task.need?.person.name ?? null,
+          personId: targetPerson?.id ?? task.need?.person.id ?? null,
+        };
+      }),
     });
   } catch (error) {
     console.error("GET /api/leader/tasks failed", error);

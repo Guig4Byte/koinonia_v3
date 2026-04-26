@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query"
 import { apiRequestWithAuth } from "@/lib/api-client"
-import type { RiskLevel } from "@/types"
+import type { AppRole, RiskLevel } from "@/types"
 
 export interface SharedMemberProfile {
   person: {
@@ -15,6 +15,18 @@ export interface SharedMemberProfile {
     riskScore: number | null
     groupName: string | null
     groupId: string | null
+    taskAssignees: Array<{
+      id: string
+      name: string
+      role: AppRole
+    }>
+    tasks: Array<{
+      id: string
+      description: string
+      dueAt: string
+      completedAt: string | null
+      assigneeName: string
+    }>
     interactions: Array<{
       id: string
       kind: string
@@ -39,7 +51,7 @@ export function useSharedMemberProfile(memberId: string) {
   return useQuery({
     queryKey: sharedMemberProfileQueryKey(memberId),
     queryFn: async () => {
-            return apiRequestWithAuth<SharedMemberProfile>(`/api/members/${memberId}`, {
+      return apiRequestWithAuth<SharedMemberProfile>(`/api/members/${memberId}`, {
         method: "GET"
       })
     },

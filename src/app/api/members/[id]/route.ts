@@ -8,6 +8,12 @@ import {
   resolvePersonAccessScope,
 } from "@/lib/api-authorization";
 
+type TaskAssignee = {
+  id: string;
+  role: "pastor" | "supervisor" | "leader" | "host" | "member";
+  person: { name: string };
+};
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -53,6 +59,20 @@ export async function GET(
               select: {
                 id: true,
                 name: true,
+                leader: {
+                  select: {
+                    id: true,
+                    role: true,
+                    person: { select: { name: true } },
+                  },
+                },
+                supervisor: {
+                  select: {
+                    id: true,
+                    role: true,
+                    person: { select: { name: true } },
+                  },
+                },
               },
             },
           },
@@ -99,6 +119,55 @@ export async function GET(
           })
         : null;
 
+    const groupIds = personAccess.memberships.map((membership) => membership.group.id);
+    const currentGroup = personAccess.memberships[0]?.group ?? null;
+
+    const tasks =
+      scope === "full"
+        ? await prisma.task.findMany({
+            where: {
+              targetType: "person",
+              targetId: personId,
+              deletedAt: null,
+              ...(groupIds.length > 0 ? { groupId: { in: groupIds } } : {}),
+              group: {
+                churchId: user.churchId,
+                deletedAt: null,
+              },
+            },
+            orderBy: [
+              { completedAt: { sort: "asc", nulls: "first" } },
+              { dueAt: "asc" },
+            ],
+            take: 6,
+            include: {
+              assignee: {
+                select: {
+                  person: { select: { name: true } },
+                },
+              },
+            },
+          })
+        : [];
+
+    const rawAssignees = [currentGroup?.leader, currentGroup?.supervisor].filter(
+      (assignee): assignee is TaskAssignee => Boolean(assignee),
+    );
+
+    const uniqueAssignees = rawAssignees.filter(
+      (assignee, index, list) => list.findIndex((item) => item.id === assignee.id) === index,
+    );
+
+    const taskAssignees =
+      scope === "full"
+        ? uniqueAssignees.filter((assignee) => {
+            if (user.role === "pastor") return true;
+            if (user.role === "supervisor") return assignee.role === "leader" || assignee.id === user.userId;
+            if (user.role === "leader") return assignee.id === user.userId;
+            return false;
+          })
+        : [];
+
     await writeAuditLog({
       userId: user.userId,
       churchId: user.churchId,
@@ -121,8 +190,20 @@ export async function GET(
         birthDate: personAccess.birthDate,
         riskLevel: sensitiveData?.riskScore?.level ?? null,
         riskScore: sensitiveData?.riskScore?.score ?? null,
-        groupName: personAccess.memberships[0]?.group.name ?? null,
-        groupId: personAccess.memberships[0]?.group.id ?? null,
+        groupName: currentGroup?.name ?? null,
+        groupId: currentGroup?.id ?? null,
+        taskAssignees: taskAssignees.map((assignee) => ({
+          id: assignee.id,
+          name: assignee.person.name,
+          role: assignee.role,
+        })),
+        tasks: tasks.map((task) => ({
+          id: task.id,
+          description: task.description,
+          dueAt: task.dueAt,
+          completedAt: task.completedAt,
+          assigneeName: task.assignee.person.name,
+        })),
         interactions:
           sensitiveData?.interactionsAsSubject.map((interaction) => ({
             id: interaction.id,

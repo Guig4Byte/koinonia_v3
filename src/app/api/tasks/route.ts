@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       return domainErrorResponse("UNAUTHORIZED");
     }
 
-    const roleCheck = requireRole(user.role, ["pastor", "supervisor"]);
+    const roleCheck = requireRole(user.role, ["pastor", "supervisor", "leader"]);
     if (!roleCheck.authorized) {
       return domainErrorResponse(roleCheck.error);
     }
@@ -69,6 +69,10 @@ export async function POST(request: Request) {
       return domainErrorResponse("UNAUTHORIZED");
     }
 
+    if (user.role === "leader" && group.leaderUserId !== user.userId) {
+      return domainErrorResponse("UNAUTHORIZED");
+    }
+
     const assignee = await prisma.user.findFirst({
       where: {
         id: assigneeId,
@@ -88,6 +92,10 @@ export async function POST(request: Request) {
     );
 
     if (!allowedAssigneeIds.includes(assigneeId)) {
+      return domainErrorResponse("INVALID_TASK_TARGET");
+    }
+
+    if (user.role === "leader" && assigneeId !== user.userId) {
       return domainErrorResponse("INVALID_TASK_TARGET");
     }
 
