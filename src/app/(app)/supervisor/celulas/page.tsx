@@ -1,8 +1,162 @@
 "use client"
 
-import { useSupervisorGroups } from "@/hooks/use-supervisor-groups"
-import { Users, TrendingUp, AlertTriangle, CalendarX } from "lucide-react"
 import Link from "next/link"
+import {
+  AlertTriangle,
+  CalendarX,
+  CheckCircle2,
+  TrendingDown,
+  Users,
+} from "lucide-react"
+import {
+  useSupervisorGroups,
+  type SupervisorGroup,
+} from "@/hooks/use-supervisor-groups"
+
+function pluralize(count: number, singular: string, plural: string) {
+  return count === 1 ? singular : plural
+}
+
+function needsSupport(group: SupervisorGroup) {
+  return (
+    group.atRiskCount > 0 ||
+    group.hasUnregisteredAttendance ||
+    (group.lastAttendanceRate !== null && group.lastAttendanceRate < 70)
+  )
+}
+
+function sortGroups(groups: SupervisorGroup[]) {
+  return [...groups].sort((a, b) => {
+    const aPriority = needsSupport(a) ? 0 : 1
+    const bPriority = needsSupport(b) ? 0 : 1
+    if (aPriority !== bPriority) return aPriority - bPriority
+
+    if (b.atRiskCount !== a.atRiskCount) return b.atRiskCount - a.atRiskCount
+    if (Number(b.hasUnregisteredAttendance) !== Number(a.hasUnregisteredAttendance)) {
+      return Number(b.hasUnregisteredAttendance) - Number(a.hasUnregisteredAttendance)
+    }
+
+    const aAttendance = a.lastAttendanceRate ?? a.averageAttendance ?? 101
+    const bAttendance = b.lastAttendanceRate ?? b.averageAttendance ?? 101
+    return aAttendance - bAttendance
+  })
+}
+
+function getGroupTone(group: SupervisorGroup) {
+  if (group.atRiskCount > 0 || (group.lastAttendanceRate !== null && group.lastAttendanceRate < 60)) {
+    return "risk" as const
+  }
+
+  if (group.hasUnregisteredAttendance || (group.lastAttendanceRate !== null && group.lastAttendanceRate < 70)) {
+    return "warn" as const
+  }
+
+  return "ok" as const
+}
+
+function getGroupLabel(group: SupervisorGroup) {
+  const tone = getGroupTone(group)
+  if (tone === "risk") return "Prioridade"
+  if (tone === "warn") return "Atenção"
+  return "Estável"
+}
+
+function getGroupReading(group: SupervisorGroup) {
+  const reasons: string[] = []
+
+  if (group.atRiskCount > 0) {
+    reasons.push(
+      `${group.atRiskCount} ${pluralize(group.atRiskCount, "pessoa precisa", "pessoas precisam")} de cuidado`,
+    )
+  }
+
+  if (group.hasUnregisteredAttendance) {
+    reasons.push("presença pendente")
+  }
+
+  if (group.lastAttendanceRate !== null && group.lastAttendanceRate < 70) {
+    reasons.push(`${group.lastAttendanceRate}% no último encontro`)
+  }
+
+  if (reasons.length === 0) {
+    return "Sem sinal urgente. Continue acompanhando de perto."
+  }
+
+  return reasons.join(" · ")
+}
+
+const toneClasses = {
+  risk: {
+    card: "border-[var(--risk-border)] bg-[var(--risk-bg)]",
+    icon: "bg-white/60 text-[var(--risk)] dark:bg-black/10",
+    badge: "bg-white/60 text-[var(--risk)] dark:bg-black/10",
+  },
+  warn: {
+    card: "border-[var(--warn-border)] bg-[var(--warn-bg)]",
+    icon: "bg-white/60 text-[var(--warn)] dark:bg-black/10",
+    badge: "bg-white/60 text-[var(--warn)] dark:bg-black/10",
+  },
+  ok: {
+    card: "border-[var(--border-light)] bg-[var(--card)]",
+    icon: "bg-[var(--ok-bg)] text-[var(--ok)]",
+    badge: "bg-[var(--ok-bg)] text-[var(--ok)]",
+  },
+}
+
+function GroupCard({ group }: { group: SupervisorGroup }) {
+  const tone = getGroupTone(group)
+  const classes = toneClasses[tone]
+
+  return (
+    <Link
+      href={`/supervisor/celulas/${group.id}`}
+      className={`block rounded-2xl border p-4 transition hover:bg-[var(--surface)] active:scale-[0.98] ${classes.card}`}
+    >
+      <div className="flex items-start gap-3">
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${classes.icon}`}>
+          {group.hasUnregisteredAttendance ? (
+            <CalendarX className="h-5 w-5" />
+          ) : tone === "ok" ? (
+            <CheckCircle2 className="h-5 w-5" />
+          ) : (
+            <TrendingDown className="h-5 w-5" />
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-[var(--text-primary)]">
+                {group.name}
+              </p>
+              <p className="mt-0.5 text-xs text-[var(--text-muted)]">
+                {group.leaderName ? `Líder: ${group.leaderName}` : "Sem líder definido"} · {group.memberCount} membros
+              </p>
+            </div>
+            <span className={`shrink-0 rounded-full px-2 py-1 text-[0.65rem] font-semibold uppercase tracking-wide ${classes.badge}`}>
+              {getGroupLabel(group)}
+            </span>
+          </div>
+
+          <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
+            {getGroupReading(group)}
+          </p>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className="rounded-full bg-white/50 px-2 py-1 text-[0.65rem] font-medium text-[var(--text-secondary)] dark:bg-black/10">
+              {group.averageAttendance}% média
+            </span>
+            {group.lastAttendanceRate !== null && (
+              <span className="rounded-full bg-white/50 px-2 py-1 text-[0.65rem] font-medium text-[var(--text-secondary)] dark:bg-black/10">
+                {group.lastAttendanceRate}% último encontro
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </Link>
+  )
+}
 
 export default function SupervisorCelulasPage() {
   const { data, isLoading } = useSupervisorGroups()
@@ -10,91 +164,71 @@ export default function SupervisorCelulasPage() {
   if (isLoading) {
     return (
       <div className="space-y-3">
-        {[...Array(3)].map((_, i) => (
-          <div key={i} className="h-24 animate-pulse rounded-xl bg-[var(--surface)]" />
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="h-24 animate-pulse rounded-2xl bg-[var(--surface)]" />
         ))}
       </div>
     )
   }
 
-  const groups = data?.groups ?? []
+  const groups = sortGroups(data?.groups ?? [])
+  const supportGroups = groups.filter(needsSupport)
+  const stableGroups = groups.filter((group) => !needsSupport(group))
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-sm font-medium text-[var(--text-secondary)]">
-        Minhas Células
-      </h2>
+    <div className="space-y-5">
+      <section>
+        <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+          Células
+        </p>
+        <h2 className="mt-1 text-2xl font-semibold leading-tight text-[var(--text-primary)]">
+          Onde preciso apoiar?
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
+          Veja primeiro as células que pedem proximidade com o líder.
+        </p>
+      </section>
 
       {groups.length === 0 && (
-        <div className="py-12 text-center">
-          <p className="text-sm text-[var(--text-muted)]">
+        <section className="rounded-2xl border border-[var(--border-light)] bg-[var(--card)] p-6 text-center">
+          <Users className="mx-auto h-6 w-6 text-[var(--text-muted)]" />
+          <p className="mt-3 text-sm font-medium text-[var(--text-primary)]">
             Nenhuma célula supervisionada
           </p>
-        </div>
+          <p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">
+            Quando houver células na sua região, elas aparecerão aqui.
+          </p>
+        </section>
       )}
 
-      <div className="space-y-3">
-        {groups.map((group) => {
-          const isZeroAttendance = group.averageAttendance === 0 && group.memberCount > 0
-          return (
-            <Link
-              key={group.id}
-              href={`/supervisor/celulas/${group.id}`}
-              className={`group relative flex flex-col gap-3 overflow-hidden rounded-xl border border-[var(--border-light)] p-4 transition active:scale-[0.98] ${
-                isZeroAttendance
-                  ? "bg-gradient-to-br from-amber-50/60 to-[var(--card)] hover:from-amber-50 hover:to-[var(--surface)] dark:from-amber-950/10"
-                  : "bg-gradient-to-br from-[var(--surface)] to-[var(--card)] hover:from-[var(--border-light)] hover:to-[var(--surface)]"
-              }`}
-            >
-              {/* Listra decorativa */}
-              <div className="absolute left-0 top-0 h-full w-1 bg-[var(--accent)] opacity-60 transition-opacity group-hover:opacity-100" />
+      {supportGroups.length > 0 && (
+        <section className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-[var(--warn)]">
+              <AlertTriangle className="h-4 w-4" />
+              <h3 className="text-sm font-semibold">Precisam de apoio</h3>
+            </div>
+            <span className="rounded-full bg-[var(--warn-bg)] px-2 py-1 text-xs font-semibold text-[var(--warn)]">
+              {supportGroups.length}
+            </span>
+          </div>
+          {supportGroups.map((group) => (
+            <GroupCard key={group.id} group={group} />
+          ))}
+        </section>
+      )}
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)]/10 text-[var(--accent)]">
-                    <Users className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-[var(--text-primary)]">{group.name}</p>
-                    <p className="text-xs text-[var(--text-muted)]">
-                      {group.leaderName ? `Líder: ${group.leaderName}` : "Sem líder"}
-                    </p>
-                  </div>
-                </div>
-                {group.hasUnregisteredAttendance && (
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--warn-bg)] text-[var(--warn)]">
-                    <CalendarX className="h-4 w-4" />
-                  </span>
-                )}
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                <div className="flex items-center gap-1.5 rounded-lg bg-[var(--bg)]/60 px-2 py-1.5">
-                  <Users className="h-3 w-3 text-[var(--text-muted)]" />
-                  <span className="text-xs font-medium">{group.memberCount}</span>
-                </div>
-                <div className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 ${isZeroAttendance ? "bg-[var(--warn-bg)] text-[var(--warn)]" : "bg-[var(--bg)]/60"}`}>
-                  <TrendingUp className="h-3 w-3 text-[var(--text-muted)]" />
-                  <span className={`text-xs font-medium ${isZeroAttendance ? "text-[var(--warn)]" : ""}`}>{group.averageAttendance}%</span>
-                </div>
-                {group.atRiskCount > 0 ? (
-                  <div className="flex items-center gap-1.5 rounded-lg bg-[var(--risk-bg)] px-2 py-1.5">
-                    <AlertTriangle className="h-3 w-3 text-[var(--risk)]" />
-                    <span className="text-xs font-medium text-[var(--risk)]">
-                      {group.atRiskCount}
-                    </span>
-                  </div>
-                ) : isZeroAttendance ? (
-                  <div className="flex items-center gap-1.5 rounded-lg bg-[var(--warn-bg)] px-2 py-1.5">
-                    <TrendingUp className="h-3 w-3 text-[var(--warn)]" />
-                    <span className="text-xs font-medium text-[var(--warn)]">0%</span>
-                  </div>
-                ) : null}
-              </div>
-            </Link>
-          )
-        })}
-      </div>
+      {stableGroups.length > 0 && (
+        <section className="space-y-3">
+          <div className="flex items-center gap-2 text-[var(--ok)]">
+            <CheckCircle2 className="h-4 w-4" />
+            <h3 className="text-sm font-semibold">Estáveis por agora</h3>
+          </div>
+          {stableGroups.map((group) => (
+            <GroupCard key={group.id} group={group} />
+          ))}
+        </section>
+      )}
     </div>
   )
 }

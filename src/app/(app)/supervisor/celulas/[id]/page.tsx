@@ -43,7 +43,7 @@ function getEventReading(event: { attendanceCount: number; totalAttendances: num
   if (event.attendanceCount === 0) {
     return {
       label: "Revisar encontro",
-      detail: "Nenhuma presença registrada. Confirme com o líder se houve encontro ou erro no registro.",
+      detail: "Nenhuma presença registrada. Confirme com o líder se houve encontro ou se falta registrar presença.",
       tone: "risk" as const,
       icon: AlertTriangle,
     }
@@ -152,11 +152,11 @@ function getMemberReason(member: SupervisorGroupMember) {
   }
 
   if (member.lastInteractionDays === null) {
-    return "Não existe interação registrada. Vale confirmar se o cuidado está acontecendo fora do sistema."
+    return "Não existe interação registrada. Vale confirmar se o cuidado aconteceu fora do sistema."
   }
 
   if (member.lastInteractionDays >= 21) {
-    return "A pessoa está há tempo demais sem devolutiva registrada. A supervisão deve destravar o líder."
+    return "A pessoa está há tempo demais sem retorno registrado. A supervisão deve apoiar o líder."
   }
 
   return "Sem sinal crítico no momento."
@@ -174,7 +174,7 @@ function getMemberNextStep(member: SupervisorGroupMember, leaderName: string | n
   }
 
   if (member.lastInteractionDays === null || member.lastInteractionDays >= 21) {
-    return `Próximo passo: confirmar com ${leader} se houve contato e registrar devolutiva.`
+    return `Próximo passo: confirmar com ${leader} se houve contato e registrar retorno.`
   }
 
   return "Próximo passo: manter acompanhamento normal."
@@ -247,7 +247,7 @@ export default function SupervisorGroupDetailPage() {
       {
         assigneeId: data.group.leaderUserId,
         groupId: id,
-        description: `Acompanhamento da supervisora: registrar presença e atualizar status da célula ${data.group.name}`,
+        description: `Acompanhamento da supervisão: atualizar presença e retorno de cuidado da célula ${data.group.name}`,
         dueAt: dueAt.toISOString(),
         targetType: "group",
         targetId: id,
@@ -311,12 +311,12 @@ export default function SupervisorGroupDetailPage() {
           {cobrarSent ? (
             <>
               <CheckCircle className="h-4 w-4" />
-              Acompanhamento enviado!
+              Pedido enviado
             </>
           ) : createTask.isPending ? (
             "Enviando..."
           ) : (
-            `Acompanhar ${group.leaderName ?? "líder"}`
+            `Pedir retorno a ${group.leaderName ?? "líder"}`
           )}
         </button>
       )}
@@ -324,7 +324,7 @@ export default function SupervisorGroupDetailPage() {
       {leaderTasks.length > 0 && (
         <section>
           <h2 className="mb-2 text-sm font-medium text-[var(--text-secondary)]">
-            Tarefas do líder
+            Encaminhamentos do líder
           </h2>
           <div className="space-y-2">
             {leaderTasks.map((task) => (
@@ -359,7 +359,7 @@ export default function SupervisorGroupDetailPage() {
               Fila de cuidado da célula
             </h2>
             <p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">
-              Veja quem precisa do líder agora e onde a supervisão deve destravar cuidado.
+              Veja quem precisa de cuidado e onde o líder pode precisar de apoio.
             </p>
           </div>
           <span className="rounded-full bg-[var(--surface)] px-2 py-1 text-xs font-semibold text-[var(--text-secondary)]">
@@ -400,7 +400,7 @@ export default function SupervisorGroupDetailPage() {
                   {stableMembersCount} {pluralize(stableMembersCount, "pessoa está", "pessoas estão")} sem sinal crítico.
                 </p>
                 <p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">
-                  Mantive o foco na fila de cuidado para a supervisão não virar lista administrativa.
+                  A lista completa fica fora daqui para manter o foco no cuidado.
                 </p>
               </div>
             </div>
@@ -413,7 +413,7 @@ export default function SupervisorGroupDetailPage() {
           O que os encontros revelaram
         </h2>
         <p className="mb-3 text-xs text-[var(--text-muted)]">
-          Use a presença como sinal para apoiar o líder, não apenas como histórico.
+          Use a presença como sinal de cuidado, não apenas como histórico.
         </p>
         <div className="space-y-2">
           {events.map((event) => {

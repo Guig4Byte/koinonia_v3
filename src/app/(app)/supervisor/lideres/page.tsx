@@ -1,7 +1,13 @@
 "use client"
 
 import Link from "next/link"
-import { AlertTriangle, CheckCircle2, ClipboardList, User } from "lucide-react"
+import {
+  AlertTriangle,
+  CalendarX,
+  CheckCircle2,
+  ClipboardList,
+  User,
+} from "lucide-react"
 import {
   useSupervisorGroups,
   type SupervisorGroup,
@@ -69,8 +75,29 @@ function buildLeaderSummaries(groups: SupervisorGroup[]): LeaderSummary[] {
     })
 }
 
+function getLeaderTone(leader: LeaderSummary) {
+  if (leader.atRiskCount > 0 || (leader.averageAttendance !== null && leader.averageAttendance < 60)) {
+    return "risk" as const
+  }
+
+  if (leader.pendingAttendanceCount > 0 || (leader.averageAttendance !== null && leader.averageAttendance < 70)) {
+    return "warn" as const
+  }
+
+  return "ok" as const
+}
+
 function getLeaderStatus(leader: LeaderSummary) {
-  if (leader.atRiskCount > 0 || leader.pendingAttendanceCount > 0) {
+  const tone = getLeaderTone(leader)
+
+  if (tone === "risk") {
+    return {
+      label: "Prioridade",
+      className: "border-[var(--risk-border)] bg-[var(--risk-bg)] text-[var(--risk)]",
+    }
+  }
+
+  if (tone === "warn") {
     return {
       label: "Apoiar",
       className: "border-[var(--warn-border)] bg-[var(--warn-bg)] text-[var(--warn)]",
@@ -78,7 +105,7 @@ function getLeaderStatus(leader: LeaderSummary) {
   }
 
   return {
-    label: "OK",
+    label: "Estável",
     className: "border-[var(--ok-border)] bg-[var(--ok-bg)] text-[var(--ok)]",
   }
 }
@@ -90,9 +117,9 @@ function getLeaderReading(leader: LeaderSummary) {
     reasons.push(
       `${leader.atRiskCount} ${pluralize(
         leader.atRiskCount,
-        "pessoa em risco",
-        "pessoas em risco",
-      )}`,
+        "pessoa precisa",
+        "pessoas precisam",
+      )} de cuidado`,
     )
   }
 
@@ -117,17 +144,48 @@ function getLeaderReading(leader: LeaderSummary) {
   return reasons.join(" · ")
 }
 
+function getLeaderNextStep(leader: LeaderSummary) {
+  if (leader.atRiskCount > 0) {
+    return "Próximo passo: perguntar quem precisa de cuidado e combinar retorno."
+  }
+
+  if (leader.pendingAttendanceCount > 0) {
+    return "Próximo passo: pedir atualização do encontro antes de cobrar mais ações."
+  }
+
+  if (leader.averageAttendance !== null && leader.averageAttendance < 70) {
+    return "Próximo passo: entender se a queda é pontual ou se o líder precisa de ajuda."
+  }
+
+  return "Mantenha proximidade normal nos próximos encontros."
+}
+
 function LeaderCard({ leader }: { leader: LeaderSummary }) {
   const status = getLeaderStatus(leader)
   const firstGroup = leader.groups[0]
+  const tone = getLeaderTone(leader)
 
   return (
     <Link
       href={firstGroup ? `/supervisor/celulas/${firstGroup.id}` : "/supervisor/celulas"}
-      className="block rounded-2xl border border-[var(--border-light)] bg-[var(--card)] p-4 transition hover:bg-[var(--surface)] active:scale-[0.98]"
+      className={`block rounded-2xl border p-4 transition hover:bg-[var(--surface)] active:scale-[0.98] ${
+        tone === "risk"
+          ? "border-[var(--risk-border)] bg-[var(--risk-bg)]"
+          : tone === "warn"
+            ? "border-[var(--warn-border)] bg-[var(--warn-bg)]"
+            : "border-[var(--border-light)] bg-[var(--card)]"
+      }`}
     >
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--surface)] text-[var(--text-muted)]">
+        <div
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+            tone === "risk"
+              ? "bg-white/60 text-[var(--risk)] dark:bg-black/10"
+              : tone === "warn"
+                ? "bg-white/60 text-[var(--warn)] dark:bg-black/10"
+                : "bg-[var(--ok-bg)] text-[var(--ok)]"
+          }`}
+        >
           <User className="h-5 w-5" />
         </div>
 
@@ -149,13 +207,16 @@ function LeaderCard({ leader }: { leader: LeaderSummary }) {
           <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
             {getLeaderReading(leader)}
           </p>
+          <p className="mt-2 text-xs font-semibold text-[var(--accent)]">
+            {getLeaderNextStep(leader)}
+          </p>
 
           {leader.groups.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
               {leader.groups.slice(0, 3).map((group) => (
                 <span
                   key={group.id}
-                  className="rounded-full bg-[var(--surface)] px-2 py-1 text-[0.65rem] font-medium text-[var(--text-muted)]"
+                  className="rounded-full bg-white/50 px-2 py-1 text-[0.65rem] font-medium text-[var(--text-secondary)] dark:bg-black/10"
                 >
                   {group.name}
                 </span>
@@ -183,9 +244,7 @@ export default function SupervisorLideresPage() {
 
   const groups = data?.groups ?? []
   const leaders = buildLeaderSummaries(groups)
-  const leadersNeedingSupport = leaders.filter(
-    (leader) => leader.atRiskCount > 0 || leader.pendingAttendanceCount > 0,
-  )
+  const leadersNeedingSupport = leaders.filter((leader) => getLeaderTone(leader) !== "ok")
 
   return (
     <div className="space-y-5">
@@ -197,7 +256,7 @@ export default function SupervisorLideresPage() {
           Quem precisa de suporte?
         </h2>
         <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-          Veja quais líderes carregam células, pessoas em risco ou presença pendente.
+          Acompanhe líderes com pessoas em cuidado, presença pendente ou queda nos encontros.
         </p>
       </section>
 
@@ -214,7 +273,7 @@ export default function SupervisorLideresPage() {
         <div className="rounded-2xl border border-[var(--warn-border)] bg-[var(--warn-bg)] p-4">
           <div className="flex items-center gap-2 text-[var(--warn)]">
             <ClipboardList className="h-4 w-4" />
-            <p className="text-xs font-medium">Apoiar</p>
+            <p className="text-xs font-medium">Precisam de apoio</p>
           </div>
           <p className="mt-2 text-2xl font-semibold text-[var(--text-primary)]">
             {leadersNeedingSupport.length}
@@ -245,11 +304,15 @@ export default function SupervisorLideresPage() {
       {leadersNeedingSupport.length > 0 && (
         <section className="rounded-2xl border border-[var(--warn-border)] bg-[var(--warn-bg)] p-4">
           <div className="flex items-start gap-3 text-[var(--warn)]">
-            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+            {leadersNeedingSupport.some((leader) => leader.pendingAttendanceCount > 0) ? (
+              <CalendarX className="mt-0.5 h-5 w-5 shrink-0" />
+            ) : (
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+            )}
             <div>
-              <h3 className="text-sm font-semibold">Comece por quem carrega mais risco</h3>
+              <h3 className="text-sm font-semibold">Comece pelo líder com maior carga</h3>
               <p className="mt-1 text-sm leading-6">
-                Um contato breve com o líder certo pode destravar o cuidado da célula inteira.
+                Um contato breve pode aliviar o líder e retomar o cuidado da célula inteira.
               </p>
             </div>
           </div>

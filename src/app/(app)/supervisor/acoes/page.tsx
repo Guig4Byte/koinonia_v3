@@ -16,7 +16,7 @@ function pluralize(count: number, singular: string, plural: string) {
 function isGroupInAttention(group: SupervisorDashboardGroup) {
   return (
     group.atRiskCount > 0 ||
-    (group.lastAttendanceRate !== null && group.lastAttendanceRate < 60)
+    (group.lastAttendanceRate !== null && group.lastAttendanceRate < 70)
   )
 }
 
@@ -38,6 +38,12 @@ function getSeverityClasses(severity: SupervisorDashboardAlert["severity"]) {
   return "border-[var(--new-border)] bg-[var(--new-bg)] text-[var(--new)]"
 }
 
+function getActionLabel(alert: SupervisorDashboardAlert) {
+  if (alert.severity === "high") return "Prioridade"
+  if (alert.severity === "medium") return "Esta semana"
+  return "Observar"
+}
+
 function ActionFromAlert({ alert }: { alert: SupervisorDashboardAlert }) {
   const href = getAlertHref(alert)
   const content = (
@@ -51,22 +57,33 @@ function ActionFromAlert({ alert }: { alert: SupervisorDashboardAlert }) {
         <ClipboardList className="h-5 w-5" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-[var(--text-primary)]">
-          {alert.title}
-        </p>
-        <p className="mt-1 text-sm leading-6 text-[var(--text-secondary)]">
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-sm font-semibold text-[var(--text-primary)]">
+            {alert.title}
+          </p>
+          <span
+            className={cn(
+              "shrink-0 rounded-full border px-2 py-1 text-[0.65rem] font-semibold uppercase tracking-wide",
+              getSeverityClasses(alert.severity),
+            )}
+          >
+            {getActionLabel(alert)}
+          </span>
+        </div>
+        <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
           {alert.description}
         </p>
         {(alert.personName || alert.groupName) && (
           <p className="mt-2 text-xs font-medium text-[var(--accent)]">
-            {alert.personName ?? alert.groupName}
+            Abrir {alert.personName ?? alert.groupName} para combinar o próximo cuidado.
           </p>
         )}
       </div>
     </>
   )
 
-  const className = "flex items-start gap-3 rounded-2xl border border-[var(--border-light)] bg-[var(--card)] p-4 transition hover:bg-[var(--surface)] active:scale-[0.98]"
+  const className =
+    "flex items-start gap-3 rounded-2xl border border-[var(--border-light)] bg-[var(--card)] p-4 transition hover:bg-[var(--surface)] active:scale-[0.98]"
 
   if (!href) return <div className={className}>{content}</div>
 
@@ -82,31 +99,41 @@ function GroupActionCard({ group }: { group: SupervisorDashboardGroup }) {
 
   if (group.atRiskCount > 0) {
     reasons.push(
-      `${group.atRiskCount} ${pluralize(group.atRiskCount, "pessoa em risco", "pessoas em risco")}`,
+      `${group.atRiskCount} ${pluralize(group.atRiskCount, "pessoa precisa", "pessoas precisam")} de cuidado`,
     )
   }
 
-  if (group.lastAttendanceRate !== null && group.lastAttendanceRate < 60) {
-    reasons.push(`${group.lastAttendanceRate}% de presença no último encontro`)
+  if (group.lastAttendanceRate !== null && group.lastAttendanceRate < 70) {
+    reasons.push(`${group.lastAttendanceRate}% no último encontro`)
   }
+
+  const isRisk = group.atRiskCount > 0 || (group.lastAttendanceRate !== null && group.lastAttendanceRate < 60)
 
   return (
     <Link
       href={`/supervisor/celulas/${group.id}`}
-      className="flex items-start gap-3 rounded-2xl border border-[var(--warn-border)] bg-[var(--warn-bg)] p-4 transition hover:opacity-90 active:scale-[0.98]"
+      className={`flex items-start gap-3 rounded-2xl border p-4 transition hover:opacity-90 active:scale-[0.98] ${
+        isRisk
+          ? "border-[var(--risk-border)] bg-[var(--risk-bg)]"
+          : "border-[var(--warn-border)] bg-[var(--warn-bg)]"
+      }`}
     >
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/60 text-[var(--warn)] dark:bg-black/10">
+      <div
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/60 dark:bg-black/10 ${
+          isRisk ? "text-[var(--risk)]" : "text-[var(--warn)]"
+        }`}
+      >
         <User className="h-5 w-5" />
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-[var(--text-primary)]">
-          Apoiar {group.leaderName ?? "líder"} em {group.name}
+          Falar com {group.leaderName ?? "o líder"} sobre {group.name}
         </p>
         <p className="mt-1 text-sm leading-6 text-[var(--text-secondary)]">
           {reasons.length > 0 ? reasons.join(" · ") : "Acompanhar célula esta semana."}
         </p>
         <p className="mt-2 text-xs font-semibold text-[var(--accent)]">
-          Próximo passo: conversar com o líder e registrar o encaminhamento.
+          Próximo passo: combinar uma ação simples e registrar o retorno.
         </p>
       </div>
     </Link>
@@ -130,8 +157,9 @@ export default function SupervisorAcoesPage() {
   const groups = data?.groups ?? []
   const attentionGroups = groups.filter(isGroupInAttention)
   const urgentAlerts = alerts.filter((alert) => alert.severity === "high")
-  const otherAlerts = alerts.filter((alert) => alert.severity !== "high")
+  const weekAlerts = alerts.filter((alert) => alert.severity !== "high")
   const fallbackGroupActions = alerts.length === 0 ? attentionGroups.slice(0, 3) : []
+  const totalActions = urgentAlerts.length + weekAlerts.length + fallbackGroupActions.length
 
   return (
     <div className="space-y-5">
@@ -140,12 +168,30 @@ export default function SupervisorAcoesPage() {
           Ações
         </p>
         <h2 className="mt-1 text-2xl font-semibold leading-tight text-[var(--text-primary)]">
-          O que precisa de encaminhamento?
+          O que precisa de retorno?
         </h2>
         <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-          Uma fila simples para lembrar onde a supervisão precisa apoiar líderes e células.
+          Uma fila curta para apoiar líderes, acompanhar células e não deixar cuidado sem resposta.
         </p>
       </section>
+
+      {totalActions > 0 && (
+        <section className="rounded-2xl border border-[var(--border-light)] bg-[var(--card)] p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--surface)] text-[var(--accent)]">
+              <ClipboardList className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-[var(--text-primary)]">
+                {totalActions} {pluralize(totalActions, "encaminhamento aberto", "encaminhamentos abertos")}
+              </p>
+              <p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">
+                Comece pelos itens prioritários e registre o retorno quando houver contato.
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       {urgentAlerts.length > 0 && (
         <section className="space-y-3">
@@ -159,12 +205,12 @@ export default function SupervisorAcoesPage() {
         </section>
       )}
 
-      {otherAlerts.length > 0 && (
+      {weekAlerts.length > 0 && (
         <section className="space-y-3">
           <h3 className="text-sm font-semibold text-[var(--text-secondary)]">
             Acompanhar esta semana
           </h3>
-          {otherAlerts.map((alert) => (
+          {weekAlerts.map((alert) => (
             <ActionFromAlert key={alert.id} alert={alert} />
           ))}
         </section>
@@ -181,21 +227,19 @@ export default function SupervisorAcoesPage() {
         </section>
       )}
 
-      {urgentAlerts.length === 0 &&
-        otherAlerts.length === 0 &&
-        fallbackGroupActions.length === 0 && (
-          <section className="rounded-2xl border border-[var(--ok-border)] bg-[var(--ok-bg)] p-4">
-            <div className="flex items-start gap-3 text-[var(--ok)]">
-              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
-              <div>
-                <h3 className="text-sm font-semibold">Nada urgente agora</h3>
-                <p className="mt-1 text-sm leading-6">
-                  Continue perto dos líderes. Quando um sinal pedir encaminhamento, ele aparecerá aqui.
-                </p>
-              </div>
+      {totalActions === 0 && (
+        <section className="rounded-2xl border border-[var(--ok-border)] bg-[var(--ok-bg)] p-4">
+          <div className="flex items-start gap-3 text-[var(--ok)]">
+            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+            <div>
+              <h3 className="text-sm font-semibold">Nada urgente agora</h3>
+              <p className="mt-1 text-sm leading-6">
+                A região está sem encaminhamento aberto. Continue perto dos líderes.
+              </p>
             </div>
-          </section>
-        )}
+          </div>
+        </section>
+      )}
     </div>
   )
 }
