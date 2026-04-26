@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useState } from "react"
 import { CheckCircle2, Loader2, Search, Sparkles, Users } from "lucide-react"
+import { ContextSignalList } from "@/components/features/context-signal-list"
 import { useMembers, type MemberItem } from "@/hooks/use-members"
 import { cn } from "@/lib/utils"
 
@@ -122,6 +123,36 @@ function getCareReason(member: MemberItem) {
   return "Sem alerta por agora. Continue perto."
 }
 
+
+function getMemberSignalReasons(member: MemberItem) {
+  const reasons: string[] = []
+  const days = getDaysSince(member.lastInteractionAt)
+
+  if (member.riskLevel === "red") {
+    reasons.push("Sinal pastoral prioritário")
+  } else if (member.riskLevel === "yellow") {
+    reasons.push("Sinal pastoral em atenção")
+  }
+
+  if (isVisitor(member)) {
+    reasons.push("Pessoa marcada como visitante")
+  }
+
+  if (days === null) {
+    reasons.push("Sem contato registrado")
+  } else if (days >= 14) {
+    reasons.push(`Sem contato há ${days} dias`)
+  } else if (days > 0 && member.riskLevel !== "green") {
+    reasons.push(`Último contato há ${days} dias`)
+  }
+
+  if (member.riskScore !== null && member.riskLevel !== "green") {
+    reasons.push(`Pontuação de cuidado: ${member.riskScore}`)
+  }
+
+  return reasons
+}
+
 function getNextStep(member: MemberItem) {
   const name = firstName(member.name)
 
@@ -187,7 +218,13 @@ function MemberCareCard({ member }: { member: MemberItem }) {
           <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
             {getCareReason(member)}
           </p>
-          <p className="mt-2 text-xs font-semibold text-[var(--accent)]">
+          <ContextSignalList
+            signals={getMemberSignalReasons(member)}
+            tone={tone === "risk" ? "risk" : tone === "warn" ? "warn" : tone === "new" ? "new" : "neutral"}
+            className="mt-3"
+          />
+
+          <p className="mt-3 text-xs font-semibold text-[var(--accent)]">
             {getNextStep(member)}
           </p>
 

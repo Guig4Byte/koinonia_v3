@@ -14,6 +14,7 @@ import {
   User,
   Users,
 } from "lucide-react"
+import { ContextSignalList } from "@/components/features/context-signal-list"
 import {
   useSupervisorGroupDetail,
   type SupervisorGroupMember,
@@ -73,6 +74,30 @@ function getEventReading(event: { attendanceCount: number; totalAttendances: num
     tone: "ok" as const,
     icon: CheckCircle2,
   }
+}
+
+function getEventSignals(event: { attendanceCount: number; totalAttendances: number }) {
+  const signals: string[] = []
+
+  if (event.totalAttendances === 0) {
+    signals.push("Presença ainda não registrada")
+    return signals
+  }
+
+  const rate = Math.round((event.attendanceCount / event.totalAttendances) * 100)
+  const absentCount = Math.max(event.totalAttendances - event.attendanceCount, 0)
+
+  signals.push(`${rate}% de presença no encontro`)
+
+  if (absentCount > 0) {
+    signals.push(`${absentCount} ${absentCount === 1 ? "ausência" : "ausências"} para observar`)
+  }
+
+  if (event.attendanceCount === 0) {
+    signals.push("Nenhuma presença marcada")
+  }
+
+  return signals
 }
 
 const eventReadingClasses = {
@@ -162,6 +187,26 @@ function getMemberReason(member: SupervisorGroupMember) {
   return "Sem sinal crítico no momento."
 }
 
+function getMemberSignals(member: SupervisorGroupMember) {
+  const signals: string[] = []
+
+  if (member.riskLevel === "red") {
+    signals.push("Sinal pastoral prioritário")
+  } else if (member.riskLevel === "yellow") {
+    signals.push("Sinal pastoral em atenção")
+  }
+
+  if (member.lastInteractionDays === null) {
+    signals.push("Sem contato registrado")
+  } else if (member.lastInteractionDays >= 21) {
+    signals.push(`Sem contato há ${member.lastInteractionDays} dias`)
+  } else if (member.lastInteractionDays > 0 && member.riskLevel !== "green") {
+    signals.push(`Último contato há ${member.lastInteractionDays} dias`)
+  }
+
+  return signals
+}
+
 function getMemberNextStep(member: SupervisorGroupMember, leaderName: string | null | undefined) {
   const leader = leaderName ?? "o líder"
 
@@ -220,7 +265,12 @@ function MemberCareRow({
           <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
             {getMemberReason(member)}
           </p>
-          <p className="mt-2 text-xs font-semibold text-[var(--accent)]">
+          <ContextSignalList
+            signals={getMemberSignals(member)}
+            tone={tone === "risk" ? "risk" : tone === "warn" ? "warn" : "neutral"}
+            className="mt-3"
+          />
+          <p className="mt-3 text-xs font-semibold text-[var(--accent)]">
             {getMemberNextStep(member, leaderName)}
           </p>
         </div>
@@ -457,6 +507,11 @@ export default function SupervisorGroupDetailPage() {
                     <p className="mt-1 text-xs leading-relaxed text-[var(--text-muted)]">
                       {reading.detail}
                     </p>
+                    <ContextSignalList
+                      signals={getEventSignals(event)}
+                      tone={reading.tone === "risk" ? "risk" : reading.tone === "warn" ? "warn" : "neutral"}
+                      className="mt-3"
+                    />
                   </div>
                 </div>
               </div>

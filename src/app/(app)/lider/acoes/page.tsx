@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { ContextSignalList } from "@/components/features/context-signal-list"
 import { useLeaderTasks } from "@/hooks/use-leader-tasks"
 import { useToggleTask } from "@/hooks/use-toggle-task"
 import { Loader2, CheckCircle2, Circle, CalendarDays, User, ArrowRight } from "lucide-react"
@@ -134,6 +135,28 @@ interface TaskCardProps {
   isLoading: boolean
 }
 
+function getTaskSignals(task: TaskCardProps["task"], overdue: boolean) {
+  const signals: string[] = []
+
+  if (overdue) {
+    signals.push("Prazo já passou")
+  } else {
+    signals.push(`Prazo até ${formatDate(task.dueAt)}`)
+  }
+
+  if (task.personName) {
+    signals.push(`Pessoa: ${task.personName}`)
+  }
+
+  if (task.completedAt) {
+    signals.push("Acompanhamento concluído")
+  } else {
+    signals.push("Ainda precisa de retorno")
+  }
+
+  return signals
+}
+
 function TaskCard({ task, onToggle, isLoading }: TaskCardProps) {
   const overdue = !task.completedAt && isOverdue(task.dueAt)
 
@@ -170,7 +193,7 @@ function TaskCard({ task, onToggle, isLoading }: TaskCardProps) {
           {task.description}
         </p>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <span
             className={`flex items-center gap-1 text-xs ${
               overdue ? "text-[var(--risk)] font-medium" : "text-[var(--text-muted)]"
@@ -191,6 +214,12 @@ function TaskCard({ task, onToggle, isLoading }: TaskCardProps) {
             </Link>
           )}
         </div>
+
+        <ContextSignalList
+          signals={getTaskSignals(task, overdue)}
+          tone={task.completedAt ? "ok" : overdue ? "risk" : "neutral"}
+          className="mt-2"
+        />
       </div>
     </div>
   )

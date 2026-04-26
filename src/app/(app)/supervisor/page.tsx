@@ -13,6 +13,7 @@ import {
   useSupervisorDashboard,
   type SupervisorDashboardGroup,
 } from "@/hooks/use-supervisor-dashboard"
+import { ContextSignalList } from "@/components/features/context-signal-list"
 import { SummaryCard } from "@/components/pastor/summary-card"
 
 function pluralize(count: number, singular: string, plural: string) {
@@ -54,6 +55,26 @@ function getGroupReading(group: SupervisorDashboardGroup) {
   }
 
   return reasons.length > 0 ? reasons.join(" · ") : "Acompanhe a próxima leitura da célula"
+}
+
+function getGroupSignals(group: SupervisorDashboardGroup) {
+  const signals: string[] = []
+
+  if (group.atRiskCount > 0) {
+    signals.push(
+      `${group.atRiskCount} ${group.atRiskCount === 1 ? "pessoa precisa" : "pessoas precisam"} de cuidado`,
+    )
+  }
+
+  if (group.lastAttendanceRate !== null && group.lastAttendanceRate < 70) {
+    signals.push(`Último encontro com ${group.lastAttendanceRate}% de presença`)
+  }
+
+  if (!group.leaderName) {
+    signals.push("Sem líder definido")
+  }
+
+  return signals
 }
 
 function getAttendanceAccent(attendance: number) {
@@ -101,7 +122,12 @@ function SupportCard({ group }: { group: SupervisorDashboardGroup }) {
           <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
             {getGroupReading(group)}.
           </p>
-          <p className="mt-2 text-xs font-medium text-[var(--accent)]">
+          <ContextSignalList
+            signals={getGroupSignals(group)}
+            tone={isRisk ? "risk" : "warn"}
+            className="mt-3"
+          />
+          <p className="mt-3 text-xs font-medium text-[var(--accent)]">
             Alinhe com {group.leaderName ?? "o líder"} um cuidado simples.
           </p>
         </div>

@@ -63,6 +63,32 @@ function getDaysSince(dateStr: string | null) {
   )
 }
 
+
+function buildMemberSignalReasons(member: LeaderDashboardMember) {
+  const reasons: string[] = []
+  const days = getDaysSince(member.lastInteractionAt)
+
+  if (member.riskLevel === "red") {
+    reasons.push("Sinal pastoral marcado como prioritário")
+  } else if (member.riskLevel === "yellow") {
+    reasons.push("Sinal pastoral em atenção")
+  }
+
+  if (days === null) {
+    reasons.push("Sem contato registrado")
+  } else if (days >= 14) {
+    reasons.push(`Sem contato há ${days} dias`)
+  } else if (days > 0) {
+    reasons.push(`Último contato há ${days} dias`)
+  }
+
+  if (member.riskScore !== null) {
+    reasons.push(`Pontuação de cuidado: ${member.riskScore}`)
+  }
+
+  return reasons
+}
+
 function buildCareContext(member: LeaderDashboardMember | undefined) {
   if (!member) {
     return {
@@ -235,6 +261,7 @@ export default function LiderPage() {
                 riskLevel={toMemberCardRiskLevel(member.riskLevel)}
                 note={buildMemberNote(member)}
                 avatarUrl={member.photoUrl}
+                signalReasons={buildMemberSignalReasons(member)}
               />
             ))}
           </div>

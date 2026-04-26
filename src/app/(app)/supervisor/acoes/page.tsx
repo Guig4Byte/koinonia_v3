@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { AlertTriangle, CheckCircle2, ClipboardList, User } from "lucide-react"
+import { ContextSignalList } from "@/components/features/context-signal-list"
 import {
   useSupervisorDashboard,
   type SupervisorDashboardAlert,
@@ -44,6 +45,34 @@ function getActionLabel(alert: SupervisorDashboardAlert) {
   return "Observar"
 }
 
+function getAlertSignals(alert: SupervisorDashboardAlert) {
+  const signals: string[] = []
+
+  if (alert.severity === "high") {
+    signals.push("Prioridade alta para a supervisão")
+  } else if (alert.severity === "medium") {
+    signals.push("Sinal para acompanhar esta semana")
+  } else {
+    signals.push("Sinal leve para observar")
+  }
+
+  if (alert.personName) {
+    signals.push(`Pessoa: ${alert.personName}`)
+  } else if (alert.groupName) {
+    signals.push(`Célula: ${alert.groupName}`)
+  }
+
+  signals.push(alert.description)
+
+  return signals
+}
+
+function getAlertTone(alert: SupervisorDashboardAlert) {
+  if (alert.severity === "high") return "risk" as const
+  if (alert.severity === "medium") return "warn" as const
+  return "new" as const
+}
+
 function ActionFromAlert({ alert }: { alert: SupervisorDashboardAlert }) {
   const href = getAlertHref(alert)
   const content = (
@@ -73,8 +102,13 @@ function ActionFromAlert({ alert }: { alert: SupervisorDashboardAlert }) {
         <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
           {alert.description}
         </p>
+        <ContextSignalList
+          signals={getAlertSignals(alert)}
+          tone={getAlertTone(alert)}
+          className="mt-3"
+        />
         {(alert.personName || alert.groupName) && (
-          <p className="mt-2 text-xs font-medium text-[var(--accent)]">
+          <p className="mt-3 text-xs font-medium text-[var(--accent)]">
             Abra {alert.personName ?? alert.groupName} e combine o cuidado.
           </p>
         )}
@@ -132,7 +166,12 @@ function GroupActionCard({ group }: { group: SupervisorDashboardGroup }) {
         <p className="mt-1 text-sm leading-6 text-[var(--text-secondary)]">
           {reasons.length > 0 ? reasons.join(" · ") : "Acompanhe a célula esta semana."}
         </p>
-        <p className="mt-2 text-xs font-semibold text-[var(--accent)]">
+        <ContextSignalList
+          signals={reasons.length > 0 ? reasons : ["Acompanhe a célula esta semana"]}
+          tone={isRisk ? "risk" : "warn"}
+          className="mt-3"
+        />
+        <p className="mt-3 text-xs font-semibold text-[var(--accent)]">
           Combine uma ação simples e registre o retorno.
         </p>
       </div>

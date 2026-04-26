@@ -8,6 +8,7 @@ import {
   ClipboardList,
   User,
 } from "lucide-react"
+import { ContextSignalList } from "@/components/features/context-signal-list"
 import {
   useSupervisorGroups,
   type SupervisorGroup,
@@ -144,6 +145,36 @@ function getLeaderReading(leader: LeaderSummary) {
   return reasons.join(" · ")
 }
 
+function getLeaderSignals(leader: LeaderSummary) {
+  const signals: string[] = []
+
+  if (leader.atRiskCount > 0) {
+    signals.push(
+      `${leader.atRiskCount} ${pluralize(leader.atRiskCount, "pessoa precisa", "pessoas precisam")} de cuidado`,
+    )
+  }
+
+  if (leader.pendingAttendanceCount > 0) {
+    signals.push(
+      `${leader.pendingAttendanceCount} ${pluralize(
+        leader.pendingAttendanceCount,
+        "célula com presença pendente",
+        "células com presença pendente",
+      )}`,
+    )
+  }
+
+  if (leader.averageAttendance !== null && leader.averageAttendance < 70) {
+    signals.push(`Presença média de ${leader.averageAttendance}%`)
+  }
+
+  if (signals.length === 0) {
+    signals.push("Sem alerta para a supervisão agora")
+  }
+
+  return signals
+}
+
 function getLeaderNextStep(leader: LeaderSummary) {
   if (leader.atRiskCount > 0) {
     return "Pergunte quem precisa de cuidado e combine retorno."
@@ -207,7 +238,12 @@ function LeaderCard({ leader }: { leader: LeaderSummary }) {
           <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
             {getLeaderReading(leader)}
           </p>
-          <p className="mt-2 text-xs font-semibold text-[var(--accent)]">
+          <ContextSignalList
+            signals={getLeaderSignals(leader)}
+            tone={tone === "risk" ? "risk" : tone === "warn" ? "warn" : "neutral"}
+            className="mt-3"
+          />
+          <p className="mt-3 text-xs font-semibold text-[var(--accent)]">
             {getLeaderNextStep(leader)}
           </p>
 

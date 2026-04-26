@@ -10,6 +10,7 @@ import {
   User,
   Users,
 } from "lucide-react"
+import { ContextSignalList } from "@/components/features/context-signal-list"
 import {
   usePastorDashboard,
   type PastorDashboardAlert,
@@ -81,6 +82,27 @@ function getUniquePersonAlerts(alerts: PastorDashboardAlert[]) {
   )
 }
 
+
+function getAlertSignals(alert: PastorDashboardAlert) {
+  const signals: string[] = []
+
+  if (alert.severity === "high") {
+    signals.push("Prioridade alta para cuidado")
+  } else if (alert.severity === "medium") {
+    signals.push("Sinal de atenção para acompanhar")
+  } else {
+    signals.push("Sinal leve para observar")
+  }
+
+  if (alert.groupName) {
+    signals.push(`Célula: ${alert.groupName}`)
+  }
+
+  signals.push(alert.description)
+
+  return signals
+}
+
 function PersonCareCard({ alert }: { alert: PastorDashboardAlert }) {
   const href = alert.personId ? `/membro/${alert.personId}` : undefined
   const content = (
@@ -117,6 +139,11 @@ function PersonCareCard({ alert }: { alert: PastorDashboardAlert }) {
         <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
           {alert.description}
         </p>
+        <ContextSignalList
+          signals={getAlertSignals(alert)}
+          tone={getSeverityTone(alert.severity)}
+          className="mt-3"
+        />
         <p className="mt-3 rounded-xl bg-[var(--surface)] px-3 py-2 text-xs font-medium leading-5 text-[var(--text-secondary)]">
           {getNextStep(alert)}
         </p>

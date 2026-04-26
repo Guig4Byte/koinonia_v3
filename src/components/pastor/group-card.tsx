@@ -1,7 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { Users, TrendingUp, AlertTriangle } from "lucide-react"
+import { AlertTriangle, TrendingUp, Users } from "lucide-react"
+import { ContextSignalList } from "@/components/features/context-signal-list"
 import { cn } from "@/lib/utils"
 
 type DashboardGroup = {
@@ -11,6 +12,26 @@ type DashboardGroup = {
   atRiskCount: number
   lastAttendanceRate: number | null
   leaderName: string | null
+}
+
+function getGroupSignals(group: DashboardGroup) {
+  const signals: string[] = []
+
+  if (group.atRiskCount > 0) {
+    signals.push(
+      `${group.atRiskCount} ${group.atRiskCount === 1 ? "pessoa em cuidado" : "pessoas em cuidado"}`,
+    )
+  }
+
+  if (group.lastAttendanceRate !== null && group.lastAttendanceRate < 70) {
+    signals.push(`Último encontro com ${group.lastAttendanceRate}% de presença`)
+  }
+
+  if (signals.length === 0 && group.lastAttendanceRate !== null) {
+    signals.push(`Último encontro com ${group.lastAttendanceRate}% de presença`)
+  }
+
+  return signals
 }
 
 export function GroupCard({
@@ -54,6 +75,11 @@ export function GroupCard({
             Líder: {group.leaderName}
           </p>
         )}
+        <ContextSignalList
+          signals={getGroupSignals(group)}
+          tone={group.atRiskCount > 0 ? "risk" : group.lastAttendanceRate !== null && group.lastAttendanceRate < 70 ? "warn" : "neutral"}
+          className="mt-3"
+        />
       </div>
     </>
   )

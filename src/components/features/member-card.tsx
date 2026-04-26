@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { ContextSignalList } from "./context-signal-list"
 import { RiskBadge } from "./risk-badge"
 
 interface MemberCardProps {
@@ -11,6 +12,7 @@ interface MemberCardProps {
   riskLevel?: "risk" | "warn" | "ok" | "new" | undefined
   note?: string | undefined
   avatarUrl?: string | null | undefined
+  signalReasons?: string[] | undefined
   className?: string | undefined
 }
 
@@ -30,6 +32,7 @@ export function MemberCard({
   riskLevel,
   note,
   avatarUrl,
+  signalReasons,
   className,
 }: MemberCardProps) {
   const initials = getInitials(name)
@@ -79,6 +82,14 @@ export function MemberCard({
           <p className="truncate text-sm text-[var(--text-secondary)]">
             {note}
           </p>
+        ) : null}
+
+        {signalReasons ? (
+          <ContextSignalList
+            signals={signalReasons}
+            tone={riskLevel === "risk" ? "risk" : riskLevel === "warn" ? "warn" : "neutral"}
+            className="mt-2"
+          />
         ) : null}
       </div>
     </Link>

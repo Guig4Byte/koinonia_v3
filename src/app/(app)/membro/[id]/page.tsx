@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import { useMe } from "@/hooks/use-auth"
 import { CareNoteForm } from "@/components/features/care-note-form"
+import { ContextSignalList } from "@/components/features/context-signal-list"
 import { FollowUpTaskForm } from "@/components/features/follow-up-task-form"
 import {
   useSharedMemberProfile,
@@ -106,6 +107,51 @@ function getCareReading(
       "Nenhum alerta por agora. Continue perto e registre mudanças importantes.",
     nextStep: "Mantenha por perto nos encontros.",
   }
+}
+
+function getProfileSignalReasons(
+  person: SharedMemberProfile["person"],
+  attendanceRate: number,
+  totalCount: number,
+) {
+  const reasons: string[] = []
+  const absenceCount = person.attendances.filter((attendance) => !attendance.present).length
+  const openTasksCount = person.tasks.filter((task) => !task.completedAt).length
+  const latestInteraction = person.interactions[0]
+
+  if (person.riskLevel === "red") {
+    reasons.push("Estado pastoral prioritário")
+  } else if (person.riskLevel === "yellow") {
+    reasons.push("Estado pastoral em atenção")
+  }
+
+  if (totalCount === 0) {
+    reasons.push("Sem presença registrada ainda")
+  } else {
+    reasons.push(`Presença recente em ${attendanceRate}%`)
+
+    if (absenceCount > 0) {
+      reasons.push(
+        `${absenceCount} ${absenceCount === 1 ? "ausência" : "ausências"} nos últimos ${totalCount} encontros`,
+      )
+    }
+  }
+
+  if (person.interactions.length === 0) {
+    reasons.push("Sem histórico pastoral registrado")
+  } else if (latestInteraction) {
+    reasons.push(
+      `Último cuidado registrado em ${new Date(latestInteraction.createdAt).toLocaleDateString("pt-BR")}`,
+    )
+  }
+
+  if (openTasksCount > 0) {
+    reasons.push(
+      `${openTasksCount} ${openTasksCount === 1 ? "acompanhamento aberto" : "acompanhamentos abertos"}`,
+    )
+  }
+
+  return reasons
 }
 
 function getInteractionKindLabel(kind: string) {
@@ -214,6 +260,11 @@ export default function MembroPage({ params }: { params: Promise<{ id: string }>
               <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
                 {careReading.description}
               </p>
+              <ContextSignalList
+                signals={getProfileSignalReasons(person, attendanceRate, totalCount)}
+                tone={careReading.tone}
+                className="mt-3"
+              />
               <p className="mt-3 text-xs font-semibold text-[var(--accent)]">
                 {careReading.nextStep}
               </p>

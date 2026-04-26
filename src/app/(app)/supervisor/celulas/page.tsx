@@ -8,6 +8,7 @@ import {
   TrendingDown,
   Users,
 } from "lucide-react"
+import { ContextSignalList } from "@/components/features/context-signal-list"
 import {
   useSupervisorGroups,
   type SupervisorGroup,
@@ -85,6 +86,30 @@ function getGroupReading(group: SupervisorGroup) {
   return reasons.join(" · ")
 }
 
+function getGroupSignals(group: SupervisorGroup) {
+  const signals: string[] = []
+
+  if (group.atRiskCount > 0) {
+    signals.push(
+      `${group.atRiskCount} ${pluralize(group.atRiskCount, "pessoa precisa", "pessoas precisam")} de cuidado`,
+    )
+  }
+
+  if (group.hasUnregisteredAttendance) {
+    signals.push("Presença do encontro ainda pendente")
+  }
+
+  if (group.lastAttendanceRate !== null && group.lastAttendanceRate < 70) {
+    signals.push(`Último encontro com ${group.lastAttendanceRate}% de presença`)
+  }
+
+  if (signals.length === 0) {
+    signals.push("Sem alerta por agora")
+  }
+
+  return signals
+}
+
 const toneClasses = {
   risk: {
     card: "border-[var(--risk-border)] bg-[var(--risk-bg)]",
@@ -141,6 +166,12 @@ function GroupCard({ group }: { group: SupervisorGroup }) {
           <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
             {getGroupReading(group)}
           </p>
+
+          <ContextSignalList
+            signals={getGroupSignals(group)}
+            tone={tone === "risk" ? "risk" : tone === "warn" ? "warn" : "neutral"}
+            className="mt-3"
+          />
 
           <div className="mt-3 flex flex-wrap gap-2">
             <span className="rounded-full bg-[var(--surface-soft)] px-2 py-1 text-[0.65rem] font-medium text-[var(--text-secondary)] dark:bg-black/10">

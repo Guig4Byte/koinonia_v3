@@ -17,6 +17,7 @@ import {
   type PastorDashboardAlert,
   type PastorDashboardGroup,
 } from "@/hooks/use-pastor-dashboard"
+import { ContextSignalList } from "@/components/features/context-signal-list"
 import { SummaryCard } from "@/components/pastor/summary-card"
 import { AlertCard } from "@/components/pastor/alert-card"
 import { GroupCard } from "@/components/pastor/group-card"
@@ -74,6 +75,25 @@ function getPersonFocus(alerts: PastorDashboardAlert[]) {
   return alerts.filter((alert) => alert.personId || alert.personName).slice(0, 2)
 }
 
+
+function getAlertSignals(alert: PastorDashboardAlert) {
+  const signals: string[] = []
+
+  if (alert.severity === "high") {
+    signals.push("Prioridade alta para cuidado")
+  } else if (alert.severity === "medium") {
+    signals.push("Sinal de atenção para acompanhar")
+  }
+
+  if (alert.groupName) {
+    signals.push(`Ligado à ${alert.groupName}`)
+  }
+
+  signals.push(alert.description)
+
+  return signals
+}
+
 function PersonFocusCard({ alert }: { alert: PastorDashboardAlert }) {
   const tone = getSeverityTone(alert.severity)
   const href = alert.personId ? `/membro/${alert.personId}` : "/pastor/pessoas"
@@ -109,6 +129,11 @@ function PersonFocusCard({ alert }: { alert: PastorDashboardAlert }) {
           <p className="mt-2 line-clamp-2 text-sm leading-5 text-[var(--text-secondary)]">
             {alert.description}
           </p>
+          <ContextSignalList
+            signals={getAlertSignals(alert)}
+            tone={tone}
+            className="mt-3"
+          />
         </div>
       </div>
     </Link>
