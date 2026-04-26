@@ -102,9 +102,9 @@ export default function SupervisorProfilePage() {
             {overdueTasks.map((task) => (
               <div
                 key={task.id}
-                className="flex items-start gap-3 rounded-xl border-l-4 border-amber-400 bg-amber-50 p-3 dark:bg-amber-950/20"
+                className="flex items-start gap-3 rounded-xl border-l-4 border-[var(--warn-border)] bg-[var(--warn-bg)] p-3"
               >
-                <ClipboardList className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                <ClipboardList className="mt-0.5 h-4 w-4 shrink-0 text-[var(--warn)]" />
                 <div className="min-w-0">
                   <p className="text-sm font-medium">{task.description}</p>
                   <p className="text-xs text-[var(--text-muted)]">

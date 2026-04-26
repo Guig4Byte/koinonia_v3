@@ -34,7 +34,7 @@ export function GroupCard({
         <div className="flex items-center justify-between">
           <p className="truncate text-sm font-medium">{group.name}</p>
           {group.atRiskCount > 0 && (
-            <span className="flex items-center gap-1 text-xs font-medium text-red-600 dark:text-red-400">
+            <span className="flex items-center gap-1 text-xs font-medium text-[var(--risk)]">
               <AlertTriangle className="h-3 w-3" />
               {group.atRiskCount}
             </span>

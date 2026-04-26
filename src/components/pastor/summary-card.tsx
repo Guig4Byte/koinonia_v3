@@ -12,19 +12,19 @@ interface SummaryCardProps {
 export function SummaryCard({ label, value, icon, accent = "default" }: SummaryCardProps) {
   const accentClass = {
     default: "bg-[var(--surface)]",
-    risk: "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/30",
-    ok: "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/30",
+    risk: "bg-[var(--risk-bg)] border-[var(--risk-border)]",
+    ok: "bg-[var(--ok-bg)] border-[var(--ok-border)]",
   }
 
   const iconClass = {
     default: "text-[var(--text-muted)]",
-    risk: "text-red-600 dark:text-red-400",
-    ok: "text-emerald-600 dark:text-emerald-400",
+    risk: "text-[var(--risk)]",
+    ok: "text-[var(--ok)]",
   }
 
   return (
     <div className={cn("flex items-center gap-3 rounded-xl border border-[var(--border-light)] p-3", accentClass[accent])}>
-      <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--bg)]", iconClass[accent])}>
+      <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--card)]", iconClass[accent])}>
         {icon}
       </div>
       <div className="min-w-0">

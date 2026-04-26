@@ -306,7 +306,7 @@ export default function SupervisorGroupDetailPage() {
         <button
           onClick={handleCobrar}
           disabled={createTask.isPending || cobrarSent}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-stone-800 px-4 py-3 text-sm font-semibold text-white transition hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-70"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-[#fffaf2] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
         >
           {cobrarSent ? (
             <>

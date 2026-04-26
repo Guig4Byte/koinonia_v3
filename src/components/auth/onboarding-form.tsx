@@ -79,7 +79,7 @@ export function OnboardingForm() {
             <button
               type="button"
               onClick={goToNextStep}
-              className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-stone-800 px-4 text-base font-semibold text-white transition hover:bg-stone-700"
+              className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-[var(--accent)] px-4 text-base font-semibold text-[#fffaf2] transition hover:opacity-90"
             >
               Continuar
             </button>
@@ -148,7 +148,7 @@ export function OnboardingForm() {
               <button
                 type="submit"
                 disabled={onboardingMutation.isPending}
-                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-stone-800 px-4 text-base font-semibold text-white transition hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-70"
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 text-base font-semibold text-[#fffaf2] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {onboardingMutation.isPending ? (
                   <>

@@ -148,13 +148,13 @@ export default function SupervisorPage() {
   return (
     <div className="space-y-6">
       <section className="rounded-2xl p-5 text-white shadow-lg" style={{ backgroundColor: "var(--pulse-card-bg)" }}>
-        <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-stone-300">
+        <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-white/70">
           Ponte de cuidado da região
         </p>
         <h2 className="text-2xl font-semibold leading-snug text-white">
           {mainPulse}
         </h2>
-        <p className="mt-3 text-sm leading-6 text-stone-300">{supportPulse}</p>
+        <p className="mt-3 text-sm leading-6 text-white/70">{supportPulse}</p>
       </section>
 
       {attentionGroups.length > 0 ? (

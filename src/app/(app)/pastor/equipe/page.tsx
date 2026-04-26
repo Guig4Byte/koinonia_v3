@@ -59,17 +59,17 @@ export default function PastorEquipePage() {
                 <span className="text-xs font-medium">{supervisor.averageAttendance}%</span>
               </div>
               {supervisor.atRiskCount > 0 && (
-                <div className="flex items-center gap-1.5 rounded-lg bg-red-50 px-2 py-1.5 dark:bg-red-950/20">
-                  <AlertTriangle className="h-3 w-3 text-red-600 dark:text-red-400" />
-                  <span className="text-xs font-medium text-red-600 dark:text-red-400">
+                <div className="flex items-center gap-1.5 rounded-lg bg-[var(--risk-bg)] px-2 py-1.5">
+                  <AlertTriangle className="h-3 w-3 text-[var(--risk)]" />
+                  <span className="text-xs font-medium text-[var(--risk)]">
                     {supervisor.atRiskCount} em risco
                   </span>
                 </div>
               )}
               {supervisor.overdueTasksCount > 0 && (
-                <div className="flex items-center gap-1.5 rounded-lg bg-amber-50 px-2 py-1.5 dark:bg-amber-950/20">
-                  <ClipboardList className="h-3 w-3 text-amber-600 dark:text-amber-400" />
-                  <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                <div className="flex items-center gap-1.5 rounded-lg bg-[var(--warn-bg)] px-2 py-1.5">
+                  <ClipboardList className="h-3 w-3 text-[var(--warn)]" />
+                  <span className="text-xs font-medium text-[var(--warn)]">
                     {supervisor.overdueTasksCount} atras.
                   </span>
                 </div>

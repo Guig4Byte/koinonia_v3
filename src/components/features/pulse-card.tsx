@@ -45,7 +45,7 @@ export function PulseCard({
       )}
       style={{ backgroundColor: "var(--pulse-card-bg)" }}
     >
-      <h2 className="mb-4 text-sm font-medium text-stone-300">
+      <h2 className="mb-4 text-sm font-medium text-white/70">
         Resumo da célula
       </h2>
 
@@ -57,11 +57,11 @@ export function PulseCard({
             style={{ animationDelay: `${item.delayMs}ms` }}
           >
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10">
-              <item.icon className="h-5 w-5 text-stone-200" />
+              <item.icon className="h-5 w-5 text-white/80" />
             </div>
             <div>
               <p className="text-xl font-semibold">{item.value}</p>
-              <p className="text-xs text-stone-400">{item.label}</p>
+              <p className="text-xs text-white/60">{item.label}</p>
             </div>
           </div>
         ))}

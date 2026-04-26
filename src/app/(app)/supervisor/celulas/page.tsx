@@ -62,7 +62,7 @@ export default function SupervisorCelulasPage() {
                   </div>
                 </div>
                 {group.hasUnregisteredAttendance && (
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--warn-bg)] text-[var(--warn)]">
                     <CalendarX className="h-4 w-4" />
                   </span>
                 )}
@@ -73,21 +73,21 @@ export default function SupervisorCelulasPage() {
                   <Users className="h-3 w-3 text-[var(--text-muted)]" />
                   <span className="text-xs font-medium">{group.memberCount}</span>
                 </div>
-                <div className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 ${isZeroAttendance ? "bg-amber-100/60 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400" : "bg-[var(--bg)]/60"}`}>
+                <div className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 ${isZeroAttendance ? "bg-[var(--warn-bg)] text-[var(--warn)]" : "bg-[var(--bg)]/60"}`}>
                   <TrendingUp className="h-3 w-3 text-[var(--text-muted)]" />
-                  <span className={`text-xs font-medium ${isZeroAttendance ? "text-amber-700 dark:text-amber-400" : ""}`}>{group.averageAttendance}%</span>
+                  <span className={`text-xs font-medium ${isZeroAttendance ? "text-[var(--warn)]" : ""}`}>{group.averageAttendance}%</span>
                 </div>
                 {group.atRiskCount > 0 ? (
-                  <div className="flex items-center gap-1.5 rounded-lg bg-red-50 px-2 py-1.5 dark:bg-red-950/20">
-                    <AlertTriangle className="h-3 w-3 text-red-600 dark:text-red-400" />
-                    <span className="text-xs font-medium text-red-600 dark:text-red-400">
+                  <div className="flex items-center gap-1.5 rounded-lg bg-[var(--risk-bg)] px-2 py-1.5">
+                    <AlertTriangle className="h-3 w-3 text-[var(--risk)]" />
+                    <span className="text-xs font-medium text-[var(--risk)]">
                       {group.atRiskCount}
                     </span>
                   </div>
                 ) : isZeroAttendance ? (
-                  <div className="flex items-center gap-1.5 rounded-lg bg-amber-100/60 px-2 py-1.5 dark:bg-amber-950/20">
-                    <TrendingUp className="h-3 w-3 text-amber-600 dark:text-amber-400" />
-                    <span className="text-xs font-medium text-amber-600 dark:text-amber-400">0%</span>
+                  <div className="flex items-center gap-1.5 rounded-lg bg-[var(--warn-bg)] px-2 py-1.5">
+                    <TrendingUp className="h-3 w-3 text-[var(--warn)]" />
+                    <span className="text-xs font-medium text-[var(--warn)]">0%</span>
                   </div>
                 ) : null}
               </div>

@@ -5,98 +5,98 @@
 @layer base {
   :root {
     color-scheme: light;
-    /* Fundos */
-    --bg: #faf6f1;
-    --card: #ffffff;
-    --surface: #f1efea;
+    /* Fundos — pergaminho contemporâneo */
+    --bg: #f4ead9;
+    --card: #fffaf2;
+    --surface: #efe3cf;
 
     /* Textos */
-    --text-primary: #2c2c2a;
-    --text-secondary: #5f5e5a;
-    --text-muted: #888780;
+    --text-primary: #2f2923;
+    --text-secondary: #5c5146;
+    --text-muted: #72695e;
 
     /* Status — Risco */
-    --risk: #993c1d;
-    --risk-bg: #faece7;
-    --risk-border: #f5c4b3;
+    --risk: #9a3f25;
+    --risk-bg: #f7e8de;
+    --risk-border: #e2b29f;
 
     /* Status — OK */
-    --ok: #3b6d11;
-    --ok-bg: #eaf3de;
-    --ok-border: #c0dd97;
+    --ok: #486b2a;
+    --ok-bg: #e7efdb;
+    --ok-border: #bfd1a3;
 
     /* Status — Atenção */
-    --warn: #854f0b;
-    --warn-bg: #fef3e8;
-    --warn-border: #fac775;
+    --warn: #8a570f;
+    --warn-bg: #fbefd7;
+    --warn-border: #dfba74;
 
     /* Status — Novo */
-    --new: #185fa5;
-    --new-bg: #e6f1fb;
-    --new-border: #b3d7f7;
+    --new: #2f638f;
+    --new-bg: #e4eef6;
+    --new-border: #b8cede;
 
     /* Acento */
-    --accent: #5f4b32;
-    --accent-light: #f0e8dc;
+    --accent: #6b4f2d;
+    --accent-light: #eadcc6;
 
     /* Input */
-    --input-bg: #ffffff;
-    --input-border: #E8E4DE;
+    --input-bg: #fffaf2;
+    --input-border: #dbcbb3;
 
     /* Bordas */
-    --border: #d3d1c7;
-    --border-light: #e3e0d8;
+    --border: #d6c5ad;
+    --border-light: #e5d7c2;
 
     /* Pulse Card */
-    --pulse-card-bg: #3d3225;
+    --pulse-card-bg: #493824;
   }
 
   .dark {
     color-scheme: dark;
     /* Fundos */
-    --bg: #141412;
-    --card: #1e1e1c;
-    --surface: #2a2a28;
+    --bg: #15130f;
+    --card: #211c16;
+    --surface: #2e261c;
 
     /* Textos */
-    --text-primary: #e8e4df;
-    --text-secondary: #c8c4bd;
-    --text-muted: #888780;
+    --text-primary: #efe7dc;
+    --text-secondary: #d0c4b5;
+    --text-muted: #a99a88;
 
     /* Status — Risco */
-    --risk: #e07a5f;
-    --risk-bg: #3d1a0e;
-    --risk-border: #5c2615;
+    --risk: #e08b72;
+    --risk-bg: #3b1c12;
+    --risk-border: #6a3424;
 
     /* Status — OK */
-    --ok: #8fbc6b;
-    --ok-bg: #1a3008;
-    --ok-border: #2a4a0f;
+    --ok: #a1c47c;
+    --ok-bg: #203013;
+    --ok-border: #3e5729;
 
     /* Status — Atenção */
-    --warn: #d4a35e;
-    --warn-bg: #3d2405;
-    --warn-border: #5c3610;
+    --warn: #e0b66a;
+    --warn-bg: #3a2608;
+    --warn-border: #6c4712;
 
     /* Status — Novo */
-    --new: #5a9fd4;
-    --new-bg: #0a2640;
-    --new-border: #143d66;
+    --new: #8db9dd;
+    --new-bg: #102a42;
+    --new-border: #255071;
 
     /* Acento */
-    --accent: #c4a882;
-    --accent-light: #3d3225;
+    --accent: #d4b98d;
+    --accent-light: #3a2d1f;
 
     /* Input */
-    --input-bg: #1C1C1A;
-    --input-border: #363430;
+    --input-bg: #211c16;
+    --input-border: #463b2c;
 
     /* Bordas */
-    --border: #3d3c39;
-    --border-light: #2a2a28;
+    --border: #4a3f31;
+    --border-light: #342c22;
 
     /* Pulse Card */
-    --pulse-card-bg: #2c2c2a;
+    --pulse-card-bg: #2f2419;
   }
 
   * {
@@ -112,18 +112,22 @@
     background-color: var(--bg);
     color: var(--text-primary);
     background-image:
-      radial-gradient(circle at 50% 0%, rgba(255, 252, 245, 0.8), transparent 50%),
-      linear-gradient(180deg, #f5f0e8 0%, #ede8df 100%);
+      radial-gradient(circle at 50% -10%, rgba(255, 253, 244, 0.92), transparent 42rem),
+      radial-gradient(circle at 12% 6%, rgba(164, 103, 39, 0.12), transparent 18rem),
+      radial-gradient(circle at 88% 0%, rgba(120, 80, 35, 0.08), transparent 20rem),
+      linear-gradient(180deg, #f7eedf 0%, #efe1cd 100%);
+    background-repeat: no-repeat;
   }
 
   .dark body {
     background-image:
-      radial-gradient(circle at top, rgba(90, 66, 43, 0.22), transparent 35%),
-      linear-gradient(180deg, rgba(20, 20, 18, 1) 0%, rgba(26, 26, 24, 1) 100%);
+      radial-gradient(circle at 50% -10%, rgba(96, 67, 37, 0.28), transparent 34rem),
+      radial-gradient(circle at 12% 6%, rgba(120, 82, 43, 0.18), transparent 18rem),
+      linear-gradient(180deg, #17130f 0%, #211a13 100%);
   }
 
   ::selection {
-    background-color: rgba(24, 95, 165, 0.2);
+    background-color: rgba(107, 79, 45, 0.22);
     color: var(--text-primary);
   }
 }
@@ -131,8 +135,8 @@
 /* Tema escuro — fallback direto fora do layer para garantir aplicação */
 html.dark,
 html.dark body {
-  background-color: #141412;
-  color: #e8e4df;
+  background-color: #15130f;
+  color: #efe7dc;
 }
 
 @layer utilities {

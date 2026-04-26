@@ -14,9 +14,21 @@ type DashboardAlert = {
 }
 
 const severityConfig = {
-  high: { color: "border-red-400 bg-red-50 dark:bg-red-950/20", icon: AlertTriangle, iconColor: "text-red-600 dark:text-red-400" },
-  medium: { color: "border-amber-400 bg-amber-50 dark:bg-amber-950/20", icon: AlertCircle, iconColor: "text-amber-600 dark:text-amber-400" },
-  low: { color: "border-sky-400 bg-sky-50 dark:bg-sky-950/20", icon: Info, iconColor: "text-sky-600 dark:text-sky-400" },
+  high: {
+    color: "border-[var(--risk-border)] bg-[var(--risk-bg)]",
+    icon: AlertTriangle,
+    iconColor: "text-[var(--risk)]",
+  },
+  medium: {
+    color: "border-[var(--warn-border)] bg-[var(--warn-bg)]",
+    icon: AlertCircle,
+    iconColor: "text-[var(--warn)]",
+  },
+  low: {
+    color: "border-[var(--new-border)] bg-[var(--new-bg)]",
+    icon: Info,
+    iconColor: "text-[var(--new)]",
+  },
 }
 
 export function AlertCard({

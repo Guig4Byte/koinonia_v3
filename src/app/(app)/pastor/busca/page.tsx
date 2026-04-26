@@ -64,10 +64,10 @@ export default function PastorBuscaPage() {
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium">{person.name}</p>
                         {person.riskLevel === "red" && (
-                          <span className="h-2 w-2 rounded-full bg-red-500" />
+                          <span className="h-2 w-2 rounded-full bg-[var(--risk)]" />
                         )}
                         {person.riskLevel === "yellow" && (
-                          <span className="h-2 w-2 rounded-full bg-amber-500" />
+                          <span className="h-2 w-2 rounded-full bg-[var(--warn)]" />
                         )}
                       </div>
                       <p className="text-xs text-[var(--text-muted)]">
