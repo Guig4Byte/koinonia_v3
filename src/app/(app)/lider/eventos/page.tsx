@@ -45,7 +45,7 @@ function getEncounterReading(event: LeaderEvent): {
   if (!event.occurredAt || rate === null) {
     return {
       label: "Aguardando presença",
-      detail: "Registre o encontro para que o Koinonia revele quem precisa de cuidado.",
+      detail: "Registre presença para saber quem precisa de cuidado.",
       tone: isPastScheduledDate(event.scheduledAt) ? "warn" : "muted",
       icon: isPastScheduledDate(event.scheduledAt) ? AlertTriangle : Clock3,
     }
@@ -54,7 +54,7 @@ function getEncounterReading(event: LeaderEvent): {
   if (event.attendanceCount > 0 && event.presentCount === 0) {
     return {
       label: "Revisar encontro",
-      detail: "Nenhuma presença registrada. Confirme se o encontro aconteceu ou se houve erro no registro.",
+      detail: "Nenhuma presença registrada. Confirme se o encontro aconteceu.",
       tone: "risk",
       icon: AlertTriangle,
     }
@@ -63,7 +63,7 @@ function getEncounterReading(event: LeaderEvent): {
   if (rate < 60) {
     return {
       label: "Queda forte",
-      detail: `${absentCount} ausência${absentCount === 1 ? "" : "s"} pedem cuidado depois deste encontro.`,
+      detail: `${absentCount} ausência${absentCount === 1 ? "" : "s"} pedem atenção.`,
       tone: "risk",
       icon: AlertTriangle,
     }
@@ -80,7 +80,7 @@ function getEncounterReading(event: LeaderEvent): {
 
   return {
     label: "Encontro saudável",
-    detail: "Presença registrada sem sinal urgente. Continue acompanhando de perto.",
+    detail: "Presença registrada sem sinal urgente.",
     tone: "ok",
     icon: CheckCircle2,
   }
@@ -151,10 +151,10 @@ export default function EventosPage() {
           Encontros da célula
         </p>
         <h2 className="mt-1 text-2xl font-semibold leading-tight text-[var(--text-primary)]">
-          O que os encontros estão revelando?
+          Registre os encontros sem complicar.
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">
-          Registre a presença para transformar o encontro em sinais de cuidado, não só em histórico.
+          Marque presença, confirme ausências e siga para o próximo cuidado.
         </p>
       </section>
 
@@ -163,7 +163,7 @@ export default function EventosPage() {
         style={{ animationDelay: "80ms" }}
       >
         <p className="text-sm font-medium text-[var(--text-primary)]">
-          Leitura rápida
+          Resumo simples
         </p>
         <div className="mt-3 grid grid-cols-2 gap-3">
           <div className="rounded-xl bg-[var(--surface)] p-3">
@@ -179,7 +179,7 @@ export default function EventosPage() {
               {recentRiskCount}
             </p>
             <p className="mt-1 text-xs text-[var(--text-muted)]">
-              leitura{recentRiskCount === 1 ? "" : "s"} pedindo atenção
+              encontro{recentRiskCount === 1 ? "" : "s"} pedindo atenção
             </p>
           </div>
         </div>
@@ -187,8 +187,8 @@ export default function EventosPage() {
 
       {waitingForAttendance.length > 0 && (
         <EventSection
-          title="Aguardando registro"
-          description="Esses encontros ainda não viraram leitura de cuidado."
+          title="Registrar presença"
+          description="Comece por esses encontros."
           events={waitingForAttendance}
           animationDelay="140ms"
         />
@@ -196,8 +196,8 @@ export default function EventosPage() {
 
       {past.length > 0 && (
         <EventSection
-          title="Leituras recentes"
-          description="Encontros já registrados e o que eles indicam para acompanhamento."
+          title="Já registrados"
+          description="Veja o que cada encontro indicou."
           events={past}
           animationDelay="200ms"
         />
@@ -206,7 +206,7 @@ export default function EventosPage() {
       {upcoming.length > 0 && (
         <EventSection
           title="Próximos encontros"
-          description="Quando acontecerem, registre a presença para alimentar o cuidado."
+          description="Quando acontecerem, registre presença sem deixar para depois."
           events={upcoming}
           animationDelay="260ms"
         />
@@ -218,7 +218,7 @@ export default function EventosPage() {
             Nenhum encontro encontrado.
           </p>
           <p className="mt-1 text-xs text-[var(--text-muted)]">
-            Quando houver encontros, esta tela mostrará o que eles revelam para o cuidado da célula.
+            Quando houver encontros, esta tela ajudará a registrar presença e observar ausências.
           </p>
         </div>
       )}
@@ -260,7 +260,7 @@ function EventCard({ event }: { event: LeaderEvent }) {
   const reading = getEncounterReading(event)
   const ToneIcon = reading.icon
   const classes = toneClasses[reading.tone]
-  const cta = event.occurredAt ? "Revisar presença" : "Registrar presença"
+  const cta = event.occurredAt ? "Revisar" : "Registrar presença"
 
   return (
     <Link

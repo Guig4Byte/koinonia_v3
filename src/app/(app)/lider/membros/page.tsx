@@ -104,29 +104,29 @@ function getCareLabel(member: MemberItem) {
 
 function getCareReason(member: MemberItem) {
   if (member.riskLevel === "red") {
-    return "Sinal alto de afastamento. O cuidado precisa sair do radar e virar contato."
+    return "Sinal alto de afastamento. Procure esta pessoa e registre um retorno breve."
   }
 
   if (member.riskLevel === "yellow") {
-    return "Sinal de atenção. Um contato simples agora pode evitar que vire urgência."
+    return "Sinal de atenção. Um contato simples agora pode ajudar bastante."
   }
 
   if (isVisitor(member)) {
-    return "Pessoa nova na caminhada da célula. O primeiro acolhimento define continuidade."
+    return "Pessoa nova na célula. Acolha bem e confirme se deseja continuar."
   }
 
   if (!member.lastInteractionAt) {
-    return "Ainda não há contato registrado. Mantenha perto nos próximos encontros."
+    return "Ainda não há contato registrado. Mantenha por perto nos próximos encontros."
   }
 
-  return "Sem sinal urgente agora. Continue perto e registre mudanças importantes."
+  return "Sem sinal urgente agora. Continue perto e observe mudanças importantes."
 }
 
 function getNextStep(member: MemberItem) {
   const name = firstName(member.name)
 
   if (member.riskLevel === "red") {
-    return `Próximo passo: procurar ${name} e registrar a devolutiva.`
+    return `Próximo passo: procurar ${name} e registrar um breve retorno.`
   }
 
   if (member.riskLevel === "yellow") {
@@ -137,7 +137,7 @@ function getNextStep(member: MemberItem) {
     return `Próximo passo: acolher ${name} e confirmar se deseja continuar.`
   }
 
-  return "Próximo passo: manter proximidade no encontro."
+  return "Próximo passo: manter por perto nos encontros."
 }
 
 function MemberCareCard({ member }: { member: MemberItem }) {
@@ -208,9 +208,9 @@ function EmptyCareState() {
       <div className="flex items-start gap-3">
         <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
         <div>
-          <p className="text-sm font-semibold">Nenhuma pessoa em cuidado urgente agora.</p>
+          <p className="text-sm font-semibold">Nenhuma pessoa urgente agora.</p>
           <p className="mt-1 text-sm leading-6">
-            A célula está sem sinais principais de risco. Continue atento aos encontros e registre mudanças importantes.
+            Continue atento aos encontros e registre mudanças importantes.
           </p>
         </div>
       </div>
@@ -268,15 +268,15 @@ export default function MembrosPage() {
   const totalCareItems = careQueue.length + visitors.length
   const pulseTitle =
     totalCareItems > 0
-      ? `${totalCareItems} ${pluralize(totalCareItems, "pessoa pede", "pessoas pedem")} cuidado mais perto.`
-      : "A célula está sem urgências pastorais agora."
+      ? `${totalCareItems} ${pluralize(totalCareItems, "pessoa para", "pessoas para")} acompanhar de perto.`
+      : "A célula está sem urgências agora."
 
   const pulseSubtitle =
     careQueue.length > 0
-      ? "Comece pelos sinais de risco e registre a devolutiva depois do contato."
+      ? "Comece pelos sinais de risco e registre um retorno breve depois do contato."
       : visitors.length > 0
         ? "A prioridade é acolher bem quem está chegando."
-        : "Use esta tela como fila de cuidado, não só como lista de cadastro."
+        : "Use esta tela como uma fila simples de cuidado."
 
   return (
     <div className="flex flex-col gap-6">
@@ -285,7 +285,7 @@ export default function MembrosPage() {
         style={{ backgroundColor: "var(--pulse-card-bg)" }}
       >
         <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-white/70">
-          Fila de cuidado da célula
+          Membros da célula
         </p>
         <h2 className="text-2xl font-semibold leading-snug text-white">
           {pulseTitle}
@@ -299,7 +299,7 @@ export default function MembrosPage() {
           type="text"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Buscar pessoa, tag ou anotação..."
+          placeholder="Buscar pessoa, tag ou observação..."
           className="h-11 w-full rounded-xl border border-[var(--input-border)] bg-[var(--input-bg)] pl-9 pr-4 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-light)]"
         />
       </div>
@@ -311,7 +311,7 @@ export default function MembrosPage() {
             Nenhuma pessoa encontrada.
           </p>
           <p className="mt-1 text-sm text-[var(--text-muted)]">
-            Tente buscar por outro nome, tag ou anotação.
+            Tente buscar por outro nome, tag ou observação.
           </p>
         </div>
       ) : (
@@ -323,10 +323,10 @@ export default function MembrosPage() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                  Cuidado agora
+                  Precisa de cuidado
                 </h3>
                 <p className="mt-1 text-xs text-[var(--text-muted)]">
-                  Pessoas com sinal de risco ou atenção.
+                  Comece por essas pessoas.
                 </p>
               </div>
               {careQueue.length > 0 ? (
@@ -354,10 +354,10 @@ export default function MembrosPage() {
             >
               <div>
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                  Acolher e integrar
+                  Acolher
                 </h3>
                 <p className="mt-1 text-xs text-[var(--text-muted)]">
-                  Pessoas novas que precisam se sentir percebidas.
+                  Pessoas novas que precisam ser bem recebidas.
                 </p>
               </div>
               <div className="flex flex-col gap-3">
@@ -376,10 +376,10 @@ export default function MembrosPage() {
               <Users className="h-4 w-4 text-[var(--text-muted)]" />
               <div>
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                  Perto e estáveis
+                  Caminhando bem
                 </h3>
                 <p className="mt-1 text-xs text-[var(--text-muted)]">
-                  Lista completa sem transformar estabilidade em alerta.
+                  Membros sem sinal urgente agora.
                 </p>
               </div>
             </div>
@@ -414,7 +414,7 @@ export default function MembrosPage() {
               </div>
             ) : (
               <div className="rounded-xl border border-[var(--border-light)] bg-[var(--card)] p-4 text-sm text-[var(--text-muted)]">
-                Nenhum membro estável nesta busca.
+                Nenhum membro nessa seção.
               </div>
             )}
           </section>

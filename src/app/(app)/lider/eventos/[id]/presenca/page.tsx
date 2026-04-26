@@ -72,8 +72,8 @@ function getAttendanceReading({
 
   if (markedCount === 0) {
     return {
-      title: "O encontro ainda não virou leitura",
-      detail: "Marque presença ou ausência para todos. É esse registro que alimenta os sinais de cuidado.",
+      title: "Presença ainda não registrada",
+      detail: "Marque presença ou ausência para todos. Isso mantém o cuidado confiável.",
       tone: "muted",
     }
   }
@@ -81,7 +81,7 @@ function getAttendanceReading({
   if (pendingCount > 0) {
     return {
       title: "Leitura incompleta",
-      detail: `Ainda falta marcar ${pendingCount} pessoa${pendingCount === 1 ? "" : "s"}. O cuidado só fica confiável quando todos são marcados.`,
+      detail: `Ainda falta marcar ${pendingCount} pessoa${pendingCount === 1 ? "" : "s"}.`,
       tone: "warn",
     }
   }
@@ -89,7 +89,7 @@ function getAttendanceReading({
   if (absentCount === 0) {
     return {
       title: "Encontro sem ausência registrada",
-      detail: "Tudo marcado. Nenhuma ausência surgiu deste encontro, mas continue atento às conversas e pedidos. ",
+      detail: "Tudo marcado. Nenhuma ausência surgiu deste encontro.",
       tone: "ok",
     }
   }
@@ -97,14 +97,14 @@ function getAttendanceReading({
   if (riskAbsentCount > 0) {
     return {
       title: "Ausência pede cuidado mais próximo",
-      detail: `${riskAbsentCount} pessoa${riskAbsentCount === 1 ? "" : "s"} já estava${riskAbsentCount === 1 ? "" : "m"} em atenção e também faltou${riskAbsentCount === 1 ? "" : "ram"}. Registre o contato depois do encontro.`,
+      detail: `${riskAbsentCount} pessoa${riskAbsentCount === 1 ? "" : "s"} em atenção também faltou${riskAbsentCount === 1 ? "" : "ram"}. Procure depois do encontro.`,
       tone: "risk",
     }
   }
 
   return {
     title: "Ausências para observar",
-    detail: `${absentCount} pessoa${absentCount === 1 ? "" : "s"} faltou${absentCount === 1 ? "" : "ram"}. Veja se é algo pontual ou se alguém precisa de contato.`,
+    detail: `${absentCount} pessoa${absentCount === 1 ? "" : "s"} faltou${absentCount === 1 ? "" : "ram"}. Veja se alguém precisa de contato.`,
     tone: "warn",
   }
 }
@@ -297,10 +297,10 @@ export default function PresencaPage() {
       >
         <div>
           <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-            Pessoas do encontro
+            Marcar pessoas
           </h3>
           <p className="mt-1 text-xs text-[var(--text-muted)]">
-            Marque todos. Uma ausência também é uma informação de cuidado.
+            Marque todos. Ausência também é sinal de cuidado.
           </p>
         </div>
 
@@ -420,7 +420,7 @@ export default function PresencaPage() {
               Salvando...
             </>
           ) : (
-            "Salvar presença e gerar leitura"
+            "Salvar presença"
           )}
         </button>
       </div>

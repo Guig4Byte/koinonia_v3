@@ -62,8 +62,8 @@ function getCareReading(
       tone: "risk" as const,
       title: "Cuidado prioritário",
       description:
-        "Esta pessoa não deve ficar apenas no radar. O próximo contato precisa virar devolutiva registrada.",
-      nextStep: "Próximo passo: procurar a pessoa, entender o contexto e registrar o cuidado.",
+        "Procure esta pessoa e registre um retorno breve depois do contato.",
+      nextStep: "Próximo passo: procurar a pessoa e entender o contexto.",
     }
   }
 
@@ -72,8 +72,8 @@ function getCareReading(
       tone: "warn" as const,
       title: "Acompanhar de perto",
       description:
-        "Existe sinal de atenção. Um contato simples agora pode evitar que a situação vire urgência.",
-      nextStep: "Próximo passo: confirmar como ela está e observar os próximos encontros.",
+        "Existe sinal de atenção. Um contato simples agora pode ajudar bastante.",
+      nextStep: "Próximo passo: confirmar como ela está.",
     }
   }
 
@@ -82,8 +82,8 @@ function getCareReading(
       tone: "warn" as const,
       title: "Presença pede atenção",
       description:
-        "A frequência recente está baixa. Mesmo sem risco alto, vale entender se existe algo por trás.",
-      nextStep: "Próximo passo: perguntar com cuidado e registrar uma breve devolutiva.",
+        "A frequência recente está baixa. Vale entender se existe algo por trás.",
+      nextStep: "Próximo passo: perguntar com cuidado e registrar um breve retorno.",
     }
   }
 
@@ -92,7 +92,7 @@ function getCareReading(
       tone: "warn" as const,
       title: "Ainda sem histórico de cuidado",
       description:
-        "Não há interação registrada. Pode estar tudo bem, mas o sistema ainda não tem memória pastoral dessa pessoa.",
+        "Ainda não há interação registrada. Registre algo quando houver contato relevante.",
       nextStep: "Próximo passo: registrar uma primeira anotação simples quando houver contato relevante.",
     }
   }
@@ -102,7 +102,7 @@ function getCareReading(
     title: "Cuidado estável por agora",
     description:
       "Não há sinal urgente nesta leitura. Continue perto e registre mudanças importantes.",
-    nextStep: "Próximo passo: manter proximidade normal nos encontros.",
+    nextStep: "Próximo passo: manter por perto nos encontros.",
   }
 }
 
@@ -253,7 +253,7 @@ export default function MembroPage({ params }: { params: Promise<{ id: string }>
             Presença como sinal
           </h3>
           <p className="mb-3 text-xs leading-5 text-[var(--text-muted)]">
-            Últimos {totalCount} encontros usados para entender continuidade, não apenas frequência.
+            Últimos {totalCount} encontros usados para entender continuidade.
           </p>
           {totalCount === 0 ? (
             <p className="text-sm text-[var(--text-muted)]">Nenhum registro de presença.</p>

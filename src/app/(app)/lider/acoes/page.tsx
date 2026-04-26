@@ -44,22 +44,39 @@ export default function AcoesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="opacity-0 animate-fade-up">
-        <h2 className="text-2xl font-semibold text-[var(--text-primary)]">
-          Ações
-        </h2>
-        <p className="text-sm text-[var(--text-muted)]">
-          {pending.length} pendente{pending.length !== 1 ? "s" : ""}
+      <section className="opacity-0 animate-fade-up">
+        <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+          Ações da célula
         </p>
-      </div>
+        <h2 className="mt-1 text-2xl font-semibold leading-tight text-[var(--text-primary)]">
+          O que precisa virar contato?
+        </h2>
+        <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">
+          {pending.length} cuidado{pending.length !== 1 ? "s" : ""} pendente{pending.length !== 1 ? "s" : ""}. Marque como concluído quando houver retorno.
+        </p>
+      </section>
+
+      <section
+        className="grid grid-cols-2 gap-3 opacity-0 animate-fade-up"
+        style={{ animationDelay: "80ms" }}
+      >
+        <div className="rounded-2xl border border-[var(--border-light)] bg-[var(--card)] p-4 shadow-sm">
+          <p className="text-2xl font-semibold text-[var(--text-primary)]">{pending.length}</p>
+          <p className="mt-1 text-xs text-[var(--text-muted)]">em aberto</p>
+        </div>
+        <div className="rounded-2xl border border-[var(--border-light)] bg-[var(--card)] p-4 shadow-sm">
+          <p className="text-2xl font-semibold text-[var(--ok)]">{completed.length}</p>
+          <p className="mt-1 text-xs text-[var(--text-muted)]">concluídas</p>
+        </div>
+      </section>
 
       {pending.length > 0 && (
         <div
           className="flex flex-col gap-3 opacity-0 animate-fade-up"
-          style={{ animationDelay: "100ms" }}
+          style={{ animationDelay: "160ms" }}
         >
           <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-            Pendentes
+            Para fazer
           </h3>
           {pending.map((task) => (
             <TaskCard
@@ -75,7 +92,7 @@ export default function AcoesPage() {
       {completed.length > 0 && (
         <div
           className="flex flex-col gap-3 opacity-0 animate-fade-up"
-          style={{ animationDelay: "200ms" }}
+          style={{ animationDelay: "240ms" }}
         >
           <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--text-muted)]">
             Concluídas
@@ -94,9 +111,9 @@ export default function AcoesPage() {
       {pending.length === 0 && completed.length === 0 && (
         <div className="flex flex-col items-center justify-center gap-3 py-20 text-center opacity-0 animate-fade-up">
           <CheckCircle2 className="h-12 w-12 text-[var(--ok)]" />
-          <p className="text-[var(--text-secondary)]">Tudo em ordem!</p>
+          <p className="text-[var(--text-secondary)]">Tudo em ordem.</p>
           <p className="text-sm text-[var(--text-muted)]">
-            Nenhuma ação pendente no momento.
+            Nenhum cuidado pendente agora.
           </p>
         </div>
       )}
@@ -160,7 +177,7 @@ function TaskCard({ task, onToggle, isLoading }: TaskCardProps) {
             }`}
           >
             <CalendarDays className="h-3 w-3" />
-            {overdue ? "Atrasada" : "Até"} {formatDate(task.dueAt)}
+            {overdue ? "Atrasado" : "Até"} {formatDate(task.dueAt)}
           </span>
 
           {task.personId && (
@@ -169,7 +186,7 @@ function TaskCard({ task, onToggle, isLoading }: TaskCardProps) {
               className="flex items-center gap-1 text-xs text-[var(--new)] transition hover:opacity-80"
             >
               <User className="h-3 w-3" />
-              {task.personName ?? "Ver perfil"}
+              {task.personName ?? "Pessoa"}
               <ArrowRight className="h-3 w-3" />
             </Link>
           )}
