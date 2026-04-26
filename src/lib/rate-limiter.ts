@@ -4,7 +4,7 @@ interface RateLimitEntry {
 }
 
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutos
-const RATE_LIMIT_MAX_REQUESTS = 5;
+const RATE_LIMIT_MAX_FAILURES = 5;
 
 const cache = new Map<string, RateLimitEntry>();
 
@@ -23,10 +23,45 @@ setInterval(
 
 function getClientIp(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for");
+
   if (forwarded) {
     return forwarded.split(",")[0]?.trim() ?? "unknown";
   }
+
+  const realIp = request.headers.get("x-real-ip");
+
+  if (realIp) {
+    return realIp.trim();
+  }
+
+  const cloudflareIp = request.headers.get("cf-connecting-ip");
+
+  if (cloudflareIp) {
+    return cloudflareIp.trim();
+  }
+
   return "unknown";
+}
+
+function normalizeIdentifier(identifier?: string): string {
+  const value = identifier?.trim().toLowerCase();
+
+  if (!value) {
+    return "anonymous";
+  }
+
+  return value;
+}
+
+function buildRateLimitKey(
+  request: Request,
+  keyPrefix: string,
+  identifier?: string,
+): string {
+  const ip = getClientIp(request);
+  const normalizedIdentifier = normalizeIdentifier(identifier);
+
+  return `${keyPrefix}:${ip}:${normalizedIdentifier}`;
 }
 
 export interface RateLimitResult {
@@ -36,14 +71,61 @@ export interface RateLimitResult {
   retryAfter?: number;
 }
 
-export function checkRateLimit(
-  request: Request,
-  keyPrefix = "login",
-): RateLimitResult {
-  const ip = getClientIp(request);
-  const key = `${keyPrefix}:${ip}`;
+function createAllowedResult(entry?: RateLimitEntry): RateLimitResult {
+  const now = Date.now();
+  const resetAt = entry?.resetAt ?? now + RATE_LIMIT_WINDOW_MS;
+  const count = entry?.count ?? 0;
+
+  return {
+    allowed: true,
+    remaining: Math.max(RATE_LIMIT_MAX_FAILURES - count, 0),
+    resetAt,
+  };
+}
+
+function createBlockedResult(entry: RateLimitEntry): RateLimitResult {
   const now = Date.now();
 
+  return {
+    allowed: false,
+    remaining: 0,
+    resetAt: entry.resetAt,
+    retryAfter: Math.max(Math.ceil((entry.resetAt - now) / 1000), 1),
+  };
+}
+
+export function getRateLimitStatus(
+  request: Request,
+  keyPrefix = "login",
+  identifier?: string,
+): RateLimitResult {
+  const key = buildRateLimitKey(request, keyPrefix, identifier);
+  const now = Date.now();
+  const entry = cache.get(key);
+
+  if (!entry) {
+    return createAllowedResult();
+  }
+
+  if (now > entry.resetAt) {
+    cache.delete(key);
+    return createAllowedResult();
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX_FAILURES) {
+    return createBlockedResult(entry);
+  }
+
+  return createAllowedResult(entry);
+}
+
+export function recordRateLimitFailure(
+  request: Request,
+  keyPrefix = "login",
+  identifier?: string,
+): RateLimitResult {
+  const key = buildRateLimitKey(request, keyPrefix, identifier);
+  const now = Date.now();
   const entry = cache.get(key);
 
   if (!entry || now > entry.resetAt) {
@@ -51,33 +133,39 @@ export function checkRateLimit(
       count: 1,
       resetAt: now + RATE_LIMIT_WINDOW_MS,
     };
+
     cache.set(key, newEntry);
-    return {
-      allowed: true,
-      remaining: RATE_LIMIT_MAX_REQUESTS - 1,
-      resetAt: newEntry.resetAt,
-    };
+    return createAllowedResult(newEntry);
   }
 
-  if (entry.count >= RATE_LIMIT_MAX_REQUESTS) {
-    return {
-      allowed: false,
-      remaining: 0,
-      resetAt: entry.resetAt,
-      retryAfter: Math.ceil((entry.resetAt - now) / 1000),
-    };
+  if (entry.count >= RATE_LIMIT_MAX_FAILURES) {
+    return createBlockedResult(entry);
   }
 
   entry.count += 1;
-  return {
-    allowed: true,
-    remaining: RATE_LIMIT_MAX_REQUESTS - entry.count,
-    resetAt: entry.resetAt,
-  };
+  return createAllowedResult(entry);
 }
 
-export function resetRateLimit(request: Request, keyPrefix = "login"): void {
-  const ip = getClientIp(request);
-  const key = `${keyPrefix}:${ip}`;
+/**
+ * Mantido para compatibilidade com chamadas antigas.
+ *
+ * A operação incrementa o contador e deve ser usada apenas para falhas.
+ * Para verificar se uma requisição já está bloqueada sem consumir tentativa,
+ * use getRateLimitStatus.
+ */
+export function checkRateLimit(
+  request: Request,
+  keyPrefix = "login",
+  identifier?: string,
+): RateLimitResult {
+  return recordRateLimitFailure(request, keyPrefix, identifier);
+}
+
+export function resetRateLimit(
+  request: Request,
+  keyPrefix = "login",
+  identifier?: string,
+): void {
+  const key = buildRateLimitKey(request, keyPrefix, identifier);
   cache.delete(key);
 }

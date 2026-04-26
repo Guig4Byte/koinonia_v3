@@ -5,14 +5,33 @@ import {
   serverErrorResponse,
   validationErrorResponse,
 } from "@/lib/api-response";
-import { checkRateLimit } from "@/lib/rate-limiter";
+import {
+  getRateLimitStatus,
+  recordRateLimitFailure,
+  resetRateLimit,
+} from "@/lib/rate-limiter";
 import { loginUser } from "@/lib/auth-service";
 import { setRefreshTokenCookie } from "@/lib/auth-cookies";
 import { loginSchema } from "@/lib/validations/auth";
 
 export async function POST(request: Request) {
   try {
-    const rateLimit = checkRateLimit(request, "login");
+    let body: unknown;
+
+    try {
+      body = await request.json();
+    } catch {
+      return invalidJsonResponse();
+    }
+
+    const parsedBody = loginSchema.safeParse(body);
+
+    if (!parsedBody.success) {
+      return validationErrorResponse(parsedBody.error);
+    }
+
+    const email = parsedBody.data.email;
+    const rateLimit = getRateLimitStatus(request, "login", email);
 
     if (!rateLimit.allowed) {
       return NextResponse.json(
@@ -29,25 +48,14 @@ export async function POST(request: Request) {
       );
     }
 
-    let body: unknown;
-
-    try {
-      body = await request.json();
-    } catch {
-      return invalidJsonResponse();
-    }
-
-    const parsedBody = loginSchema.safeParse(body);
-
-    if (!parsedBody.success) {
-      return validationErrorResponse(parsedBody.error);
-    }
-
     const result = await loginUser(parsedBody.data);
 
     if (result.isErr()) {
+      recordRateLimitFailure(request, "login", email);
       return domainErrorResponse(result.error);
     }
+
+    resetRateLimit(request, "login", email);
 
     const { refreshToken, ...responseBody } = result.value;
     const response = NextResponse.json(responseBody);

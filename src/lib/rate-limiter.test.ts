@@ -1,7 +1,11 @@
 // @vitest-environment node
 
 import { describe, it, expect, beforeEach } from "vitest";
-import { checkRateLimit, resetRateLimit } from "./rate-limiter";
+import {
+  getRateLimitStatus,
+  recordRateLimitFailure,
+  resetRateLimit,
+} from "./rate-limiter";
 
 function createMockRequest(ip: string): Request {
   return new Request("http://localhost/api/auth/login", {
@@ -11,58 +15,114 @@ function createMockRequest(ip: string): Request {
   });
 }
 
-describe("checkRateLimit", () => {
+describe("login rate limiter", () => {
   beforeEach(() => {
-    // Limpar rate limit entre testes
-    resetRateLimit(createMockRequest("192.168.1.1"), "login");
-    resetRateLimit(createMockRequest("10.0.0.1"), "login");
+    resetRateLimit(createMockRequest("192.168.1.1"), "login", "ana@koinonia.com");
+    resetRateLimit(
+      createMockRequest("192.168.1.1"),
+      "login",
+      "pastor@koinonia.com",
+    );
+    resetRateLimit(createMockRequest("10.0.0.1"), "login", "ana@koinonia.com");
   });
 
-  it("permite a primeira tentativa", () => {
-    const request = createMockRequest("192.168.1.1");
-    const result = checkRateLimit(request, "login");
-
-    expect(result.allowed).toBe(true);
-    expect(result.remaining).toBe(4);
-  });
-
-  it("permite até 5 tentativas", () => {
+  it("verifica o limite sem consumir tentativa", () => {
     const request = createMockRequest("192.168.1.1");
 
-    for (let i = 0; i < 4; i++) {
-      const result = checkRateLimit(request, "login");
-      expect(result.allowed).toBe(true);
-    }
+    const firstStatus = getRateLimitStatus(request, "login", "ana@koinonia.com");
+    const secondStatus = getRateLimitStatus(request, "login", "ana@koinonia.com");
 
-    const lastAllowed = checkRateLimit(request, "login");
-    expect(lastAllowed.allowed).toBe(true);
-    expect(lastAllowed.remaining).toBe(0);
+    expect(firstStatus.allowed).toBe(true);
+    expect(firstStatus.remaining).toBe(5);
+    expect(secondStatus.allowed).toBe(true);
+    expect(secondStatus.remaining).toBe(5);
   });
 
-  it("bloqueia após 5 tentativas", () => {
+  it("registra somente falhas de login", () => {
+    const request = createMockRequest("192.168.1.1");
+
+    const firstFailure = recordRateLimitFailure(
+      request,
+      "login",
+      "ana@koinonia.com",
+    );
+
+    expect(firstFailure.allowed).toBe(true);
+    expect(firstFailure.remaining).toBe(4);
+
+    const status = getRateLimitStatus(request, "login", "ana@koinonia.com");
+
+    expect(status.allowed).toBe(true);
+    expect(status.remaining).toBe(4);
+  });
+
+  it("bloqueia após 5 falhas para o mesmo IP e email", () => {
     const request = createMockRequest("192.168.1.1");
 
     for (let i = 0; i < 5; i++) {
-      checkRateLimit(request, "login");
+      const result = recordRateLimitFailure(
+        request,
+        "login",
+        "ana@koinonia.com",
+      );
+
+      expect(result.allowed).toBe(true);
     }
 
-    const blocked = checkRateLimit(request, "login");
+    const blocked = getRateLimitStatus(request, "login", "ana@koinonia.com");
+
     expect(blocked.allowed).toBe(false);
     expect(blocked.retryAfter).toBeGreaterThan(0);
   });
 
-  it("IPs diferentes têm limites independentes", () => {
+  it("emails diferentes têm limites independentes no mesmo IP", () => {
+    const request = createMockRequest("192.168.1.1");
+
+    for (let i = 0; i < 5; i++) {
+      recordRateLimitFailure(request, "login", "ana@koinonia.com");
+    }
+
+    const anaBlocked = getRateLimitStatus(request, "login", "ana@koinonia.com");
+    const pastorAllowed = getRateLimitStatus(
+      request,
+      "login",
+      "pastor@koinonia.com",
+    );
+
+    expect(anaBlocked.allowed).toBe(false);
+    expect(pastorAllowed.allowed).toBe(true);
+  });
+
+  it("o mesmo email em IPs diferentes tem limites independentes", () => {
     const request1 = createMockRequest("192.168.1.1");
     const request2 = createMockRequest("10.0.0.1");
 
     for (let i = 0; i < 5; i++) {
-      checkRateLimit(request1, "login");
+      recordRateLimitFailure(request1, "login", "ana@koinonia.com");
     }
 
-    const blocked1 = checkRateLimit(request1, "login");
-    expect(blocked1.allowed).toBe(false);
+    const blocked1 = getRateLimitStatus(request1, "login", "ana@koinonia.com");
+    const allowed2 = getRateLimitStatus(request2, "login", "ana@koinonia.com");
 
-    const allowed2 = checkRateLimit(request2, "login");
+    expect(blocked1.allowed).toBe(false);
     expect(allowed2.allowed).toBe(true);
+  });
+
+  it("resetRateLimit libera o login após sucesso", () => {
+    const request = createMockRequest("192.168.1.1");
+
+    for (let i = 0; i < 5; i++) {
+      recordRateLimitFailure(request, "login", "ana@koinonia.com");
+    }
+
+    expect(getRateLimitStatus(request, "login", "ana@koinonia.com").allowed).toBe(
+      false,
+    );
+
+    resetRateLimit(request, "login", "ana@koinonia.com");
+
+    expect(getRateLimitStatus(request, "login", "ana@koinonia.com").allowed).toBe(
+      true,
+    );
   });
 });
