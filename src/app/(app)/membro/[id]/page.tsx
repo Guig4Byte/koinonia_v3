@@ -62,8 +62,8 @@ function getCareReading(
       tone: "risk" as const,
       title: "Cuidado prioritário",
       description:
-        "Procure esta pessoa e registre um retorno breve depois do contato.",
-      nextStep: "Próximo passo: procurar a pessoa e entender o contexto.",
+        "Procure esta pessoa e registre um retorno breve.",
+      nextStep: "Procure a pessoa e entenda o contexto.",
     }
   }
 
@@ -73,7 +73,7 @@ function getCareReading(
       title: "Acompanhar de perto",
       description:
         "Existe sinal de atenção. Um contato simples agora pode ajudar bastante.",
-      nextStep: "Próximo passo: confirmar como ela está.",
+      nextStep: "Confirme como ela está.",
     }
   }
 
@@ -83,17 +83,17 @@ function getCareReading(
       title: "Presença pede atenção",
       description:
         "A frequência recente está baixa. Vale entender se existe algo por trás.",
-      nextStep: "Próximo passo: perguntar com cuidado e registrar um breve retorno.",
+      nextStep: "Pergunte com cuidado e registre um breve retorno.",
     }
   }
 
   if (person.interactions.length === 0) {
     return {
       tone: "warn" as const,
-      title: "Ainda sem histórico de cuidado",
+      title: "Sem histórico ainda",
       description:
-        "Ainda não há interação registrada. Registre algo quando houver contato relevante.",
-      nextStep: "Próximo passo: registrar uma primeira anotação simples quando houver contato relevante.",
+        "Ainda não há registro. Anote quando houver contato relevante.",
+      nextStep: "Registre uma primeira anotação quando houver contato.",
     }
   }
 
@@ -101,8 +101,8 @@ function getCareReading(
     tone: "ok" as const,
     title: "Cuidado estável por agora",
     description:
-      "Não há sinal urgente nesta leitura. Continue perto e registre mudanças importantes.",
-    nextStep: "Próximo passo: manter por perto nos encontros.",
+      "Nenhum alerta por agora. Continue perto e registre mudanças importantes.",
+    nextStep: "Mantenha por perto nos encontros.",
   }
 }
 
@@ -164,7 +164,7 @@ export default function MembroPage({ params }: { params: Promise<{ id: string }>
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <h1 className="text-lg font-semibold text-[var(--text-primary)]">Perfil de cuidado</h1>
+          <h1 className="text-lg font-semibold text-[var(--text-primary)]">Perfil pastoral</h1>
         </div>
       </header>
 
@@ -202,7 +202,7 @@ export default function MembroPage({ params }: { params: Promise<{ id: string }>
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-current">
-                Leitura do cuidado
+                Leitura pastoral
               </p>
               <h3 className="mt-2 text-base font-semibold text-[var(--text-primary)]">
                 {careReading.title}
@@ -288,7 +288,7 @@ export default function MembroPage({ params }: { params: Promise<{ id: string }>
 
         <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
           <h3 className="mb-1 text-sm font-medium text-[var(--text-muted)]">
-            Histórico de cuidado
+            Histórico pastoral
           </h3>
           <p className="mb-3 text-xs leading-5 text-[var(--text-muted)]">
             Registros que ajudam a liderança a lembrar o contexto antes de agir.

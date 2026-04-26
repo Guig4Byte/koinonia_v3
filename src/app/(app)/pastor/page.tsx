@@ -190,10 +190,10 @@ export default function PastorPage() {
     : overdueTasksCount > 0
       ? `${overdueTasksCount} ${pluralize(
           overdueTasksCount,
-          "retorno atrasado pede",
-          "retornos atrasados pedem",
+          "retorno pendente pede",
+          "retornos pendentes pedem",
         )} revisão.`
-      : "Nenhum sinal urgente pedindo intervenção imediata."
+      : "Nada pede intervenção agora."
 
   return (
     <div className="space-y-5">
@@ -222,14 +222,14 @@ export default function PastorPage() {
         <ActionLink
           href="/pastor/pessoas"
           icon={<HeartHandshake className="h-5 w-5" />}
-          title="Ver pessoas em cuidado"
-          description="Comece por quem precisa ser percebido esta semana."
+          title="Ver pessoas"
+          description="Comece por quem precisa de cuidado esta semana."
         />
         <ActionLink
           href="/pastor/equipe"
           icon={<Users className="h-5 w-5" />}
           title="Ver equipe em atenção"
-          description="Entenda onde supervisores e líderes precisam de apoio."
+          description="Veja onde apoiar supervisores e líderes."
         />
       </section>
 
@@ -254,9 +254,9 @@ export default function PastorPage() {
           <div className="flex items-start gap-3 text-[var(--ok)]">
             <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
             <div>
-              <h2 className="text-sm font-semibold">Sem pessoa em urgência agora</h2>
+              <h2 className="text-sm font-semibold">Nenhuma pessoa em prioridade agora</h2>
               <p className="mt-1 text-sm leading-6">
-                Continue acompanhando a equipe. Novos sinais aparecerão quando alguém precisar de atenção.
+                Siga perto da equipe. Quando alguém precisar, aparecerá aqui.
               </p>
             </div>
           </div>
@@ -266,7 +266,7 @@ export default function PastorPage() {
       {relevantAlerts.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-sm font-medium text-[var(--text-secondary)]">
-            Sinais que explicam a leitura
+            Por que isso apareceu
           </h2>
           <div className="space-y-2">
             {relevantAlerts.map((alert) => (
@@ -300,14 +300,14 @@ export default function PastorPage() {
             accent={getAttendanceAccent(averageAttendance)}
           />
           <SummaryCard
-            label="Retornos atrasados"
+            label="Retornos pendentes"
             value={overdueTasksCount}
             icon={<ClipboardList className="h-5 w-5" />}
             accent={overdueTasksCount > 0 ? "risk" : "ok"}
           />
         </div>
         <p className="text-xs leading-5 text-[var(--text-muted)]">
-          Os números ficam aqui para contexto. A prioridade pastoral aparece acima, em pessoas, equipe e busca.
+          Os números ficam como apoio. A prioridade aparece acima.
         </p>
       </section>
 
@@ -315,7 +315,7 @@ export default function PastorPage() {
         <section className="space-y-3">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm font-medium text-[var(--text-secondary)]">
-              Células que pedem calma
+              Células para acompanhar
             </h2>
             <Link href="/pastor/equipe" className="text-xs font-medium text-[var(--accent)]">
               Ver equipe

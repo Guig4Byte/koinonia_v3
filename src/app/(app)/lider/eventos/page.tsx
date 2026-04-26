@@ -45,7 +45,7 @@ function getEncounterReading(event: LeaderEvent): {
   if (!event.occurredAt || rate === null) {
     return {
       label: "Aguardando presença",
-      detail: "Registre presença para saber quem precisa de cuidado.",
+      detail: "Registre presença e veja quem precisa de cuidado.",
       tone: isPastScheduledDate(event.scheduledAt) ? "warn" : "muted",
       icon: isPastScheduledDate(event.scheduledAt) ? AlertTriangle : Clock3,
     }
@@ -80,7 +80,7 @@ function getEncounterReading(event: LeaderEvent): {
 
   return {
     label: "Encontro saudável",
-    detail: "Presença registrada sem sinal urgente.",
+    detail: "Presença registrada sem alerta.",
     tone: "ok",
     icon: CheckCircle2,
   }
@@ -154,7 +154,7 @@ export default function EventosPage() {
           Registre os encontros sem complicar.
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">
-          Marque presença, confirme ausências e siga para o próximo cuidado.
+          Marque presença, confirme ausências e siga.
         </p>
       </section>
 

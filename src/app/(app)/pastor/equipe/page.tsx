@@ -28,7 +28,7 @@ function getSupervisorStatus(supervisor: PastorSupervisor) {
     return {
       label: "Apoiar",
       classes: "border-[var(--risk-border)] bg-[var(--risk-bg)] text-[var(--risk)]",
-      text: `${supervisor.atRiskCount} ${pluralize(supervisor.atRiskCount, "pessoa em cuidado", "pessoas em cuidado")} · ${supervisor.overdueTasksCount} ${pluralize(supervisor.overdueTasksCount, "retorno atrasado", "retornos atrasados")}`,
+      text: `${supervisor.atRiskCount} ${pluralize(supervisor.atRiskCount, "pessoa em cuidado", "pessoas em cuidado")} · ${supervisor.overdueTasksCount} ${pluralize(supervisor.overdueTasksCount, "retorno pendente", "retornos pendentes")}`,
     }
   }
 
@@ -36,14 +36,14 @@ function getSupervisorStatus(supervisor: PastorSupervisor) {
     return {
       label: "Atenção",
       classes: "border-[var(--warn-border)] bg-[var(--warn-bg)] text-[var(--warn)]",
-      text: `${supervisor.averageAttendance}% de presença média · acompanhar com calma`,
+      text: `${supervisor.averageAttendance}% de presença média · acompanhar de perto`,
     }
   }
 
   return {
     label: "Estável",
     classes: "border-[var(--ok-border)] bg-[var(--ok-bg)] text-[var(--ok)]",
-    text: "Sem sinal urgente pedindo intervenção agora.",
+    text: "Nada pede intervenção agora.",
   }
 }
 
@@ -79,7 +79,7 @@ export default function PastorEquipePage() {
           Quem precisa de apoio pastoral?
         </h2>
         <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
-          Veja supervisores por prioridade. O foco não é cobrança, é apoio onde o cuidado está pesando.
+          Veja supervisores por prioridade. O foco é apoiar, não cobrar.
         </p>
       </section>
 
@@ -91,10 +91,10 @@ export default function PastorEquipePage() {
             </div>
             <div>
               <h3 className="text-sm font-semibold text-[var(--text-primary)]">
-                {supportCount} {pluralize(supportCount, "frente pede", "frentes pedem")} apoio
+                {supportCount} {pluralize(supportCount, "frente precisa de", "frentes precisam de")} apoio
               </h3>
               <p className="mt-1 text-sm leading-6 text-[var(--text-secondary)]">
-                Comece por quem concentra pessoas em cuidado ou retornos atrasados.
+                Comece por quem concentra pessoas em cuidado.
               </p>
             </div>
           </div>
@@ -181,7 +181,7 @@ export default function PastorEquipePage() {
                     </div>
 
                     <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-[var(--accent)]">
-                      Ver detalhes da supervisão <ArrowRight className="h-3.5 w-3.5" />
+                      Ver supervisão <ArrowRight className="h-3.5 w-3.5" />
                     </div>
                   </div>
                 </div>

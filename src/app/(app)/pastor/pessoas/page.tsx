@@ -52,14 +52,14 @@ function getPersonLabel(alert: PastorDashboardAlert) {
 
 function getNextStep(alert: PastorDashboardAlert) {
   if (alert.severity === "high") {
-    return "Próximo cuidado: procurar esta semana e registrar retorno."
+    return "Procure esta semana e registre retorno."
   }
 
   if (alert.severity === "medium") {
-    return "Próximo cuidado: confirmar como está antes do próximo encontro."
+    return "Confirme como está antes do próximo encontro."
   }
 
-  return "Próximo cuidado: manter por perto e observar os próximos sinais."
+  return "Mantenha por perto e observe os próximos sinais."
 }
 
 function getUniquePersonAlerts(alerts: PastorDashboardAlert[]) {
@@ -162,7 +162,7 @@ export default function PastorPessoasPage() {
           Quem precisa ser percebido agora?
         </h2>
         <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
-          Aqui ficam pessoas que apareceram nos sinais de cuidado. Pouca lista, mais contexto.
+          Pessoas que apareceram nos sinais de cuidado. Pouca lista, mais contexto.
         </p>
       </section>
 
@@ -179,7 +179,7 @@ export default function PastorPessoasPage() {
         <section className="space-y-3">
           <div className="flex items-center justify-between gap-3">
             <h3 className="text-sm font-medium text-[var(--text-secondary)]">
-              Fila de cuidado
+              Pessoas em cuidado
             </h3>
             <span className="rounded-full bg-[var(--surface)] px-2.5 py-1 text-xs font-medium text-[var(--text-muted)]">
               {personAlerts.length} {personAlerts.length === 1 ? "pessoa" : "pessoas"}
@@ -196,9 +196,9 @@ export default function PastorPessoasPage() {
           <div className="flex items-start gap-3 text-[var(--ok)]">
             <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
             <div>
-              <h3 className="text-sm font-semibold">Nenhuma pessoa em urgência agora</h3>
+              <h3 className="text-sm font-semibold">Nenhuma pessoa em prioridade agora</h3>
               <p className="mt-1 text-sm leading-6">
-                Continue acompanhando a equipe. Novos sinais aparecerão aqui quando alguém precisar de atenção.
+                Siga perto da equipe. Quando alguém precisar, aparecerá aqui.
               </p>
             </div>
           </div>
@@ -211,10 +211,10 @@ export default function PastorPessoasPage() {
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-[var(--warn)]" />
             <div className="min-w-0 flex-1">
               <h3 className="text-sm font-semibold text-[var(--text-primary)]">
-                Também há sinais em células ou equipe
+                Há sinais em células ou equipe
               </h3>
               <p className="mt-1 text-sm leading-6 text-[var(--text-secondary)]">
-                Alguns sinais não apontam para uma pessoa específica. Veja a equipe para entender onde apoiar.
+                Alguns sinais não apontam para uma pessoa. Veja onde apoiar.
               </p>
               <Link
                 href="/pastor/equipe"
@@ -237,7 +237,7 @@ export default function PastorPessoasPage() {
               O objetivo não é listar todo mundo
             </h3>
             <p className="mt-1 text-sm leading-6 text-[var(--text-secondary)]">
-              Esta tela mostra quem precisa de atenção agora. Para encontrar qualquer pessoa, use a busca.
+              Aqui aparece quem precisa de atenção agora. Para os demais, use a busca.
             </p>
           </div>
         </div>

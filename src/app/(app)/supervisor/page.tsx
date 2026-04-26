@@ -53,7 +53,7 @@ function getGroupReading(group: SupervisorDashboardGroup) {
     reasons.push(`${group.lastAttendanceRate}% no último encontro`)
   }
 
-  return reasons.length > 0 ? reasons.join(" · ") : "Acompanhar a próxima leitura da célula"
+  return reasons.length > 0 ? reasons.join(" · ") : "Acompanhe a próxima leitura da célula"
 }
 
 function getAttendanceAccent(attendance: number) {
@@ -102,7 +102,7 @@ function SupportCard({ group }: { group: SupervisorDashboardGroup }) {
             {getGroupReading(group)}.
           </p>
           <p className="mt-2 text-xs font-medium text-[var(--accent)]">
-            Próximo passo: alinhar com {group.leaderName ?? "o líder"} um cuidado simples.
+            Alinhe com {group.leaderName ?? "o líder"} um cuidado simples.
           </p>
         </div>
       </div>
@@ -170,8 +170,8 @@ export default function SupervisorPage() {
   const supportPulse = leaderFocus
     ? `${leaderFocus} é o primeiro líder para acompanhar.`
     : overdueTasksCount > 0
-      ? `${overdueTasksCount} ${pluralize(overdueTasksCount, "ação atrasada", "ações atrasadas")} pedem revisão com os líderes.`
-      : "Mantenha proximidade com os líderes e acompanhe os próximos encontros."
+      ? `${overdueTasksCount} ${pluralize(overdueTasksCount, "ação pendente", "ações pendentes")} pedem revisão com os líderes.`
+      : "Siga perto dos líderes nos próximos encontros."
 
   return (
     <div className="space-y-6">
@@ -180,7 +180,7 @@ export default function SupervisorPage() {
         style={{ backgroundColor: "var(--pulse-card-bg)" }}
       >
         <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-white/70">
-          Região em cuidado
+          Região
         </p>
         <h2 className="text-2xl font-semibold leading-snug text-white">
           {mainPulse}
@@ -198,7 +198,7 @@ export default function SupervisorPage() {
         <QuickLink
           href="/supervisor/lideres"
           title="Líderes"
-          description="Apoiar quem está carregando cuidado."
+          description="Apoiar líderes que precisam de ajuda."
           icon={<User className="h-5 w-5" />}
         />
         <QuickLink
@@ -230,9 +230,9 @@ export default function SupervisorPage() {
           <div className="flex items-start gap-3 text-[var(--ok)]">
             <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
             <div>
-              <h2 className="text-sm font-semibold">Sem célula pedindo apoio urgente</h2>
+              <h2 className="text-sm font-semibold">Sem célula em prioridade agora</h2>
               <p className="mt-1 text-sm leading-6">
-                A região está tranquila. Continue perto dos líderes e observe os próximos encontros.
+                A região está tranquila. Siga perto dos líderes.
               </p>
             </div>
           </div>
@@ -262,7 +262,7 @@ export default function SupervisorPage() {
             accent={getAttendanceAccent(averageAttendance)}
           />
           <SummaryCard
-            label="Ações atrasadas"
+            label="Ações pendentes"
             value={overdueTasksCount}
             icon={<ClipboardList className="h-5 w-5" />}
             accent={overdueTasksCount > 0 ? "risk" : "ok"}

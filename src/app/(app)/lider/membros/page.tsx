@@ -104,40 +104,40 @@ function getCareLabel(member: MemberItem) {
 
 function getCareReason(member: MemberItem) {
   if (member.riskLevel === "red") {
-    return "Sinal alto de afastamento. Procure esta pessoa e registre um retorno breve."
+    return "Procure esta pessoa e registre um retorno breve."
   }
 
   if (member.riskLevel === "yellow") {
-    return "Sinal de atenção. Um contato simples agora pode ajudar bastante."
+    return "Um contato simples pode ajudar bastante."
   }
 
   if (isVisitor(member)) {
-    return "Pessoa nova na célula. Acolha bem e confirme se deseja continuar."
+    return "Acolha bem e confirme se deseja continuar."
   }
 
   if (!member.lastInteractionAt) {
-    return "Ainda não há contato registrado. Mantenha por perto nos próximos encontros."
+    return "Sem contato registrado. Mantenha por perto."
   }
 
-  return "Sem sinal urgente agora. Continue perto e observe mudanças importantes."
+  return "Sem alerta por agora. Continue perto."
 }
 
 function getNextStep(member: MemberItem) {
   const name = firstName(member.name)
 
   if (member.riskLevel === "red") {
-    return `Próximo passo: procurar ${name} e registrar um breve retorno.`
+    return `Procure ${name} e registre um breve retorno.`
   }
 
   if (member.riskLevel === "yellow") {
-    return `Próximo passo: fazer um contato simples com ${name}.`
+    return `Faça um contato simples com ${name}.`
   }
 
   if (isVisitor(member)) {
-    return `Próximo passo: acolher ${name} e confirmar se deseja continuar.`
+    return `Acolha ${name} e confirme se deseja continuar.`
   }
 
-  return "Próximo passo: manter por perto nos encontros."
+  return "Mantenha por perto nos encontros."
 }
 
 function MemberCareCard({ member }: { member: MemberItem }) {
@@ -208,7 +208,7 @@ function EmptyCareState() {
       <div className="flex items-start gap-3">
         <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
         <div>
-          <p className="text-sm font-semibold">Nenhuma pessoa urgente agora.</p>
+          <p className="text-sm font-semibold">Nenhuma pessoa em prioridade agora.</p>
           <p className="mt-1 text-sm leading-6">
             Continue atento aos encontros e registre mudanças importantes.
           </p>
@@ -269,14 +269,14 @@ export default function MembrosPage() {
   const pulseTitle =
     totalCareItems > 0
       ? `${totalCareItems} ${pluralize(totalCareItems, "pessoa para", "pessoas para")} acompanhar de perto.`
-      : "A célula está sem urgências agora."
+      : "A célula está tranquila por agora."
 
   const pulseSubtitle =
     careQueue.length > 0
-      ? "Comece pelos sinais de risco e registre um retorno breve depois do contato."
+      ? "Comece por quem precisa de cuidado e registre o retorno."
       : visitors.length > 0
         ? "A prioridade é acolher bem quem está chegando."
-        : "Use esta tela como uma fila simples de cuidado."
+        : "Use esta tela como uma fila simples."
 
   return (
     <div className="flex flex-col gap-6">
@@ -323,7 +323,7 @@ export default function MembrosPage() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                  Precisa de cuidado
+                  Cuidar primeiro
                 </h3>
                 <p className="mt-1 text-xs text-[var(--text-muted)]">
                   Comece por essas pessoas.
@@ -379,7 +379,7 @@ export default function MembrosPage() {
                   Caminhando bem
                 </h3>
                 <p className="mt-1 text-xs text-[var(--text-muted)]">
-                  Membros sem sinal urgente agora.
+                  Sem alerta por agora.
                 </p>
               </div>
             </div>

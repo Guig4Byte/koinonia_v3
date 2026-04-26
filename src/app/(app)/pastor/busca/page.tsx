@@ -29,9 +29,9 @@ function getRiskLabel(riskLevel: RiskLevel | null) {
 }
 
 function getRiskDescription(riskLevel: RiskLevel | null) {
-  if (riskLevel === "red") return "Precisa de cuidado próximo."
-  if (riskLevel === "yellow") return "Vale acompanhar antes que vire urgência."
-  if (riskLevel === "green") return "Sem sinal urgente agora."
+  if (riskLevel === "red") return "Precisa de cuidado de perto."
+  if (riskLevel === "yellow") return "Vale acompanhar antes que pese mais."
+  if (riskLevel === "green") return "Sem alerta por agora."
   return "Abra o perfil para ver o contexto pastoral."
 }
 
@@ -60,10 +60,10 @@ export default function PastorBuscaPage() {
           Busca pastoral
         </p>
         <h2 className="mt-2 text-2xl font-semibold leading-tight text-[var(--text-primary)]">
-          Para quando alguém cita um nome no corredor.
+          Para encontrar alguém em segundos.
         </h2>
         <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
-          Encontre pessoa, célula ou encontro e entenda o contexto sem abrir um painel pesado.
+          Busque pessoa, célula ou encontro sem abrir um painel pesado.
         </p>
       </section>
 
@@ -138,7 +138,7 @@ export default function PastorBuscaPage() {
                       </p>
                       {person.phone && (
                         <p className="mt-1 text-xs text-[var(--text-muted)]">
-                          Contato cadastrado: {person.phone}
+                          Contato: {person.phone}
                         </p>
                       )}
                     </div>
@@ -200,7 +200,7 @@ export default function PastorBuscaPage() {
                       </p>
                       {event.totalAttendances > 0 && (
                         <p className="mt-2 text-xs font-medium text-[var(--text-secondary)]">
-                          {event.attendanceCount}/{event.totalAttendances} presentes registrados
+                          {event.attendanceCount}/{event.totalAttendances} presenças registradas
                         </p>
                       )}
                     </div>
@@ -219,7 +219,7 @@ export default function PastorBuscaPage() {
             Nada encontrado para “{q}”.
           </p>
           <p className="mt-1 text-sm leading-6 text-[var(--text-muted)]">
-            Tente parte do nome, célula ou liderança responsável.
+            Tente parte do nome, célula ou líder.
           </p>
         </div>
       )}
@@ -235,7 +235,7 @@ export default function PastorBuscaPage() {
                 Digite pelo menos 2 letras
               </p>
               <p className="mt-1 text-sm leading-6 text-[var(--text-secondary)]">
-                Exemplo: “Clau” para encontrar Cláudio e entender rapidamente onde ele está no cuidado.
+                Exemplo: “Clau” para encontrar Cláudio e ver o contexto.
               </p>
             </div>
           </div>

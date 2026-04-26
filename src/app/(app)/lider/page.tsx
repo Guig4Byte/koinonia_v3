@@ -45,8 +45,8 @@ function pluralize(count: number, singular: string, plural: string) {
 
 function buildMemberNote(member: LeaderDashboardMember) {
   if (member.lastInteraction) return member.lastInteraction
-  if (member.riskLevel === "red") return "Procure esta pessoa e registre um retorno breve."
-  if (member.riskLevel === "yellow") return "Um contato simples pode evitar que vire urgência."
+  if (member.riskLevel === "red") return "Procure esta pessoa e registre retorno breve."
+  if (member.riskLevel === "yellow") return "Um contato simples pode ajudar."
   return undefined
 }
 
@@ -66,8 +66,8 @@ function getDaysSince(dateStr: string | null) {
 function buildCareContext(member: LeaderDashboardMember | undefined) {
   if (!member) {
     return {
-      title: "Sua célula está sem urgência agora.",
-      subtitle: "Mantenha a presença em dia e registre sinais importantes.",
+      title: "Sua célula está tranquila por agora.",
+      subtitle: "Registre presença e observe mudanças.",
       step: "Comece pelo próximo encontro.",
     }
   }
@@ -83,7 +83,7 @@ function buildCareContext(member: LeaderDashboardMember | undefined) {
           : `sem contato há ${days} dias`
 
   return {
-    title: `${firstName(member.name)} precisa de cuidado esta semana.`,
+    title: `${firstName(member.name)} precisa de cuidado nesta semana.`,
     subtitle: `${member.name} está ${contactText}.`,
     step:
       member.riskLevel === "red"
@@ -160,7 +160,7 @@ export default function LiderPage() {
           "pessoas também precisam",
         )} de atenção.`
       : careContext.step
-    : "Nenhum membro aparece em risco nos sinais principais."
+    : "Nenhum membro aparece em risco agora."
 
   return (
     <div className="flex flex-col gap-6">
@@ -188,7 +188,7 @@ export default function LiderPage() {
           href="/lider/eventos"
           icon={CalendarDays}
           title="Registrar encontro"
-          description="Marque presença e deixe o sistema apontar quem precisa de cuidado."
+          description="Marque presença e veja quem precisa de cuidado."
         />
         <QuickAction
           href="/lider/membros"
@@ -201,7 +201,7 @@ export default function LiderPage() {
             href="/lider/acoes"
             icon={ClipboardList}
             title="Ver ações"
-            description="Acompanhe contatos pendentes e retornos desta semana."
+            description="Veja contatos pendentes desta semana."
           />
         ) : null}
       </section>
@@ -213,7 +213,7 @@ export default function LiderPage() {
         <div className="flex items-center justify-between gap-3">
           <div>
             <h3 className="text-base font-semibold text-[var(--text-primary)]">
-              Cuidado agora
+              Cuidar primeiro
             </h3>
             <p className="mt-1 text-xs text-[var(--text-muted)]">
               Comece por quem aparece aqui.
@@ -243,9 +243,9 @@ export default function LiderPage() {
             <div className="flex items-start gap-3 text-[var(--ok)]">
               <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
               <div>
-                <p className="text-sm font-semibold">Sem cuidado urgente agora.</p>
+                <p className="text-sm font-semibold">Sem cuidado prioritário agora.</p>
                 <p className="mt-1 text-sm leading-6">
-                  Continue perto da célula e registre o próximo encontro com calma.
+                  Siga perto da célula e registre o próximo encontro.
                 </p>
               </div>
             </div>

@@ -138,7 +138,7 @@ function getLeaderReading(leader: LeaderSummary) {
   }
 
   if (reasons.length === 0) {
-    return "Sem sinal urgente para a supervisão agora."
+    return "Sem alerta para a supervisão agora."
   }
 
   return reasons.join(" · ")
@@ -146,15 +146,15 @@ function getLeaderReading(leader: LeaderSummary) {
 
 function getLeaderNextStep(leader: LeaderSummary) {
   if (leader.atRiskCount > 0) {
-    return "Próximo passo: perguntar quem precisa de cuidado e combinar retorno."
+    return "Pergunte quem precisa de cuidado e combine retorno."
   }
 
   if (leader.pendingAttendanceCount > 0) {
-    return "Próximo passo: pedir atualização do encontro antes de cobrar mais ações."
+    return "Peça atualização do encontro antes de novas cobranças."
   }
 
   if (leader.averageAttendance !== null && leader.averageAttendance < 70) {
-    return "Próximo passo: entender se a queda é pontual ou se o líder precisa de ajuda."
+    return "Entenda se a queda é pontual ou se o líder precisa de ajuda."
   }
 
   return "Mantenha proximidade normal nos próximos encontros."
@@ -256,7 +256,7 @@ export default function SupervisorLideresPage() {
           Quem precisa de suporte?
         </h2>
         <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-          Acompanhe líderes com pessoas em cuidado, presença pendente ou queda nos encontros.
+          Veja líderes com pessoas em cuidado, presença pendente ou queda nos encontros.
         </p>
       </section>
 
@@ -312,7 +312,7 @@ export default function SupervisorLideresPage() {
             <div>
               <h3 className="text-sm font-semibold">Comece pelo líder com maior carga</h3>
               <p className="mt-1 text-sm leading-6">
-                Um contato breve pode aliviar o líder e retomar o cuidado da célula inteira.
+                Um contato breve pode aliviar o líder e ajudar a célula inteira.
               </p>
             </div>
           </div>

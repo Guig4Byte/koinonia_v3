@@ -69,7 +69,7 @@ function getEventReading(event: { attendanceCount: number; totalAttendances: num
 
   return {
     label: "Encontro saudável",
-    detail: "Presença registrada sem sinal urgente para a supervisão.",
+    detail: "Presença registrada sem alerta para a supervisão.",
     tone: "ok" as const,
     icon: CheckCircle2,
   }
@@ -148,7 +148,7 @@ function getMemberReason(member: SupervisorGroupMember) {
   }
 
   if (member.riskLevel === "yellow") {
-    return "Ainda dá para agir cedo. Um contato do líder pode evitar que vire urgência."
+    return "Ainda dá para agir cedo. Um contato do líder pode ajudar bastante."
   }
 
   if (member.lastInteractionDays === null) {
@@ -166,18 +166,18 @@ function getMemberNextStep(member: SupervisorGroupMember, leaderName: string | n
   const leader = leaderName ?? "o líder"
 
   if (member.riskLevel === "red") {
-    return `Próximo passo: pedir para ${leader} registrar contato com ${member.name}.`
+    return `Peça para ${leader} registrar contato com ${member.name}.`
   }
 
   if (member.riskLevel === "yellow") {
-    return `Próximo passo: alinhar com ${leader} um cuidado simples nesta semana.`
+    return `Alinhe com ${leader} um cuidado simples nesta semana.`
   }
 
   if (member.lastInteractionDays === null || member.lastInteractionDays >= 21) {
-    return `Próximo passo: confirmar com ${leader} se houve contato e registrar retorno.`
+    return `Confirme com ${leader} se houve contato e registre retorno.`
   }
 
-  return "Próximo passo: manter acompanhamento normal."
+  return "Mantenha acompanhamento normal."
 }
 
 function MemberCareRow({
@@ -247,7 +247,7 @@ export default function SupervisorGroupDetailPage() {
       {
         assigneeId: data.group.leaderUserId,
         groupId: id,
-        description: `Acompanhamento da supervisão: atualizar presença e retorno de cuidado da célula ${data.group.name}`,
+        description: `Supervisão: atualizar presença e retorno da célula ${data.group.name}`,
         dueAt: dueAt.toISOString(),
         targetType: "group",
         targetId: id,
@@ -356,7 +356,7 @@ export default function SupervisorGroupDetailPage() {
         <div className="mb-3 flex items-start justify-between gap-3">
           <div>
             <h2 className="text-sm font-medium text-[var(--text-secondary)]">
-              Fila de cuidado da célula
+              Pessoas para acompanhar
             </h2>
             <p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">
               Veja quem precisa de cuidado e onde o líder pode precisar de apoio.
@@ -382,9 +382,9 @@ export default function SupervisorGroupDetailPage() {
             <div className="flex items-start gap-3">
               <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
               <div>
-                <p className="text-sm font-semibold">Nenhuma pessoa em cuidado crítico agora.</p>
+                <p className="text-sm font-semibold">Nenhuma pessoa crítica agora.</p>
                 <p className="mt-1 text-sm leading-6">
-                  A célula não tem sinais principais de risco. Continue acompanhando o líder pelos encontros.
+                  A célula não tem leituras principais de risco. Continue acompanhando o líder pelos encontros.
                 </p>
               </div>
             </div>
@@ -400,7 +400,7 @@ export default function SupervisorGroupDetailPage() {
                   {stableMembersCount} {pluralize(stableMembersCount, "pessoa está", "pessoas estão")} sem sinal crítico.
                 </p>
                 <p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">
-                  A lista completa fica fora daqui para manter o foco no cuidado.
+                  A lista completa fica fora daqui para manter o foco.
                 </p>
               </div>
             </div>
@@ -413,7 +413,7 @@ export default function SupervisorGroupDetailPage() {
           O que os encontros revelaram
         </h2>
         <p className="mb-3 text-xs text-[var(--text-muted)]">
-          Use a presença como sinal de cuidado, não apenas como histórico.
+          Use a presença como sinal, não só como histórico.
         </p>
         <div className="space-y-2">
           {events.map((event) => {

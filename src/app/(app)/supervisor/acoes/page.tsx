@@ -75,7 +75,7 @@ function ActionFromAlert({ alert }: { alert: SupervisorDashboardAlert }) {
         </p>
         {(alert.personName || alert.groupName) && (
           <p className="mt-2 text-xs font-medium text-[var(--accent)]">
-            Abrir {alert.personName ?? alert.groupName} para combinar o próximo cuidado.
+            Abra {alert.personName ?? alert.groupName} e combine o cuidado.
           </p>
         )}
       </div>
@@ -130,10 +130,10 @@ function GroupActionCard({ group }: { group: SupervisorDashboardGroup }) {
           Falar com {group.leaderName ?? "o líder"} sobre {group.name}
         </p>
         <p className="mt-1 text-sm leading-6 text-[var(--text-secondary)]">
-          {reasons.length > 0 ? reasons.join(" · ") : "Acompanhar célula esta semana."}
+          {reasons.length > 0 ? reasons.join(" · ") : "Acompanhe a célula esta semana."}
         </p>
         <p className="mt-2 text-xs font-semibold text-[var(--accent)]">
-          Próximo passo: combinar uma ação simples e registrar o retorno.
+          Combine uma ação simples e registre o retorno.
         </p>
       </div>
     </Link>
@@ -168,10 +168,10 @@ export default function SupervisorAcoesPage() {
           Ações
         </p>
         <h2 className="mt-1 text-2xl font-semibold leading-tight text-[var(--text-primary)]">
-          O que precisa de retorno?
+          O que precisa voltar?
         </h2>
         <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-          Uma fila curta para apoiar líderes, acompanhar células e não deixar cuidado sem resposta.
+          Uma fila curta para apoiar líderes e acompanhar células.
         </p>
       </section>
 
@@ -183,10 +183,10 @@ export default function SupervisorAcoesPage() {
             </div>
             <div>
               <p className="text-sm font-semibold text-[var(--text-primary)]">
-                {totalActions} {pluralize(totalActions, "encaminhamento aberto", "encaminhamentos abertos")}
+                {totalActions} {pluralize(totalActions, "cuidado aberto", "cuidados abertos")}
               </p>
               <p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">
-                Comece pelos itens prioritários e registre o retorno quando houver contato.
+                Comece pelos prioritários e registre quando houver contato.
               </p>
             </div>
           </div>
@@ -208,7 +208,7 @@ export default function SupervisorAcoesPage() {
       {weekAlerts.length > 0 && (
         <section className="space-y-3">
           <h3 className="text-sm font-semibold text-[var(--text-secondary)]">
-            Acompanhar esta semana
+            Para esta semana
           </h3>
           {weekAlerts.map((alert) => (
             <ActionFromAlert key={alert.id} alert={alert} />
@@ -232,9 +232,9 @@ export default function SupervisorAcoesPage() {
           <div className="flex items-start gap-3 text-[var(--ok)]">
             <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
             <div>
-              <h3 className="text-sm font-semibold">Nada urgente agora</h3>
+              <h3 className="text-sm font-semibold">Nada prioritário agora</h3>
               <p className="mt-1 text-sm leading-6">
-                A região está sem encaminhamento aberto. Continue perto dos líderes.
+                A região não tem cuidado aberto. Siga perto dos líderes.
               </p>
             </div>
           </div>

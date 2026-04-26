@@ -73,7 +73,7 @@ function getAttendanceReading({
   if (markedCount === 0) {
     return {
       title: "Presença ainda não registrada",
-      detail: "Marque presença ou ausência para todos. Isso mantém o cuidado confiável.",
+      detail: "Marque presença ou ausência para todos. Isso mantém o leitura completa.",
       tone: "muted",
     }
   }
@@ -96,7 +96,7 @@ function getAttendanceReading({
 
   if (riskAbsentCount > 0) {
     return {
-      title: "Ausência pede cuidado mais próximo",
+      title: "Ausência pede atenção",
       detail: `${riskAbsentCount} pessoa${riskAbsentCount === 1 ? "" : "s"} em atenção também faltou${riskAbsentCount === 1 ? "" : "ram"}. Procure depois do encontro.`,
       tone: "risk",
     }
@@ -300,7 +300,7 @@ export default function PresencaPage() {
             Marcar pessoas
           </h3>
           <p className="mt-1 text-xs text-[var(--text-muted)]">
-            Marque todos. Ausência também é sinal de cuidado.
+            Marque todos. Ausência também é sinal.
           </p>
         </div>
 

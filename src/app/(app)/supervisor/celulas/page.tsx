@@ -79,7 +79,7 @@ function getGroupReading(group: SupervisorGroup) {
   }
 
   if (reasons.length === 0) {
-    return "Sem sinal urgente. Continue acompanhando de perto."
+    return "Sem alerta por agora."
   }
 
   return reasons.join(" · ")
@@ -185,7 +185,7 @@ export default function SupervisorCelulasPage() {
           Onde preciso apoiar?
         </h2>
         <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-          Veja primeiro as células que pedem proximidade com o líder.
+          Comece pelas células que pedem apoio do líder.
         </p>
       </section>
 
@@ -206,7 +206,7 @@ export default function SupervisorCelulasPage() {
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-[var(--warn)]">
               <AlertTriangle className="h-4 w-4" />
-              <h3 className="text-sm font-semibold">Precisam de apoio</h3>
+              <h3 className="text-sm font-semibold">Pedem apoio</h3>
             </div>
             <span className="rounded-full bg-[var(--warn-bg)] px-2 py-1 text-xs font-semibold text-[var(--warn)]">
               {supportGroups.length}

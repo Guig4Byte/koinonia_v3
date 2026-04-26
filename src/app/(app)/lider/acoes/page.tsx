@@ -52,7 +52,7 @@ export default function AcoesPage() {
           O que precisa virar contato?
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">
-          {pending.length} cuidado{pending.length !== 1 ? "s" : ""} pendente{pending.length !== 1 ? "s" : ""}. Marque como concluído quando houver retorno.
+          {pending.length} contato{pending.length !== 1 ? "s" : ""} pendente{pending.length !== 1 ? "s" : ""}. Marque como concluído após o retorno.
         </p>
       </section>
 
@@ -113,7 +113,7 @@ export default function AcoesPage() {
           <CheckCircle2 className="h-12 w-12 text-[var(--ok)]" />
           <p className="text-[var(--text-secondary)]">Tudo em ordem.</p>
           <p className="text-sm text-[var(--text-muted)]">
-            Nenhum cuidado pendente agora.
+            Nenhum contato pendente agora.
           </p>
         </div>
       )}
