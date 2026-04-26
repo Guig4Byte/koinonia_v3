@@ -4,14 +4,7 @@ import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useMe } from "@/hooks/use-auth"
 import type { AppRole } from "@/types"
-
-const roleHomeMap: Record<AppRole, string> = {
-  pastor: "/pastor",
-  supervisor: "/supervisor",
-  leader: "/lider",
-  host: "/lider",
-  member: "/lider",
-}
+import { getRoleHomePath } from "@/lib/role-home"
 
 export function RoleGuard({
   allowedRoles,
@@ -30,8 +23,7 @@ export function RoleGuard({
       return
     }
     if (!allowedRoles.includes(user.role)) {
-      const home = roleHomeMap[user.role] ?? "/"
-      router.replace(home)
+      router.replace(getRoleHomePath(user.role))
     }
   }, [user, isLoading, router, allowedRoles])
 

@@ -4,12 +4,7 @@ import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useMe } from "@/hooks/use-auth"
 import { Loader2 } from "lucide-react"
-
-const ROLE_ROUTES: Record<string, string> = {
-  pastor: "/pastor",
-  supervisor: "/supervisor",
-  leader: "/lider",
-}
+import { getRoleHomePath } from "@/lib/role-home"
 
 export function PersonaGuard() {
   const router = useRouter()
@@ -17,8 +12,7 @@ export function PersonaGuard() {
 
   useEffect(() => {
     if (!isLoading && user) {
-      const route = ROLE_ROUTES[user.role]
-      if (route) router.replace(route)
+      router.replace(getRoleHomePath(user.role))
     }
   }, [user, isLoading, router])
 

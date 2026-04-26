@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useMe } from "@/hooks/use-auth"
+import { getRoleHomePath } from "@/lib/role-home"
 
 export default function HomePage() {
   const router = useRouter()
@@ -16,16 +17,7 @@ export default function HomePage() {
       return
     }
 
-    const route =
-      user.role === "pastor"
-        ? "/pastor"
-        : user.role === "supervisor"
-        ? "/supervisor"
-        : user.role === "leader"
-        ? "/lider"
-        : "/login"
-
-    router.replace(route)
+    router.replace(getRoleHomePath(user.role))
   }, [user, isLoading, router])
 
   return (

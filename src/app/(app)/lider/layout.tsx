@@ -12,7 +12,7 @@ export default function LiderLayout({
   children: React.ReactNode
 }>) {
   return (
-    <RoleGuard allowedRoles={["leader", "host", "member"]}>
+    <RoleGuard allowedRoles={["leader"]}>
       <LiderLayoutInner>{children}</LiderLayoutInner>
     </RoleGuard>
   )

@@ -16,6 +16,7 @@ import type {
   MeResponse,
   OnboardingResponse,
 } from "@/types";
+import { getRoleHomePath } from "@/lib/role-home";
 
 export const authQueryKey = ["auth", "me"] as const;
 
@@ -71,11 +72,7 @@ export function useLogin(options?: { redirectTo?: string }) {
       queryClient.setQueryData(authQueryKey, response.user);
 
       const redirectTo = options?.redirectTo;
-      const role = response.user.role;
-      const defaultRoute =
-        role === "pastor" ? "/pastor" :
-        role === "supervisor" ? "/supervisor" :
-        role === "leader" ? "/lider" : "/";
+      const defaultRoute = getRoleHomePath(response.user.role);
       startTransition(() => {
         router.replace(redirectTo ?? defaultRoute);
       });
@@ -106,11 +103,7 @@ export function useOnboarding(options?: { redirectTo?: string }) {
       queryClient.setQueryData(authQueryKey, response.user);
 
       const redirectTo = options?.redirectTo;
-      const role = response.user.role;
-      const defaultRoute =
-        role === "pastor" ? "/pastor" :
-        role === "supervisor" ? "/supervisor" :
-        role === "leader" ? "/lider" : "/";
+      const defaultRoute = getRoleHomePath(response.user.role);
       startTransition(() => {
         router.replace(redirectTo ?? defaultRoute);
       });
