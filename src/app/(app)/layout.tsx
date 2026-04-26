@@ -44,7 +44,7 @@ export default function AuthenticatedAppLayout({
     return (
       <div className="flex h-screen items-center justify-center bg-[var(--bg)]">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-300 border-t-stone-800" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--border)] border-t-[var(--accent)]" />
           <p className="text-sm text-[var(--text-muted)]">Carregando...</p>
         </div>
       </div>
@@ -55,7 +55,7 @@ export default function AuthenticatedAppLayout({
     return (
       <div className="flex h-screen items-center justify-center bg-[var(--bg)]">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-300 border-t-stone-800" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--border)] border-t-[var(--accent)]" />
           <p className="text-sm text-[var(--text-muted)]">Redirecionando...</p>
         </div>
       </div>

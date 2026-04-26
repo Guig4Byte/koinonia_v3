@@ -180,9 +180,9 @@ function LeaderCard({ leader }: { leader: LeaderSummary }) {
         <div
           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
             tone === "risk"
-              ? "bg-white/60 text-[var(--risk)] dark:bg-black/10"
+              ? "bg-[var(--surface-soft)] text-[var(--risk)] dark:bg-black/10"
               : tone === "warn"
-                ? "bg-white/60 text-[var(--warn)] dark:bg-black/10"
+                ? "bg-[var(--surface-soft)] text-[var(--warn)] dark:bg-black/10"
                 : "bg-[var(--ok-bg)] text-[var(--ok)]"
           }`}
         >
@@ -216,7 +216,7 @@ function LeaderCard({ leader }: { leader: LeaderSummary }) {
               {leader.groups.slice(0, 3).map((group) => (
                 <span
                   key={group.id}
-                  className="rounded-full bg-white/50 px-2 py-1 text-[0.65rem] font-medium text-[var(--text-secondary)] dark:bg-black/10"
+                  className="rounded-full bg-[var(--surface-soft)] px-2 py-1 text-[0.65rem] font-medium text-[var(--text-secondary)] dark:bg-black/10"
                 >
                   {group.name}
                 </span>

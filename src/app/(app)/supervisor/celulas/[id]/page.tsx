@@ -198,7 +198,7 @@ function MemberCareRow({
       )}
     >
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/60 text-[var(--text-muted)] dark:bg-black/10">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--surface-soft)] text-[var(--text-muted)] dark:bg-black/10">
           <User className="h-5 w-5" />
         </div>
 
@@ -212,7 +212,7 @@ function MemberCareRow({
                 {getContactText(member)}
               </p>
             </div>
-            <span className="shrink-0 rounded-full bg-white/60 px-2 py-1 text-[0.65rem] font-semibold uppercase tracking-wide text-current dark:bg-black/10">
+            <span className="shrink-0 rounded-full bg-[var(--surface-soft)] px-2 py-1 text-[0.65rem] font-semibold uppercase tracking-wide text-current dark:bg-black/10">
               {getMemberLabel(member)}
             </span>
           </div>
@@ -429,7 +429,7 @@ export default function SupervisorGroupDetailPage() {
                 className={`rounded-xl border p-3 ${eventReadingClasses[reading.tone]}`}
               >
                 <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/50 text-current dark:bg-black/10">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--surface-soft)] text-current dark:bg-black/10">
                     <Icon className="h-5 w-5" />
                   </div>
                   <div className="min-w-0 flex-1">

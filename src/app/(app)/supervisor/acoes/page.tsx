@@ -50,7 +50,7 @@ function ActionFromAlert({ alert }: { alert: SupervisorDashboardAlert }) {
     <>
       <div
         className={cn(
-          "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border bg-white/60 dark:bg-black/10",
+          "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border bg-[var(--surface-soft)] dark:bg-black/10",
           getSeverityClasses(alert.severity),
         )}
       >
@@ -119,7 +119,7 @@ function GroupActionCard({ group }: { group: SupervisorDashboardGroup }) {
       }`}
     >
       <div
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/60 dark:bg-black/10 ${
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--surface-soft)] dark:bg-black/10 ${
           isRisk ? "text-[var(--risk)]" : "text-[var(--warn)]"
         }`}
       >

@@ -6,49 +6,53 @@
   :root {
     color-scheme: light;
     /* Fundos — pergaminho contemporâneo */
-    --bg: #f4ead9;
-    --card: #fffaf2;
-    --surface: #efe3cf;
+    --bg: #f3eadb;
+    --card: #fffaf3;
+    --surface: #efe2cc;
+    --surface-soft: #f8f0e3;
 
     /* Textos */
     --text-primary: #2f2923;
-    --text-secondary: #5c5146;
-    --text-muted: #72695e;
+    --text-secondary: #554a40;
+    --text-muted: #655c51;
 
     /* Status — Risco */
-    --risk: #9a3f25;
-    --risk-bg: #f7e8de;
-    --risk-border: #e2b29f;
+    --risk: #934025;
+    --risk-bg: #f6e5dc;
+    --risk-border: #dcaa96;
 
     /* Status — OK */
-    --ok: #486b2a;
-    --ok-bg: #e7efdb;
-    --ok-border: #bfd1a3;
+    --ok: #456728;
+    --ok-bg: #e7efda;
+    --ok-border: #bccf9f;
 
     /* Status — Atenção */
-    --warn: #8a570f;
-    --warn-bg: #fbefd7;
-    --warn-border: #dfba74;
+    --warn: #83530f;
+    --warn-bg: #faeed4;
+    --warn-border: #dab36f;
 
     /* Status — Novo */
-    --new: #2f638f;
-    --new-bg: #e4eef6;
-    --new-border: #b8cede;
+    --new: #2d618a;
+    --new-bg: #e3eef6;
+    --new-border: #b5ccdd;
 
     /* Acento */
-    --accent: #6b4f2d;
-    --accent-light: #eadcc6;
+    --accent: #684c2c;
+    --accent-light: #eadbc4;
 
     /* Input */
     --input-bg: #fffaf2;
-    --input-border: #dbcbb3;
+    --input-border: #d5c3aa;
 
     /* Bordas */
-    --border: #d6c5ad;
-    --border-light: #e5d7c2;
+    --border: #d2bfa5;
+    --border-light: #e4d4bd;
 
     /* Pulse Card */
-    --pulse-card-bg: #493824;
+    --pulse-card-bg: #483622;
+    --pulse-card-fg: #fffaf0;
+    --pulse-card-muted: rgba(255, 250, 240, 0.76);
+    --pulse-card-soft: rgba(255, 250, 240, 0.12);
   }
 
   .dark {
@@ -57,6 +61,7 @@
     --bg: #15130f;
     --card: #211c16;
     --surface: #2e261c;
+    --surface-soft: #261f18;
 
     /* Textos */
     --text-primary: #efe7dc;
@@ -97,6 +102,9 @@
 
     /* Pulse Card */
     --pulse-card-bg: #2f2419;
+    --pulse-card-fg: #fff6e8;
+    --pulse-card-muted: rgba(255, 246, 232, 0.72);
+    --pulse-card-soft: rgba(255, 246, 232, 0.10);
   }
 
   * {
@@ -115,7 +123,7 @@
       radial-gradient(circle at 50% -10%, rgba(255, 253, 244, 0.92), transparent 42rem),
       radial-gradient(circle at 12% 6%, rgba(164, 103, 39, 0.12), transparent 18rem),
       radial-gradient(circle at 88% 0%, rgba(120, 80, 35, 0.08), transparent 20rem),
-      linear-gradient(180deg, #f7eedf 0%, #efe1cd 100%);
+      linear-gradient(180deg, #f7eddd 0%, #efe0ca 100%);
     background-repeat: no-repeat;
   }
 

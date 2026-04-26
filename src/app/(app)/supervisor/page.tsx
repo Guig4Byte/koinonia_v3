@@ -176,16 +176,16 @@ export default function SupervisorPage() {
   return (
     <div className="space-y-6">
       <section
-        className="rounded-2xl p-5 text-white shadow-lg"
+        className="rounded-2xl p-5 text-[var(--pulse-card-fg)] shadow-lg"
         style={{ backgroundColor: "var(--pulse-card-bg)" }}
       >
-        <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-white/70">
+        <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-[var(--pulse-card-muted)]">
           Região
         </p>
-        <h2 className="text-2xl font-semibold leading-snug text-white">
+        <h2 className="text-2xl font-semibold leading-snug text-[var(--pulse-card-fg)]">
           {mainPulse}
         </h2>
-        <p className="mt-3 text-sm leading-6 text-white/70">{supportPulse}</p>
+        <p className="mt-3 text-sm leading-6 text-[var(--pulse-card-muted)]">{supportPulse}</p>
       </section>
 
       <section className="grid grid-cols-3 gap-3">

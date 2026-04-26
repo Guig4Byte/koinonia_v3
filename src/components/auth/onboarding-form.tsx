@@ -46,7 +46,7 @@ export function OnboardingForm() {
   return (
     <div className="w-full rounded-2xl bg-[var(--card)] p-6 shadow-sm border border-[var(--border)]">
       <div className="mb-8 flex items-center gap-3">
-        <div className="rounded-2xl bg-ok-bg p-3 text-ok">
+        <div className="rounded-2xl bg-[var(--ok-bg)] p-3 text-[var(--ok)]">
           <Sparkles className="h-6 w-6" />
         </div>
         <div>
@@ -72,14 +72,14 @@ export function OnboardingForm() {
                 placeholder="Comunidade Esperança"
               />
               {errors.churchName ? (
-                <p className="text-sm text-[var(--text-muted)]">{errors.churchName.message}</p>
+                <p className="text-sm text-[var(--risk)]">{errors.churchName.message}</p>
               ) : null}
             </div>
 
             <button
               type="button"
               onClick={goToNextStep}
-              className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-[var(--accent)] px-4 text-base font-semibold text-[#fffaf2] transition hover:opacity-90"
+              className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-[var(--accent)] px-4 text-base font-semibold text-[var(--pulse-card-fg)] transition hover:opacity-90"
             >
               Continuar
             </button>
@@ -98,7 +98,7 @@ export function OnboardingForm() {
                 placeholder="Roberto Almeida"
               />
               {errors.pastorName ? (
-                <p className="text-sm text-[var(--text-muted)]">{errors.pastorName.message}</p>
+                <p className="text-sm text-[var(--risk)]">{errors.pastorName.message}</p>
               ) : null}
             </div>
 
@@ -115,7 +115,7 @@ export function OnboardingForm() {
                 placeholder="pastor@igreja.org"
               />
               {errors.email ? (
-                <p className="text-sm text-[var(--text-muted)]">{errors.email.message}</p>
+                <p className="text-sm text-[var(--risk)]">{errors.email.message}</p>
               ) : null}
             </div>
 
@@ -132,7 +132,7 @@ export function OnboardingForm() {
                 placeholder="Crie uma senha"
               />
               {errors.password ? (
-                <p className="text-sm text-[var(--text-muted)]">{errors.password.message}</p>
+                <p className="text-sm text-[var(--risk)]">{errors.password.message}</p>
               ) : null}
             </div>
 
@@ -148,7 +148,7 @@ export function OnboardingForm() {
               <button
                 type="submit"
                 disabled={onboardingMutation.isPending}
-                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 text-base font-semibold text-[#fffaf2] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 text-base font-semibold text-[var(--pulse-card-fg)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {onboardingMutation.isPending ? (
                   <>
@@ -163,7 +163,7 @@ export function OnboardingForm() {
           </div>
         )}
 
-        {errorMessage ? <p className="text-sm text-[var(--text-muted)]">{errorMessage}</p> : null}
+        {errorMessage ? <p className="text-sm font-medium text-[var(--risk)]">{errorMessage}</p> : null}
       </form>
 
       <div className="mt-6 border-t border-[var(--border-light)] pt-4">

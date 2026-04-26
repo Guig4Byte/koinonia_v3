@@ -49,7 +49,7 @@ export function BottomNav({
   const activeTabs = tabs ?? defaultTabs
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-[var(--border)] bg-[var(--card)]">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-[var(--border)] bg-[var(--card)]/95 backdrop-blur">
       <div className="mx-auto flex max-w-[430px] items-center justify-around py-2">
         {activeTabs.map((tab) => {
           const isActive = isActiveTab(pathname, tab.href)
@@ -60,10 +60,10 @@ export function BottomNav({
               href={tab.href}
               aria-current={isActive ? "page" : undefined}
               className={cn(
-                "flex flex-col items-center gap-0.5 px-3 py-1 transition",
+                "flex min-w-14 flex-col items-center gap-0.5 rounded-2xl px-3 py-1.5 transition",
                 isActive
-                  ? "text-[var(--text-primary)]"
-                  : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                  ? "bg-[var(--accent-light)] text-[var(--accent)]"
+                  : "text-[var(--text-muted)] hover:bg-[var(--surface-soft)] hover:text-[var(--text-secondary)]"
               )}
             >
               <Icon className="h-5 w-5" />

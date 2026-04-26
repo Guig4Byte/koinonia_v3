@@ -412,7 +412,7 @@ export default function PresencaPage() {
         <button
           onClick={handleSave}
           disabled={!allMarked || saveMutation.isPending}
-          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 text-base font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 text-base font-semibold text-[var(--pulse-card-fg)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {saveMutation.isPending ? (
             <>

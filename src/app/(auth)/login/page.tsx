@@ -13,7 +13,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Header pastoral */}
         <div className="mb-8 flex flex-col items-center gap-3 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--accent)] text-[#fffaf2]">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--accent)] text-[var(--pulse-card-fg)]">
             <Church className="h-7 w-7" />
           </div>
           <div>

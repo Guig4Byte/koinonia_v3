@@ -87,7 +87,7 @@ function PersonCareCard({ alert }: { alert: PastorDashboardAlert }) {
     <>
       <div
         className={cn(
-          "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border bg-white/60 dark:bg-black/10",
+          "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border bg-[var(--surface-soft)] dark:bg-black/10",
           getSeverityClasses(alert.severity),
         )}
       >

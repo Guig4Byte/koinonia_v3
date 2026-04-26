@@ -88,13 +88,13 @@ function getGroupReading(group: SupervisorGroup) {
 const toneClasses = {
   risk: {
     card: "border-[var(--risk-border)] bg-[var(--risk-bg)]",
-    icon: "bg-white/60 text-[var(--risk)] dark:bg-black/10",
-    badge: "bg-white/60 text-[var(--risk)] dark:bg-black/10",
+    icon: "bg-[var(--surface-soft)] text-[var(--risk)] dark:bg-black/10",
+    badge: "bg-[var(--surface-soft)] text-[var(--risk)] dark:bg-black/10",
   },
   warn: {
     card: "border-[var(--warn-border)] bg-[var(--warn-bg)]",
-    icon: "bg-white/60 text-[var(--warn)] dark:bg-black/10",
-    badge: "bg-white/60 text-[var(--warn)] dark:bg-black/10",
+    icon: "bg-[var(--surface-soft)] text-[var(--warn)] dark:bg-black/10",
+    badge: "bg-[var(--surface-soft)] text-[var(--warn)] dark:bg-black/10",
   },
   ok: {
     card: "border-[var(--border-light)] bg-[var(--card)]",
@@ -143,11 +143,11 @@ function GroupCard({ group }: { group: SupervisorGroup }) {
           </p>
 
           <div className="mt-3 flex flex-wrap gap-2">
-            <span className="rounded-full bg-white/50 px-2 py-1 text-[0.65rem] font-medium text-[var(--text-secondary)] dark:bg-black/10">
+            <span className="rounded-full bg-[var(--surface-soft)] px-2 py-1 text-[0.65rem] font-medium text-[var(--text-secondary)] dark:bg-black/10">
               {group.averageAttendance}% média
             </span>
             {group.lastAttendanceRate !== null && (
-              <span className="rounded-full bg-white/50 px-2 py-1 text-[0.65rem] font-medium text-[var(--text-secondary)] dark:bg-black/10">
+              <span className="rounded-full bg-[var(--surface-soft)] px-2 py-1 text-[0.65rem] font-medium text-[var(--text-secondary)] dark:bg-black/10">
                 {group.lastAttendanceRate}% último encontro
               </span>
             )}

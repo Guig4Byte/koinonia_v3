@@ -198,16 +198,16 @@ export default function PastorPage() {
   return (
     <div className="space-y-5">
       <section
-        className="rounded-3xl p-5 text-white shadow-lg"
+        className="rounded-3xl p-5 text-[var(--pulse-card-fg)] shadow-lg"
         style={{ backgroundColor: "var(--pulse-card-bg)" }}
       >
-        <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-white/70">
+        <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-[var(--pulse-card-muted)]">
           Leitura pastoral de agora
         </p>
-        <h2 className="text-2xl font-semibold leading-snug text-white">
+        <h2 className="text-2xl font-semibold leading-snug text-[var(--pulse-card-fg)]">
           {mainPulse}
         </h2>
-        <p className="mt-3 text-base leading-7 text-white/75">{supportPulse}</p>
+        <p className="mt-3 text-base leading-7 text-[var(--pulse-card-muted)]">{supportPulse}</p>
       </section>
 
       <Link

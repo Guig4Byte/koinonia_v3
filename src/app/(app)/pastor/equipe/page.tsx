@@ -86,7 +86,7 @@ export default function PastorEquipePage() {
       {supportCount > 0 && (
         <section className="rounded-2xl border border-[var(--warn-border)] bg-[var(--warn-bg)] p-4">
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/60 text-[var(--warn)] dark:bg-black/10">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--surface-soft)] text-[var(--warn)] dark:bg-black/10">
               <HeartHandshake className="h-5 w-5" />
             </div>
             <div>

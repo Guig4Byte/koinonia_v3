@@ -152,7 +152,7 @@ function MemberCareCard({ member }: { member: MemberItem }) {
       )}
     >
       <div className="flex items-start gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/60 text-sm font-semibold text-[var(--text-secondary)] dark:bg-black/10">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--surface-soft)] text-sm font-semibold text-[var(--text-secondary)] dark:bg-black/10">
           {member.photoUrl ? (
             <img
               src={member.photoUrl}
@@ -192,7 +192,7 @@ function MemberCareCard({ member }: { member: MemberItem }) {
           </p>
 
           {member.lastInteraction ? (
-            <p className="mt-3 rounded-xl bg-white/50 px-3 py-2 text-xs leading-5 text-[var(--text-secondary)] dark:bg-black/10">
+            <p className="mt-3 rounded-xl bg-[var(--surface-soft)] px-3 py-2 text-xs leading-5 text-[var(--text-secondary)] dark:bg-black/10">
               Última anotação: {member.lastInteraction}
             </p>
           ) : null}
@@ -281,16 +281,16 @@ export default function MembrosPage() {
   return (
     <div className="flex flex-col gap-6">
       <section
-        className="opacity-0 animate-fade-up rounded-2xl p-5 text-white shadow-lg"
+        className="opacity-0 animate-fade-up rounded-2xl p-5 text-[var(--pulse-card-fg)] shadow-lg"
         style={{ backgroundColor: "var(--pulse-card-bg)" }}
       >
-        <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-white/70">
+        <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-[var(--pulse-card-muted)]">
           Membros da célula
         </p>
-        <h2 className="text-2xl font-semibold leading-snug text-white">
+        <h2 className="text-2xl font-semibold leading-snug text-[var(--pulse-card-fg)]">
           {pulseTitle}
         </h2>
-        <p className="mt-3 text-sm leading-6 text-white/70">{pulseSubtitle}</p>
+        <p className="mt-3 text-sm leading-6 text-[var(--pulse-card-muted)]">{pulseSubtitle}</p>
       </section>
 
       <div className="relative opacity-0 animate-fade-up" style={{ animationDelay: "100ms" }}>

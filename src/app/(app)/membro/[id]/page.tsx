@@ -197,7 +197,7 @@ export default function MembroPage({ params }: { params: Promise<{ id: string }>
 
         <section className={cn("mb-6 rounded-2xl border p-4", careToneClasses[careReading.tone])}>
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/60 dark:bg-black/10">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--surface-soft)] dark:bg-black/10">
               <HeartHandshake className="h-5 w-5" />
             </div>
             <div>
