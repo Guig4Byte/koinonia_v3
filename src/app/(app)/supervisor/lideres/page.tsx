@@ -1,0 +1,260 @@
+"use client"
+
+import Link from "next/link"
+import { AlertTriangle, CheckCircle2, ClipboardList, User } from "lucide-react"
+import {
+  useSupervisorGroups,
+  type SupervisorGroup,
+} from "@/hooks/use-supervisor-groups"
+
+interface LeaderSummary {
+  name: string
+  groups: SupervisorGroup[]
+  memberCount: number
+  atRiskCount: number
+  pendingAttendanceCount: number
+  averageAttendance: number | null
+}
+
+function pluralize(count: number, singular: string, plural: string) {
+  return count === 1 ? singular : plural
+}
+
+function buildLeaderSummaries(groups: SupervisorGroup[]): LeaderSummary[] {
+  const map = new Map<string, LeaderSummary>()
+
+  groups.forEach((group) => {
+    const name = group.leaderName ?? "Sem líder definido"
+    const current = map.get(name) ?? {
+      name,
+      groups: [],
+      memberCount: 0,
+      atRiskCount: 0,
+      pendingAttendanceCount: 0,
+      averageAttendance: null,
+    }
+
+    current.groups.push(group)
+    current.memberCount += group.memberCount
+    current.atRiskCount += group.atRiskCount
+    current.pendingAttendanceCount += group.hasUnregisteredAttendance ? 1 : 0
+    map.set(name, current)
+  })
+
+  return [...map.values()]
+    .map((leader) => {
+      const groupsWithAttendance = leader.groups.filter(
+        (group) => group.lastAttendanceRate !== null,
+      )
+      const averageAttendance = groupsWithAttendance.length
+        ? Math.round(
+            groupsWithAttendance.reduce(
+              (sum, group) => sum + (group.lastAttendanceRate ?? 0),
+              0,
+            ) / groupsWithAttendance.length,
+          )
+        : null
+
+      return { ...leader, averageAttendance }
+    })
+    .sort((a, b) => {
+      if (b.atRiskCount !== a.atRiskCount) return b.atRiskCount - a.atRiskCount
+      if (b.pendingAttendanceCount !== a.pendingAttendanceCount) {
+        return b.pendingAttendanceCount - a.pendingAttendanceCount
+      }
+
+      const aAttendance = a.averageAttendance ?? 101
+      const bAttendance = b.averageAttendance ?? 101
+      return aAttendance - bAttendance
+    })
+}
+
+function getLeaderStatus(leader: LeaderSummary) {
+  if (leader.atRiskCount > 0 || leader.pendingAttendanceCount > 0) {
+    return {
+      label: "Apoiar",
+      className: "border-[var(--warn-border)] bg-[var(--warn-bg)] text-[var(--warn)]",
+    }
+  }
+
+  return {
+    label: "OK",
+    className: "border-[var(--ok-border)] bg-[var(--ok-bg)] text-[var(--ok)]",
+  }
+}
+
+function getLeaderReading(leader: LeaderSummary) {
+  const reasons: string[] = []
+
+  if (leader.atRiskCount > 0) {
+    reasons.push(
+      `${leader.atRiskCount} ${pluralize(
+        leader.atRiskCount,
+        "pessoa em risco",
+        "pessoas em risco",
+      )}`,
+    )
+  }
+
+  if (leader.pendingAttendanceCount > 0) {
+    reasons.push(
+      `${leader.pendingAttendanceCount} ${pluralize(
+        leader.pendingAttendanceCount,
+        "célula com presença pendente",
+        "células com presença pendente",
+      )}`,
+    )
+  }
+
+  if (leader.averageAttendance !== null && leader.averageAttendance < 70) {
+    reasons.push(`${leader.averageAttendance}% de presença média`)
+  }
+
+  if (reasons.length === 0) {
+    return "Sem sinal urgente para a supervisão agora."
+  }
+
+  return reasons.join(" · ")
+}
+
+function LeaderCard({ leader }: { leader: LeaderSummary }) {
+  const status = getLeaderStatus(leader)
+  const firstGroup = leader.groups[0]
+
+  return (
+    <Link
+      href={firstGroup ? `/supervisor/celulas/${firstGroup.id}` : "/supervisor/celulas"}
+      className="block rounded-2xl border border-[var(--border-light)] bg-[var(--card)] p-4 transition hover:bg-[var(--surface)] active:scale-[0.98]"
+    >
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--surface)] text-[var(--text-muted)]">
+          <User className="h-5 w-5" />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-[var(--text-primary)]">
+                {leader.name}
+              </p>
+              <p className="mt-0.5 text-xs text-[var(--text-muted)]">
+                {leader.groups.length} {pluralize(leader.groups.length, "célula", "células")} · {leader.memberCount} membros
+              </p>
+            </div>
+            <span className={`shrink-0 rounded-full border px-2 py-1 text-[0.65rem] font-semibold uppercase tracking-wide ${status.className}`}>
+              {status.label}
+            </span>
+          </div>
+
+          <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
+            {getLeaderReading(leader)}
+          </p>
+
+          {leader.groups.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {leader.groups.slice(0, 3).map((group) => (
+                <span
+                  key={group.id}
+                  className="rounded-full bg-[var(--surface)] px-2 py-1 text-[0.65rem] font-medium text-[var(--text-muted)]"
+                >
+                  {group.name}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </Link>
+  )
+}
+
+export default function SupervisorLideresPage() {
+  const { data, isLoading } = useSupervisorGroups()
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {[...Array(4)].map((_, index) => (
+          <div key={index} className="h-24 animate-pulse rounded-2xl bg-[var(--surface)]" />
+        ))}
+      </div>
+    )
+  }
+
+  const groups = data?.groups ?? []
+  const leaders = buildLeaderSummaries(groups)
+  const leadersNeedingSupport = leaders.filter(
+    (leader) => leader.atRiskCount > 0 || leader.pendingAttendanceCount > 0,
+  )
+
+  return (
+    <div className="space-y-5">
+      <section>
+        <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+          Líderes
+        </p>
+        <h2 className="mt-1 text-2xl font-semibold leading-tight text-[var(--text-primary)]">
+          Quem precisa de suporte?
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
+          Veja quais líderes carregam células, pessoas em risco ou presença pendente.
+        </p>
+      </section>
+
+      <section className="grid grid-cols-2 gap-3">
+        <div className="rounded-2xl border border-[var(--border-light)] bg-[var(--card)] p-4">
+          <div className="flex items-center gap-2 text-[var(--text-muted)]">
+            <User className="h-4 w-4" />
+            <p className="text-xs font-medium">Líderes</p>
+          </div>
+          <p className="mt-2 text-2xl font-semibold text-[var(--text-primary)]">
+            {leaders.length}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-[var(--warn-border)] bg-[var(--warn-bg)] p-4">
+          <div className="flex items-center gap-2 text-[var(--warn)]">
+            <ClipboardList className="h-4 w-4" />
+            <p className="text-xs font-medium">Apoiar</p>
+          </div>
+          <p className="mt-2 text-2xl font-semibold text-[var(--text-primary)]">
+            {leadersNeedingSupport.length}
+          </p>
+        </div>
+      </section>
+
+      {leaders.length > 0 ? (
+        <section className="space-y-3">
+          {leaders.map((leader) => (
+            <LeaderCard key={leader.name} leader={leader} />
+          ))}
+        </section>
+      ) : (
+        <section className="rounded-2xl border border-[var(--ok-border)] bg-[var(--ok-bg)] p-4">
+          <div className="flex items-start gap-3 text-[var(--ok)]">
+            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+            <div>
+              <h3 className="text-sm font-semibold">Nenhum líder encontrado</h3>
+              <p className="mt-1 text-sm leading-6">
+                Quando houver células supervisionadas, os líderes aparecerão aqui.
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {leadersNeedingSupport.length > 0 && (
+        <section className="rounded-2xl border border-[var(--warn-border)] bg-[var(--warn-bg)] p-4">
+          <div className="flex items-start gap-3 text-[var(--warn)]">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+            <div>
+              <h3 className="text-sm font-semibold">Comece por quem carrega mais risco</h3>
+              <p className="mt-1 text-sm leading-6">
+                Um contato breve com o líder certo pode destravar o cuidado da célula inteira.
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
+    </div>
+  )
+}

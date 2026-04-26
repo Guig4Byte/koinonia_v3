@@ -2,23 +2,30 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Users, CalendarDays, Zap, Eye, Search } from "lucide-react"
+import {
+  CalendarDays,
+  ClipboardList,
+  Eye,
+  Home,
+  Search,
+  Users,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   home: Home,
   users: Users,
   calendar: CalendarDays,
-  zap: Zap,
+  clipboard: ClipboardList,
   eye: Eye,
   search: Search,
 }
 
 const defaultTabs = [
-  { href: "/lider", label: "Visão", icon: "home" },
+  { href: "/lider", label: "Célula", icon: "home" },
   { href: "/lider/membros", label: "Membros", icon: "users" },
-  { href: "/lider/eventos", label: "Encontro", icon: "calendar" },
-  { href: "/lider/acoes", label: "Ações", icon: "zap" },
+  { href: "/lider/eventos", label: "Encontros", icon: "calendar" },
+  { href: "/lider/acoes", label: "Ações", icon: "clipboard" },
 ]
 
 const rootProfileRoutes = new Set(["/pastor", "/supervisor", "/lider"])
@@ -27,7 +34,7 @@ function isActiveTab(pathname: string, href: string) {
   if (pathname === href) return true
 
   // A raiz do perfil não deve continuar ativa dentro das subrotas.
-  // Ex.: /lider/membros ativa "Membros", não "Visão".
+  // Ex.: /lider/membros ativa "Membros", não "Célula".
   if (rootProfileRoutes.has(href)) return false
 
   return pathname.startsWith(`${href}/`)

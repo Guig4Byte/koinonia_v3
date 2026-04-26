@@ -1,12 +1,201 @@
-export default function SupervisorAcoesPage() {
+"use client"
+
+import Link from "next/link"
+import { AlertTriangle, CheckCircle2, ClipboardList, User } from "lucide-react"
+import {
+  useSupervisorDashboard,
+  type SupervisorDashboardAlert,
+  type SupervisorDashboardGroup,
+} from "@/hooks/use-supervisor-dashboard"
+import { cn } from "@/lib/utils"
+
+function pluralize(count: number, singular: string, plural: string) {
+  return count === 1 ? singular : plural
+}
+
+function isGroupInAttention(group: SupervisorDashboardGroup) {
   return (
-    <div className="flex flex-col items-center justify-center py-20 text-center">
-      <h2 className="text-lg font-medium text-[var(--text-primary)]">
-        Ações
-      </h2>
-      <p className="mt-2 text-sm text-[var(--text-muted)]">
-        Tarefas e follow-ups em construção...
-      </p>
+    group.atRiskCount > 0 ||
+    (group.lastAttendanceRate !== null && group.lastAttendanceRate < 60)
+  )
+}
+
+function getAlertHref(alert: SupervisorDashboardAlert) {
+  if (alert.personId) return `/membro/${alert.personId}`
+  if (alert.groupId) return `/supervisor/celulas/${alert.groupId}`
+  return undefined
+}
+
+function getSeverityClasses(severity: SupervisorDashboardAlert["severity"]) {
+  if (severity === "high") {
+    return "border-[var(--risk-border)] bg-[var(--risk-bg)] text-[var(--risk)]"
+  }
+
+  if (severity === "medium") {
+    return "border-[var(--warn-border)] bg-[var(--warn-bg)] text-[var(--warn)]"
+  }
+
+  return "border-[var(--new-border)] bg-[var(--new-bg)] text-[var(--new)]"
+}
+
+function ActionFromAlert({ alert }: { alert: SupervisorDashboardAlert }) {
+  const href = getAlertHref(alert)
+  const content = (
+    <>
+      <div
+        className={cn(
+          "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border bg-white/60 dark:bg-black/10",
+          getSeverityClasses(alert.severity),
+        )}
+      >
+        <ClipboardList className="h-5 w-5" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-[var(--text-primary)]">
+          {alert.title}
+        </p>
+        <p className="mt-1 text-sm leading-6 text-[var(--text-secondary)]">
+          {alert.description}
+        </p>
+        {(alert.personName || alert.groupName) && (
+          <p className="mt-2 text-xs font-medium text-[var(--accent)]">
+            {alert.personName ?? alert.groupName}
+          </p>
+        )}
+      </div>
+    </>
+  )
+
+  const className = "flex items-start gap-3 rounded-2xl border border-[var(--border-light)] bg-[var(--card)] p-4 transition hover:bg-[var(--surface)] active:scale-[0.98]"
+
+  if (!href) return <div className={className}>{content}</div>
+
+  return (
+    <Link href={href} className={className}>
+      {content}
+    </Link>
+  )
+}
+
+function GroupActionCard({ group }: { group: SupervisorDashboardGroup }) {
+  const reasons: string[] = []
+
+  if (group.atRiskCount > 0) {
+    reasons.push(
+      `${group.atRiskCount} ${pluralize(group.atRiskCount, "pessoa em risco", "pessoas em risco")}`,
+    )
+  }
+
+  if (group.lastAttendanceRate !== null && group.lastAttendanceRate < 60) {
+    reasons.push(`${group.lastAttendanceRate}% de presença no último encontro`)
+  }
+
+  return (
+    <Link
+      href={`/supervisor/celulas/${group.id}`}
+      className="flex items-start gap-3 rounded-2xl border border-[var(--warn-border)] bg-[var(--warn-bg)] p-4 transition hover:opacity-90 active:scale-[0.98]"
+    >
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/60 text-[var(--warn)] dark:bg-black/10">
+        <User className="h-5 w-5" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-[var(--text-primary)]">
+          Apoiar {group.leaderName ?? "líder"} em {group.name}
+        </p>
+        <p className="mt-1 text-sm leading-6 text-[var(--text-secondary)]">
+          {reasons.length > 0 ? reasons.join(" · ") : "Acompanhar célula esta semana."}
+        </p>
+        <p className="mt-2 text-xs font-semibold text-[var(--accent)]">
+          Próximo passo: conversar com o líder e registrar o encaminhamento.
+        </p>
+      </div>
+    </Link>
+  )
+}
+
+export default function SupervisorAcoesPage() {
+  const { data, isLoading } = useSupervisorDashboard()
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {[...Array(4)].map((_, index) => (
+          <div key={index} className="h-24 animate-pulse rounded-2xl bg-[var(--surface)]" />
+        ))}
+      </div>
+    )
+  }
+
+  const alerts = data?.alerts ?? []
+  const groups = data?.groups ?? []
+  const attentionGroups = groups.filter(isGroupInAttention)
+  const urgentAlerts = alerts.filter((alert) => alert.severity === "high")
+  const otherAlerts = alerts.filter((alert) => alert.severity !== "high")
+  const fallbackGroupActions = alerts.length === 0 ? attentionGroups.slice(0, 3) : []
+
+  return (
+    <div className="space-y-5">
+      <section>
+        <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+          Ações
+        </p>
+        <h2 className="mt-1 text-2xl font-semibold leading-tight text-[var(--text-primary)]">
+          O que precisa de encaminhamento?
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
+          Uma fila simples para lembrar onde a supervisão precisa apoiar líderes e células.
+        </p>
+      </section>
+
+      {urgentAlerts.length > 0 && (
+        <section className="space-y-3">
+          <div className="flex items-center gap-2 text-[var(--risk)]">
+            <AlertTriangle className="h-4 w-4" />
+            <h3 className="text-sm font-semibold">Prioridade</h3>
+          </div>
+          {urgentAlerts.map((alert) => (
+            <ActionFromAlert key={alert.id} alert={alert} />
+          ))}
+        </section>
+      )}
+
+      {otherAlerts.length > 0 && (
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold text-[var(--text-secondary)]">
+            Acompanhar esta semana
+          </h3>
+          {otherAlerts.map((alert) => (
+            <ActionFromAlert key={alert.id} alert={alert} />
+          ))}
+        </section>
+      )}
+
+      {fallbackGroupActions.length > 0 && (
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold text-[var(--text-secondary)]">
+            Sugestões de apoio
+          </h3>
+          {fallbackGroupActions.map((group) => (
+            <GroupActionCard key={group.id} group={group} />
+          ))}
+        </section>
+      )}
+
+      {urgentAlerts.length === 0 &&
+        otherAlerts.length === 0 &&
+        fallbackGroupActions.length === 0 && (
+          <section className="rounded-2xl border border-[var(--ok-border)] bg-[var(--ok-bg)] p-4">
+            <div className="flex items-start gap-3 text-[var(--ok)]">
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+              <div>
+                <h3 className="text-sm font-semibold">Nada urgente agora</h3>
+                <p className="mt-1 text-sm leading-6">
+                  Continue perto dos líderes. Quando um sinal pedir encaminhamento, ele aparecerá aqui.
+                </p>
+              </div>
+            </div>
+          </section>
+        )}
     </div>
   )
 }
