@@ -15,6 +15,7 @@ import {
   XCircle,
 } from "lucide-react"
 import { useMe } from "@/hooks/use-auth"
+import { CareNoteForm } from "@/components/features/care-note-form"
 import {
   useSharedMemberProfile,
   type SharedMemberProfile,
@@ -153,6 +154,7 @@ export default function MembroPage({ params }: { params: Promise<{ id: string }>
   const totalCount = person.attendances.length
   const attendanceRate = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0
   const careReading = getCareReading(person, attendanceRate, totalCount)
+  const canRegisterCare = user?.role === "pastor" || user?.role === "supervisor" || user?.role === "leader"
 
   return (
     <div className="mx-auto flex min-h-screen max-w-[430px] flex-col bg-[var(--bg)]">
@@ -285,6 +287,8 @@ export default function MembroPage({ params }: { params: Promise<{ id: string }>
             </>
           )}
         </section>
+
+        {canRegisterCare && <CareNoteForm personId={person.id} />}
 
         <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
           <h3 className="mb-1 text-sm font-medium text-[var(--text-muted)]">
