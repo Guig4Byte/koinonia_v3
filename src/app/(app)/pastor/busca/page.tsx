@@ -17,22 +17,21 @@ import { cn } from "@/lib/utils"
 function getRiskTone(riskLevel: RiskLevel | null) {
   if (riskLevel === "red") return "risk"
   if (riskLevel === "yellow") return "warn"
-  if (riskLevel === "green") return "ok"
-  return "neutral"
+  return "ok"
 }
 
 function getRiskLabel(riskLevel: RiskLevel | null) {
   if (riskLevel === "red") return "Prioritário"
   if (riskLevel === "yellow") return "Atenção"
-  if (riskLevel === "green") return "Tranquilo"
-  return "Sem leitura"
+  if (riskLevel === "green") return "Sem sinais ativos"
+  return "Sem sinais ativos"
 }
 
 function getRiskDescription(riskLevel: RiskLevel | null) {
   if (riskLevel === "red") return "Precisa de cuidado de perto."
   if (riskLevel === "yellow") return "Vale acompanhar antes que pese mais."
-  if (riskLevel === "green") return "Sem alerta por agora."
-  return "Abra o perfil para ver o contexto pastoral."
+  if (riskLevel === "green") return "Nenhum sinal pastoral ativo agora."
+  return "Nenhum sinal pastoral ativo agora."
 }
 
 function getRiskClasses(riskLevel: RiskLevel | null) {

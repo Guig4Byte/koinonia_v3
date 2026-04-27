@@ -36,13 +36,13 @@ const careToneClasses: Record<CareTone, string> = {
 function riskLabel(level: RiskLevel | null) {
   switch (level) {
     case "green":
-      return "Tranquilo"
+      return "Sem sinais ativos"
     case "yellow":
       return "Atenção"
     case "red":
       return "Prioritário"
     default:
-      return "Sem leitura"
+      return "Sem sinais ativos"
   }
 }
 
@@ -60,13 +60,28 @@ function getCareReading(
   attendanceRate: number,
   totalCount: number,
 ) {
+  const openTasksCount = person.tasks.filter((task) => !task.completedAt).length
+  const overdueTasksCount = person.tasks.filter(
+    (task) => !task.completedAt && new Date(task.dueAt) < new Date(),
+  ).length
+
   if (person.riskLevel === "red") {
     return {
       tone: "risk" as const,
       title: "Cuidado prioritário",
       description:
-        "Procure esta pessoa e registre um retorno breve.",
-      nextStep: "Procure a pessoa e entenda o contexto.",
+        "Há sinais importantes ou um pedido de apoio pastoral. Não trate como rotina.",
+      nextStep: "Entenda o contexto e registre o próximo retorno.",
+    }
+  }
+
+  if (overdueTasksCount > 0) {
+    return {
+      tone: "risk" as const,
+      title: "Acompanhamento vencido",
+      description:
+        "Existe cuidado aberto além do prazo. Vale retomar antes de criar outro encaminhamento.",
+      nextStep: "Atualize o acompanhamento e registre o retorno.",
     }
   }
 
@@ -76,7 +91,7 @@ function getCareReading(
       title: "Acompanhar de perto",
       description:
         "Existe sinal de atenção. Um contato simples agora pode ajudar bastante.",
-      nextStep: "Confirme como ela está.",
+      nextStep: "Confirme como a pessoa está.",
     }
   }
 
@@ -90,22 +105,22 @@ function getCareReading(
     }
   }
 
-  if (person.interactions.length === 0) {
+  if (openTasksCount > 0) {
     return {
       tone: "warn" as const,
-      title: "Sem histórico ainda",
+      title: "Acompanhamento aberto",
       description:
-        "Ainda não há registro. Anote quando houver contato relevante.",
-      nextStep: "Registre uma primeira anotação quando houver contato.",
+        "Há um cuidado simples em andamento. Ele não é, sozinho, uma urgência pastoral.",
+      nextStep: "Acompanhe o responsável e registre mudanças importantes.",
     }
   }
 
   return {
     tone: "ok" as const,
-    title: "Cuidado estável por agora",
+    title: "Tudo em ordem até aqui",
     description:
-      "Nenhum alerta por agora. Continue perto e registre mudanças importantes.",
-    nextStep: "Mantenha por perto nos encontros.",
+      "Não há sinais pastorais ativos ou acompanhamento aberto para esta pessoa neste momento.",
+    nextStep: "Registre uma anotação apenas quando houver contato relevante.",
   }
 }
 
@@ -116,7 +131,8 @@ function getProfileSignalReasons(
 ) {
   const reasons: string[] = []
   const absenceCount = person.attendances.filter((attendance) => !attendance.present).length
-  const openTasksCount = person.tasks.filter((task) => !task.completedAt).length
+  const openTasks = person.tasks.filter((task) => !task.completedAt)
+  const overdueTasksCount = openTasks.filter((task) => new Date(task.dueAt) < new Date()).length
   const latestInteraction = person.interactions[0]
 
   if (person.riskLevel === "red") {
@@ -125,30 +141,37 @@ function getProfileSignalReasons(
     reasons.push("Estado pastoral em atenção")
   }
 
-  if (totalCount === 0) {
-    reasons.push("Sem presença registrada ainda")
-  } else {
+  if (totalCount > 0 && attendanceRate < 60) {
     reasons.push(`Presença recente em ${attendanceRate}%`)
-
-    if (absenceCount > 0) {
-      reasons.push(
-        `${absenceCount} ${absenceCount === 1 ? "ausência" : "ausências"} nos últimos ${totalCount} encontros`,
-      )
-    }
   }
 
-  if (person.interactions.length === 0) {
-    reasons.push("Sem histórico pastoral registrado")
-  } else if (latestInteraction) {
+  if (absenceCount > 0 && (person.riskLevel !== null || attendanceRate < 60)) {
+    reasons.push(
+      `${absenceCount} ${absenceCount === 1 ? "ausência" : "ausências"} nos últimos ${totalCount} encontros`,
+    )
+  }
+
+  if (latestInteraction && (person.riskLevel !== null || openTasks.length > 0)) {
     reasons.push(
       `Último cuidado registrado em ${new Date(latestInteraction.createdAt).toLocaleDateString("pt-BR")}`,
     )
   }
 
-  if (openTasksCount > 0) {
+  if (overdueTasksCount > 0) {
     reasons.push(
-      `${openTasksCount} ${openTasksCount === 1 ? "acompanhamento aberto" : "acompanhamentos abertos"}`,
+      `${overdueTasksCount} ${overdueTasksCount === 1 ? "acompanhamento vencido" : "acompanhamentos vencidos"}`,
     )
+  } else if (openTasks.length > 0) {
+    reasons.push(
+      `${openTasks.length} ${openTasks.length === 1 ? "acompanhamento aberto" : "acompanhamentos abertos"}`,
+    )
+  }
+
+  if (reasons.length === 0) {
+    reasons.push("Sem sinais pastorais ativos")
+    if (totalCount > 0) {
+      reasons.push(`Presença recente em ${attendanceRate}%`)
+    }
   }
 
   return reasons
@@ -262,6 +285,7 @@ export default function MembroPage({ params }: { params: Promise<{ id: string }>
               </p>
               <ContextSignalList
                 signals={getProfileSignalReasons(person, attendanceRate, totalCount)}
+                title={careReading.tone === "ok" ? "Leitura de contexto" : "Por que pede atenção?"}
                 tone={careReading.tone}
                 className="mt-3"
               />
@@ -296,19 +320,18 @@ export default function MembroPage({ params }: { params: Promise<{ id: string }>
             <AlertTriangle className="h-4 w-4 text-[var(--accent)]" />
             <span className="text-sm text-[var(--text-primary)]">
               Estado pastoral: <span className="font-medium">{riskLabel(person.riskLevel)}</span>
-              {person.riskScore != null && (
-                <span className="ml-1 text-xs text-[var(--text-muted)]">({person.riskScore} pts)</span>
-              )}
             </span>
           </div>
         </section>
 
         <section className="mb-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
           <h3 className="mb-1 text-sm font-medium text-[var(--text-muted)]">
-            Presença como sinal
+            {totalCount > 0 && attendanceRate < 60 ? "Presença como sinal" : "Presença recente"}
           </h3>
           <p className="mb-3 text-xs leading-5 text-[var(--text-muted)]">
-            Últimos {totalCount} encontros usados para entender continuidade.
+            {totalCount > 0 && attendanceRate < 60
+              ? "A frequência recente pede leitura pastoral."
+              : `Últimos ${totalCount} encontros registrados como contexto.`}
           </p>
           {totalCount === 0 ? (
             <p className="text-sm text-[var(--text-muted)]">Nenhum registro de presença.</p>

@@ -5,6 +5,23 @@ import { requireRole } from "@/lib/role-guard";
 import prisma from "@/lib/prisma";
 import { writeAuditLog, extractIp } from "@/app/api/_helpers/audit-log";
 
+interface PastoralRiskScore {
+  level: "green" | "yellow" | "red";
+  reasons: string[];
+}
+
+function hasPastoralAttention(riskScore: PastoralRiskScore | null): boolean {
+  const reasons = riskScore?.reasons ?? [];
+
+  return (
+    riskScore?.level === "red" ||
+    reasons.includes("escalado_ao_pastor") ||
+    reasons.includes("caso_sensivel") ||
+    reasons.includes("multiplos_sinais") ||
+    reasons.includes("acompanhamento_vencido")
+  );
+}
+
 export async function GET(request: Request) {
   try {
     const user = getCurrentUser(request);
@@ -20,7 +37,6 @@ export async function GET(request: Request) {
 
     const now = new Date();
 
-    // Busca todos os supervisores da igreja
     const supervisors = await prisma.user.findMany({
       where: {
         churchId: user.churchId,
@@ -34,7 +50,6 @@ export async function GET(request: Request) {
       },
     });
 
-    // Busca todos os grupos da igreja com dados necessários
     const groups = await prisma.group.findMany({
       where: { churchId: user.churchId, deletedAt: null },
       select: {
@@ -47,7 +62,7 @@ export async function GET(request: Request) {
           select: {
             person: {
               select: {
-                riskScore: { select: { level: true } },
+                riskScore: { select: { level: true, reasons: true } },
               },
             },
           },
@@ -67,7 +82,6 @@ export async function GET(request: Request) {
       },
     });
 
-    // Busca tasks vencidas dos líderes
     const overdueTasks = await prisma.task.findMany({
       where: {
         group: { churchId: user.churchId, deletedAt: null },
@@ -84,39 +98,40 @@ export async function GET(request: Request) {
 
     const result = supervisors.map((supervisor) => {
       const supervisedGroups = groups.filter(
-        (g) => g.supervisorUserId === supervisor.id,
+        (group) => group.supervisorUserId === supervisor.id,
       );
 
       let totalMembers = 0;
-      let totalAttendances = 0;
-      let totalPossible = 0;
       let atRiskCount = 0;
       let overdueTasksCount = 0;
+      const groupAttendanceRates: number[] = [];
       const leaderUserIds = new Set<string>();
 
       supervisedGroups.forEach((group) => {
         totalMembers += group.memberships.length;
 
-        group.memberships.forEach((m) => {
-          if (
-            m.person.riskScore?.level === "red" ||
-            m.person.riskScore?.level === "yellow"
-          ) {
+        group.memberships.forEach((membership) => {
+          if (hasPastoralAttention(membership.person.riskScore)) {
             atRiskCount++;
           }
         });
 
+        let groupAttendances = 0;
+        let groupPossible = 0;
         group.events.forEach((event) => {
-          totalAttendances += event.attendances.filter((a) => a.present).length;
-          totalPossible += event.attendances.length;
+          groupAttendances += event.attendances.filter((attendance) => attendance.present).length;
+          groupPossible += event.attendances.length;
         });
+
+        if (groupPossible > 0) {
+          groupAttendanceRates.push(Math.round((groupAttendances / groupPossible) * 100));
+        }
 
         if (group.leaderUserId) {
           leaderUserIds.add(group.leaderUserId);
         }
       });
 
-      // Conta tasks vencidas dos líderes desses grupos
       overdueTasks.forEach((task) => {
         if (leaderUserIds.has(task.assigneeId)) {
           overdueTasksCount++;
@@ -124,8 +139,11 @@ export async function GET(request: Request) {
       });
 
       const averageAttendance =
-        totalPossible > 0
-          ? Math.round((totalAttendances / totalPossible) * 100)
+        groupAttendanceRates.length > 0
+          ? Math.round(
+              groupAttendanceRates.reduce((sum, rate) => sum + rate, 0) /
+                groupAttendanceRates.length,
+            )
           : 0;
 
       return {
@@ -146,7 +164,7 @@ export async function GET(request: Request) {
       action: "read",
       resource: "person",
       resourceId: user.churchId,
-      details: "Lista de supervisores",
+      details: "Lista de supervisores para leitura pastoral",
       ip: extractIp(request),
     });
 

@@ -7,7 +7,10 @@ export interface SupervisorGroupMember {
   name: string
   photoUrl: string | null
   riskLevel: RiskLevel | null
+  riskReasons: string[]
   lastInteractionDays: number | null
+  openTasksCount: number
+  overdueTasksCount: number
 }
 
 export interface SupervisorGroupEvent {

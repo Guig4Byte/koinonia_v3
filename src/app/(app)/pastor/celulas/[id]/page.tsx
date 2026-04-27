@@ -29,9 +29,9 @@ function pluralize(count: number, singular: string, plural: string) {
 function getEventReading(event: { attendanceCount: number; totalAttendances: number }) {
   if (event.totalAttendances === 0) {
     return {
-      label: "Presença não registrada",
-      detail: "O encontro ainda não virou leitura de cuidado pastoral.",
-      tone: "warn" as const,
+      label: "Leitura pendente",
+      detail: "A presença deste encontro ainda não foi registrada. Trate como contexto operacional, não como sinal pastoral sozinho.",
+      tone: "quiet" as const,
       icon: Clock3,
     }
   }
@@ -68,7 +68,7 @@ function getEventReading(event: { attendanceCount: number; totalAttendances: num
 
   return {
     label: "Encontro saudável",
-    detail: "Presença registrada sem alerta para a supervisão.",
+    detail: "Presença registrada sem sinal pastoral neste encontro.",
     tone: "ok" as const,
     icon: CheckCircle2,
   }
@@ -100,6 +100,7 @@ function getEventSignals(event: { attendanceCount: number; totalAttendances: num
 
 const eventReadingClasses = {
   ok: "border-[var(--border-light)] bg-[var(--card)] text-[var(--ok)]",
+  quiet: "border-[var(--border-light)] bg-[var(--card)] text-[var(--text-muted)]",
   warn: "border-[var(--warn-border)] bg-[var(--warn-bg)] text-[var(--warn)]",
   risk: "border-[var(--risk-border)] bg-[var(--risk-bg)] text-[var(--risk)]",
 }
@@ -110,12 +111,24 @@ const memberToneClasses: Record<CareTone, string> = {
   quiet: "border-[var(--border-light)] bg-[var(--card)] text-[var(--text-muted)]",
 }
 
+function hasPastoralAttention(member: SupervisorGroupMember) {
+  const reasons = member.riskReasons ?? []
+
+  return (
+    member.riskLevel === "red" ||
+    member.overdueTasksCount > 0 ||
+    reasons.includes("escalado_ao_pastor") ||
+    reasons.includes("caso_sensivel") ||
+    reasons.includes("multiplos_sinais") ||
+    reasons.includes("acompanhamento_vencido")
+  )
+}
+
 function getMemberPriority(member: SupervisorGroupMember) {
   if (member.riskLevel === "red") return 0
-  if (member.riskLevel === "yellow") return 1
-  if (member.lastInteractionDays === null) return 2
-  if (member.lastInteractionDays >= 21) return 3
-  return 4
+  if (member.overdueTasksCount > 0) return 1
+  if (member.riskLevel === "yellow" && hasPastoralAttention(member)) return 2
+  return 3
 }
 
 function sortMembersForCare(members: SupervisorGroupMember[]) {
@@ -134,52 +147,56 @@ function sortMembersForCare(members: SupervisorGroupMember[]) {
 }
 
 function shouldBeInCareQueue(member: SupervisorGroupMember) {
-  return (
-    member.riskLevel === "red" ||
-    member.riskLevel === "yellow" ||
-    member.lastInteractionDays === null ||
-    member.lastInteractionDays >= 21
-  )
+  return hasPastoralAttention(member)
 }
 
 function getMemberTone(member: SupervisorGroupMember): CareTone {
-  if (member.riskLevel === "red") return "risk"
-  if (member.riskLevel === "yellow") return "warn"
-  if (member.lastInteractionDays === null || member.lastInteractionDays >= 21) return "warn"
+  if (member.riskLevel === "red" || member.overdueTasksCount > 0) return "risk"
+  if (member.riskLevel === "yellow" && hasPastoralAttention(member)) return "warn"
   return "quiet"
 }
 
 function getMemberLabel(member: SupervisorGroupMember) {
+  const reasons = member.riskReasons ?? []
+
+  if (reasons.includes("escalado_ao_pastor") || reasons.includes("caso_sensivel")) {
+    return "Escalado"
+  }
+
+  if (member.overdueTasksCount > 0 || reasons.includes("acompanhamento_vencido")) {
+    return "Vencido"
+  }
+
   if (member.riskLevel === "red") return "Prioritário"
-  if (member.riskLevel === "yellow") return "Atenção"
-  if (member.lastInteractionDays === null) return "Sem contato"
-  if (member.lastInteractionDays >= 21) return "Contato antigo"
-  return "Estável"
+  if (member.riskLevel === "yellow" && hasPastoralAttention(member)) return "Atenção"
+  return "Sem sinais ativos"
 }
 
 function getContactText(member: SupervisorGroupMember) {
-  if (member.lastInteractionDays === null) return "Sem contato registrado"
-  if (member.lastInteractionDays === 0) return "Contato hoje"
-  if (member.lastInteractionDays === 1) return "Último contato ontem"
+  if (member.lastInteractionDays === null) return "Sem retorno registrado"
+  if (member.lastInteractionDays === 0) return "Retorno registrado hoje"
+  if (member.lastInteractionDays === 1) return "Último retorno ontem"
 
-  return `Último contato há ${member.lastInteractionDays} dias`
+  return `Último retorno há ${member.lastInteractionDays} dias`
 }
 
 function getMemberReason(member: SupervisorGroupMember) {
+  const reasons = member.riskReasons ?? []
+
+  if (reasons.includes("escalado_ao_pastor") || reasons.includes("caso_sensivel")) {
+    return "A liderança já pediu apoio pastoral. Este caso não deve ficar só na rotina da célula."
+  }
+
+  if (member.overdueTasksCount > 0 || reasons.includes("acompanhamento_vencido")) {
+    return "Há acompanhamento vencido depois de sinais importantes. Vale apoiar o líder na próxima resposta."
+  }
+
+  if (reasons.includes("multiplos_sinais")) {
+    return "Os sinais se acumularam. A questão pede discernimento pastoral, não apenas observação."
+  }
+
   if (member.riskLevel === "red") {
     return "O líder precisa tratar este cuidado como prioridade, não apenas como observação."
-  }
-
-  if (member.riskLevel === "yellow") {
-    return "Ainda dá para agir cedo. Um contato do líder pode ajudar bastante."
-  }
-
-  if (member.lastInteractionDays === null) {
-    return "Não existe interação registrada. Vale confirmar se o cuidado aconteceu fora do sistema."
-  }
-
-  if (member.lastInteractionDays >= 21) {
-    return "A pessoa está há tempo demais sem retorno registrado. O cuidado pastoral deve apoiar o líder."
   }
 
   return "Sem sinal crítico no momento."
@@ -187,19 +204,30 @@ function getMemberReason(member: SupervisorGroupMember) {
 
 function getMemberSignals(member: SupervisorGroupMember) {
   const signals: string[] = []
+  const reasons = member.riskReasons ?? []
 
   if (member.riskLevel === "red") {
     signals.push("Sinal pastoral prioritário")
-  } else if (member.riskLevel === "yellow") {
+  } else if (member.riskLevel === "yellow" && hasPastoralAttention(member)) {
     signals.push("Sinal pastoral em atenção")
   }
 
-  if (member.lastInteractionDays === null) {
-    signals.push("Sem contato registrado")
-  } else if (member.lastInteractionDays >= 21) {
-    signals.push(`Sem contato há ${member.lastInteractionDays} dias`)
-  } else if (member.lastInteractionDays > 0 && member.riskLevel !== "green") {
-    signals.push(`Último contato há ${member.lastInteractionDays} dias`)
+  if (reasons.includes("escalado_ao_pastor") || reasons.includes("caso_sensivel")) {
+    signals.push("Pedido de apoio pastoral")
+  }
+
+  if (member.overdueTasksCount > 0 || reasons.includes("acompanhamento_vencido")) {
+    signals.push("Acompanhamento vencido")
+  }
+
+  if (reasons.includes("multiplos_sinais")) {
+    signals.push("Múltiplos sinais acumulados")
+  }
+
+  if (member.lastInteractionDays === null && signals.length > 0) {
+    signals.push("Sem retorno registrado para este cuidado")
+  } else if (member.lastInteractionDays !== null && member.lastInteractionDays >= 21 && signals.length > 0) {
+    signals.push(`Último retorno há ${member.lastInteractionDays} dias`)
   }
 
   return signals
@@ -207,20 +235,37 @@ function getMemberSignals(member: SupervisorGroupMember) {
 
 function getMemberNextStep(member: SupervisorGroupMember, leaderName: string | null | undefined) {
   const leader = leaderName ?? "o líder"
+  const reasons = member.riskReasons ?? []
+
+  if (reasons.includes("escalado_ao_pastor") || reasons.includes("caso_sensivel")) {
+    return `Combine com ${leader} a próxima resposta pastoral.`
+  }
+
+  if (member.overdueTasksCount > 0 || reasons.includes("acompanhamento_vencido")) {
+    return `Peça para ${leader} atualizar o acompanhamento e registre o retorno.`
+  }
 
   if (member.riskLevel === "red") {
-    return `Peça para ${leader} registrar contato com ${member.name}.`
-  }
-
-  if (member.riskLevel === "yellow") {
-    return `Alinhe com ${leader} um cuidado simples nesta semana.`
-  }
-
-  if (member.lastInteractionDays === null || member.lastInteractionDays >= 21) {
-    return `Confirme com ${leader} se houve contato e registre retorno.`
+    return `Peça para ${leader} registrar retorno com ${member.name}.`
   }
 
   return "Mantenha acompanhamento normal."
+}
+
+function shouldShowPastoralAction({
+  careMembersCount,
+  overdueLeaderTasksCount,
+  latestAttendanceRate,
+}: {
+  careMembersCount: number
+  overdueLeaderTasksCount: number
+  latestAttendanceRate: number | null
+}) {
+  return (
+    careMembersCount > 0 ||
+    overdueLeaderTasksCount > 0 ||
+    (latestAttendanceRate !== null && latestAttendanceRate < 60)
+  )
 }
 
 function MemberCareRow({
@@ -265,6 +310,7 @@ function MemberCareRow({
           </p>
           <ContextSignalList
             signals={getMemberSignals(member)}
+            title="Por que pede atenção?"
             tone={tone === "risk" ? "risk" : tone === "warn" ? "warn" : "neutral"}
             className="mt-3"
           />
@@ -335,6 +381,15 @@ export default function PastorGroupDetailPage() {
   const leaderTasks = data?.leaderTasks ?? []
   const careMembers = sortMembersForCare(members.filter(shouldBeInCareQueue))
   const stableMembersCount = Math.max(members.length - careMembers.length, 0)
+  const latestEvent = events.find((event) => event.totalAttendances > 0)
+  const latestAttendanceRate = latestEvent
+    ? Math.round((latestEvent.attendanceCount / latestEvent.totalAttendances) * 100)
+    : null
+  const showPastoralAction = shouldShowPastoralAction({
+    careMembersCount: careMembers.length,
+    overdueLeaderTasksCount: leaderTasks.filter((task) => task.isOverdue).length,
+    latestAttendanceRate,
+  })
 
   return (
     <div className="space-y-6">
@@ -354,12 +409,12 @@ export default function PastorGroupDetailPage() {
         {group?.hasUnregisteredAttendance && (
           <span className="flex items-center gap-1 rounded-lg bg-[var(--warn-bg)] px-2 py-1 text-xs font-medium text-[var(--warn)]">
             <CalendarX className="h-3 w-3" />
-            Presença não registrada
+            Presença pendente
           </span>
         )}
       </div>
 
-      {group?.leaderUserId && (
+      {group?.leaderUserId && showPastoralAction && (
         <button
           onClick={handleCobrar}
           disabled={createTask.isPending || cobrarSent}
@@ -413,10 +468,10 @@ export default function PastorGroupDetailPage() {
         <div className="mb-3 flex items-start justify-between gap-3">
           <div>
             <h2 className="text-sm font-medium text-[var(--text-secondary)]">
-              Pessoas para acompanhar
+              Pessoas que pedem cuidado pastoral
             </h2>
             <p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">
-              Veja quem precisa de cuidado e onde o líder pode precisar de apoio.
+              Mostra só casos graves, acumulados, vencidos ou escalados. Para os demais, use a busca.
             </p>
           </div>
           <span className="rounded-full bg-[var(--surface)] px-2 py-1 text-xs font-semibold text-[var(--text-secondary)]">
@@ -457,7 +512,7 @@ export default function PastorGroupDetailPage() {
                   {stableMembersCount} {pluralize(stableMembersCount, "pessoa está", "pessoas estão")} sem sinal crítico.
                 </p>
                 <p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">
-                  A lista completa fica fora daqui para manter o foco.
+                  Use a busca quando precisar encontrar alguém específico fora da fila pastoral.
                 </p>
               </div>
             </div>
@@ -470,7 +525,7 @@ export default function PastorGroupDetailPage() {
           O que os encontros revelaram
         </h2>
         <p className="mb-3 text-xs text-[var(--text-muted)]">
-          Use a presença como sinal, não só como histórico.
+          Presença boa é contexto; presença ruim pode virar sinal.
         </p>
         <div className="space-y-2">
           {events.map((event) => {
@@ -516,6 +571,7 @@ export default function PastorGroupDetailPage() {
                     </p>
                     <ContextSignalList
                       signals={getEventSignals(event)}
+                      title={event.totalAttendances === 0 || reading.tone === "ok" ? "Contexto" : "Por que pede atenção?"}
                       tone={reading.tone === "risk" ? "risk" : reading.tone === "warn" ? "warn" : "neutral"}
                       className="mt-3"
                     />

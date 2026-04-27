@@ -83,6 +83,7 @@ export async function GET(
         assigneeId: group.leaderUserId ?? "",
         completedAt: null,
         deletedAt: null,
+        dueAt: { lt: now },
       },
       orderBy: { dueAt: "asc" },
       select: {
@@ -93,6 +94,26 @@ export async function GET(
       },
     });
 
+    const memberIds = group.memberships.map((membership) => membership.person.id);
+    const memberTasks = await prisma.task.findMany({
+      where: {
+        targetType: "person",
+        targetId: { in: memberIds },
+        completedAt: null,
+        deletedAt: null,
+      },
+      select: {
+        targetId: true,
+        dueAt: true,
+      },
+    });
+    const memberTasksByPersonId = new Map<string, typeof memberTasks>();
+    memberTasks.forEach((task) => {
+      const tasks = memberTasksByPersonId.get(task.targetId) ?? [];
+      tasks.push(task);
+      memberTasksByPersonId.set(task.targetId, tasks);
+    });
+
     const members = group.memberships.map((membership) => {
       const lastContact = membership.person.interactionsAsSubject[0]?.createdAt;
       const daysSinceContact = lastContact
@@ -101,13 +122,17 @@ export async function GET(
               (1000 * 60 * 60 * 24),
           )
         : null;
+      const openTasks = memberTasksByPersonId.get(membership.person.id) ?? [];
 
       return {
         id: membership.person.id,
         name: membership.person.name,
         photoUrl: membership.person.photoUrl,
         riskLevel: membership.person.riskScore?.level ?? null,
+        riskReasons: membership.person.riskScore?.reasons ?? [],
         lastInteractionDays: daysSinceContact,
+        openTasksCount: openTasks.length,
+        overdueTasksCount: openTasks.filter((task) => task.dueAt < now).length,
       };
     });
 

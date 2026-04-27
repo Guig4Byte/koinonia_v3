@@ -38,8 +38,14 @@ export interface DashboardResult {
 interface DashboardPerson {
   id: string;
   name: string;
-  riskScore: { level: "green" | "yellow" | "red" } | null;
+  riskScore: { level: "green" | "yellow" | "red"; reasons?: string[] } | null;
   interactionsAsSubject: Array<{ createdAt: Date }>;
+}
+
+type DashboardAudience = "pastor" | "supervisor";
+
+interface BuildDashboardOptions {
+  audience?: DashboardAudience;
 }
 
 interface DashboardMembership {
@@ -67,8 +73,51 @@ interface OverdueTask {
   };
 }
 
-function isAtRisk(person: DashboardPerson): boolean {
+function hasPastoralAttention(person: DashboardPerson): boolean {
+  const riskScore = person.riskScore;
+  const reasons = riskScore?.reasons ?? [];
+
+  return (
+    riskScore?.level === "red" ||
+    reasons.includes("escalado_ao_pastor") ||
+    reasons.includes("caso_sensivel") ||
+    reasons.includes("multiplos_sinais") ||
+    reasons.includes("acompanhamento_vencido")
+  );
+}
+
+function isAtRisk(person: DashboardPerson, audience: DashboardAudience): boolean {
+  if (audience === "pastor") {
+    return hasPastoralAttention(person);
+  }
+
   return person.riskScore?.level === "red" || person.riskScore?.level === "yellow";
+}
+
+function getPastoralAttentionDescription(person: DashboardPerson, daysSinceContact: number): string {
+  const reasons = person.riskScore?.reasons ?? [];
+
+  if (reasons.includes("escalado_ao_pastor") || reasons.includes("caso_sensivel")) {
+    return "Caso sensível escalado para atenção pastoral.";
+  }
+
+  if (reasons.includes("acompanhamento_vencido")) {
+    return "Acompanhamento vencido depois de sinais acumulados.";
+  }
+
+  if (reasons.includes("multiplos_sinais")) {
+    return "Múltiplos sinais se acumularam e pedem discernimento pastoral.";
+  }
+
+  if (daysSinceContact === Infinity) {
+    return "Cuidado prioritário sem retorno pastoral registrado.";
+  }
+
+  if (daysSinceContact > 7) {
+    return `Cuidado prioritário com último retorno registrado há ${daysSinceContact} dias.`;
+  }
+
+  return "Cuidado prioritário acompanhado pela liderança.";
 }
 
 function daysSince(date: Date): number {
@@ -79,7 +128,9 @@ export function buildDashboard(
   groups: DashboardGroup[],
   overdueTasks: OverdueTask[],
   userNameMap: Map<string, string>,
+  options: BuildDashboardOptions = {},
 ): DashboardResult {
+  const audience = options.audience ?? "supervisor";
   const alerts: DashboardAlert[] = [];
   const alertedPersonIds = new Set<string>();
   const atRiskPersonIds = new Set<string>();
@@ -94,7 +145,7 @@ export function buildDashboard(
     const memberCount = members.length;
     totalMembers += memberCount;
 
-    const atRiskMembers = members.filter(isAtRisk);
+    const atRiskMembers = members.filter((member) => isAtRisk(member, audience));
     atRiskMembers.forEach((m) => atRiskPersonIds.add(m.id));
 
     let groupAttendances = 0;
@@ -148,12 +199,30 @@ export function buildDashboard(
       }
     }
 
-    // Alerta: membros em risco sem contato recente
+    // Alerta: pessoas em cuidado.
+    // Para o pastor, só sobe atenção qualificada: grave, acumulada, sensível,
+    // vencida ou escalada. "Sem contato" isolado não é motivo pastoral suficiente.
     atRiskMembers.forEach((member) => {
       if (alertedPersonIds.has(member.id)) return;
 
       const lastContact = member.interactionsAsSubject[0]?.createdAt;
       const daysSinceContact = lastContact ? daysSince(lastContact) : Infinity;
+
+      if (audience === "pastor") {
+        alertedPersonIds.add(member.id);
+        alerts.push({
+          id: `pastoral-${member.id}`,
+          type: "pastoral_attention",
+          severity: member.riskScore?.level === "red" ? "high" : "medium",
+          title: `${member.name} pede atenção pastoral`,
+          description: getPastoralAttentionDescription(member, daysSinceContact),
+          groupId: group.id,
+          groupName: group.name,
+          personId: member.id,
+          personName: member.name,
+        });
+        return;
+      }
 
       if (daysSinceContact > 7 || daysSinceContact === Infinity) {
         alertedPersonIds.add(member.id);
@@ -164,8 +233,8 @@ export function buildDashboard(
           title: `${member.name} está em risco`,
           description:
             daysSinceContact === Infinity
-              ? `Sem contato registrado.`
-              : `Sem contato há ${daysSinceContact} dias.`,
+              ? "Sem retorno registrado depois do sinal."
+              : `Sem retorno registrado há ${daysSinceContact} dias depois do sinal.`,
           groupId: group.id,
           groupName: group.name,
           personId: member.id,
@@ -174,8 +243,8 @@ export function buildDashboard(
       }
     });
 
-    // Alerta: presença não registrada
-    if (pastEvents.length > 0) {
+    // Alerta operacional: presença não registrada fica na supervisão, não na fila do pastor.
+    if (audience !== "pastor" && pastEvents.length > 0) {
       const latestEvent = pastEvents[0]!;
       if (
         latestEvent.attendances.length === 0 &&
@@ -233,12 +302,16 @@ export function buildDashboard(
   });
 
   leaderOverdueMap.forEach((data, leaderUserId) => {
+    if (audience === "pastor" && data.count < 2) {
+      return;
+    }
+
     alerts.push({
       id: `overdue-${leaderUserId}`,
       type: "leader_overdue_tasks",
       severity: data.count >= 3 ? "high" : "medium",
-      title: `${data.name}: ${data.count} tarefa(s) atrasada(s)`,
-      description: `O líder tem ${data.count} tarefa(s) pendente(s) além do prazo.`,
+      title: `${data.name}: ${data.count} retorno(s) atrasado(s)`,
+      description: `A liderança tem ${data.count} retorno(s) pendente(s) além do prazo.`,
     });
   });
 

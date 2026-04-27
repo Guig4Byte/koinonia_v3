@@ -5,6 +5,23 @@ import { requireRole } from "@/lib/role-guard";
 import prisma from "@/lib/prisma";
 import { writeAuditLog, extractIp } from "@/app/api/_helpers/audit-log";
 
+interface PastoralRiskScore {
+  level: "green" | "yellow" | "red";
+  reasons: string[];
+}
+
+function hasPastoralAttention(riskScore: PastoralRiskScore | null): boolean {
+  const reasons = riskScore?.reasons ?? [];
+
+  return (
+    riskScore?.level === "red" ||
+    reasons.includes("escalado_ao_pastor") ||
+    reasons.includes("caso_sensivel") ||
+    reasons.includes("multiplos_sinais") ||
+    reasons.includes("acompanhamento_vencido")
+  );
+}
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -24,7 +41,6 @@ export async function GET(
     const { id: supervisorUserId } = await params;
     const now = new Date();
 
-    // Busca o supervisor
     const supervisor = await prisma.user.findFirst({
       where: {
         id: supervisorUserId,
@@ -43,7 +59,6 @@ export async function GET(
       return domainErrorResponse("USER_NOT_FOUND");
     }
 
-    // Busca grupos supervisionados
     const groups = await prisma.group.findMany({
       where: {
         churchId: user.churchId,
@@ -62,7 +77,7 @@ export async function GET(
                 id: true,
                 name: true,
                 photoUrl: true,
-                riskScore: { select: { level: true } },
+                riskScore: { select: { level: true, reasons: true } },
               },
             },
           },
@@ -82,9 +97,8 @@ export async function GET(
       },
     });
 
-    // Busca nomes dos líderes
     const leaderUserIds = groups
-      .map((g) => g.leaderUserId)
+      .map((group) => group.leaderUserId)
       .filter((id): id is string => id !== null);
 
     const leaders = await prisma.user.findMany({
@@ -97,11 +111,12 @@ export async function GET(
     });
 
     const leaderNameMap = new Map<string, string>();
-    leaders.forEach((l) => {
-      if (l.person?.name) leaderNameMap.set(l.id, l.person.name);
+    leaders.forEach((leader) => {
+      if (leader.person?.name) {
+        leaderNameMap.set(leader.id, leader.person.name);
+      }
     });
 
-    // Busca tasks vencidas dos líderes desses grupos
     const overdueTasks = await prisma.task.findMany({
       where: {
         group: {
@@ -124,16 +139,14 @@ export async function GET(
     });
 
     const groupDetails = groups.map((group) => {
-      const members = group.memberships.map((m) => m.person);
+      const members = group.memberships.map((membership) => membership.person);
       const memberCount = members.length;
-      const atRiskMembers = members.filter(
-        (m) => m.riskScore?.level === "red" || m.riskScore?.level === "yellow",
-      );
+      const atRiskMembers = members.filter((member) => hasPastoralAttention(member.riskScore));
 
       let groupAttendances = 0;
       let groupPossible = 0;
       group.events.forEach((event) => {
-        groupAttendances += event.attendances.filter((a) => a.present).length;
+        groupAttendances += event.attendances.filter((attendance) => attendance.present).length;
         groupPossible += event.attendances.length;
       });
 
@@ -143,7 +156,7 @@ export async function GET(
           : 0;
 
       const pastEvents = group.events.filter(
-        (e) => e.occurredAt && new Date(e.occurredAt) < now,
+        (event) => event.occurredAt && new Date(event.occurredAt) < now,
       );
 
       return {
@@ -155,7 +168,7 @@ export async function GET(
         lastAttendanceRate:
           pastEvents.length > 0 && pastEvents[0]!.attendances.length > 0
             ? Math.round(
-                (pastEvents[0]!.attendances.filter((a) => a.present).length /
+                (pastEvents[0]!.attendances.filter((attendance) => attendance.present).length /
                   pastEvents[0]!.attendances.length) *
                   100,
               )
@@ -174,7 +187,7 @@ export async function GET(
       action: "read",
       resource: "person",
       resourceId: supervisorUserId,
-      details: `Perfil do supervisor: ${supervisor.person?.name}`,
+      details: `Perfil pastoral da supervisão: ${supervisor.person?.name}`,
       ip: extractIp(request),
     });
 
@@ -185,12 +198,12 @@ export async function GET(
         photoUrl: supervisor.person?.photoUrl ?? null,
       },
       groups: groupDetails,
-      overdueTasks: overdueTasks.map((t) => ({
-        id: t.id,
-        description: t.description,
-        dueAt: t.dueAt,
-        assigneeName: t.assignee.person?.name ?? "Líder",
-        groupName: t.group?.name ?? null,
+      overdueTasks: overdueTasks.map((task) => ({
+        id: task.id,
+        description: task.description,
+        dueAt: task.dueAt,
+        assigneeName: task.assignee.person?.name ?? "Líder",
+        groupName: task.group?.name ?? null,
       })),
     });
   } catch (error) {

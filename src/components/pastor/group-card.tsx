@@ -40,11 +40,11 @@ function getGroupSignals(group: DashboardGroup) {
 
 function getCompactReason(group: DashboardGroup) {
   if (group.atRiskCount > 0) {
-    return `${group.atRiskCount} ${group.atRiskCount === 1 ? "pessoa em cuidado" : "pessoas em cuidado"}`;
+    return `${group.atRiskCount} ${group.atRiskCount === 1 ? "pessoa pede" : "pessoas pedem"} cuidado pastoral`;
   }
 
   if (group.lastAttendanceRate !== null && group.lastAttendanceRate < 70) {
-    return `${group.lastAttendanceRate}% no último encontro`;
+    return `Presença baixa no último encontro (${group.lastAttendanceRate}%)`;
   }
 
   return null;
@@ -107,7 +107,7 @@ export function GroupCard({
                 group.atRiskCount > 0 ? "text-[var(--risk)]" : "text-[var(--warn)]",
               )}
             >
-              Motivo: {compactReason}
+              {compactReason}
             </p>
           )
         ) : (

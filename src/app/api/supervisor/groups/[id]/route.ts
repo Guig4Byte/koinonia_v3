@@ -93,6 +93,26 @@ export async function GET(
       },
     });
 
+    const memberIds = group.memberships.map((membership) => membership.person.id);
+    const memberTasks = await prisma.task.findMany({
+      where: {
+        targetType: "person",
+        targetId: { in: memberIds },
+        completedAt: null,
+        deletedAt: null,
+      },
+      select: {
+        targetId: true,
+        dueAt: true,
+      },
+    });
+    const memberTasksByPersonId = new Map<string, typeof memberTasks>();
+    memberTasks.forEach((task) => {
+      const tasks = memberTasksByPersonId.get(task.targetId) ?? [];
+      tasks.push(task);
+      memberTasksByPersonId.set(task.targetId, tasks);
+    });
+
     const members = group.memberships.map((m) => {
       const lastContact = m.person.interactionsAsSubject[0]?.createdAt;
       const daysSinceContact = lastContact
@@ -101,13 +121,17 @@ export async function GET(
               (1000 * 60 * 60 * 24),
           )
         : null;
+      const openTasks = memberTasksByPersonId.get(m.person.id) ?? [];
 
       return {
         id: m.person.id,
         name: m.person.name,
         photoUrl: m.person.photoUrl,
         riskLevel: m.person.riskScore?.level ?? null,
+        riskReasons: m.person.riskScore?.reasons ?? [],
         lastInteractionDays: daysSinceContact,
+        openTasksCount: openTasks.length,
+        overdueTasksCount: openTasks.filter((task) => task.dueAt < now).length,
       };
     });
 

@@ -106,7 +106,9 @@ async function getDashboard(scope: DashboardScope): Promise<DashboardResult> {
   const userNameMap = await getUserNameMap(getDashboardUserIds(groups));
   const overdueTasks = await getOverdueTasksForDashboard(scope);
 
-  return buildDashboard(groups, overdueTasks, userNameMap);
+  return buildDashboard(groups, overdueTasks, userNameMap, {
+    audience: scope.supervisorUserId ? "supervisor" : "pastor",
+  });
 }
 
 export function getPastorDashboard(churchId: string): Promise<DashboardResult> {
