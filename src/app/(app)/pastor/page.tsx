@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import type { ReactNode } from "react"
-import Link from "next/link"
+import type { ReactNode } from "react";
+import Link from "next/link";
 import {
   AlertTriangle,
   ArrowRight,
@@ -11,105 +11,91 @@ import {
   Search,
   TrendingUp,
   Users,
-} from "lucide-react"
+} from "lucide-react";
 import {
   usePastorDashboard,
   type PastorDashboardAlert,
   type PastorDashboardGroup,
-} from "@/hooks/use-pastor-dashboard"
-import { ContextSignalList } from "@/components/features/context-signal-list"
-import { SummaryCard } from "@/components/pastor/summary-card"
-import { AlertCard } from "@/components/pastor/alert-card"
-import { GroupCard } from "@/components/pastor/group-card"
-import { cn } from "@/lib/utils"
+} from "@/hooks/use-pastor-dashboard";
+import { SummaryCard } from "@/components/pastor/summary-card";
+import { GroupCard } from "@/components/pastor/group-card";
+import { cn } from "@/lib/utils";
 
 function pluralize(count: number, singular: string, plural: string) {
-  return count === 1 ? singular : plural
+  return count === 1 ? singular : plural;
 }
 
 function isGroupInAttention(group: PastorDashboardGroup) {
   return (
     group.atRiskCount > 0 ||
     (group.lastAttendanceRate !== null && group.lastAttendanceRate < 60)
-  )
+  );
 }
 
 function getAttendanceAccent(attendance: number) {
-  if (attendance < 50) return "risk"
-  if (attendance >= 80) return "ok"
-  return "default"
+  if (attendance < 50) return "risk";
+  if (attendance >= 80) return "ok";
+  return "default";
 }
 
 function getSupervisorFocus(groups: PastorDashboardGroup[]) {
-  const counts = new Map<string, number>()
+  const counts = new Map<string, number>();
 
   groups.forEach((group) => {
-    const supervisor = group.supervisorName ?? "Supervisão sem nome"
-    counts.set(supervisor, (counts.get(supervisor) ?? 0) + 1)
-  })
+    const supervisor = group.supervisorName ?? "Supervisão sem nome";
+    counts.set(supervisor, (counts.get(supervisor) ?? 0) + 1);
+  });
 
   return [...counts.entries()]
     .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count)[0]
+    .sort((a, b) => b.count - a.count)[0];
 }
 
 function sortGroupsForPastor(groups: PastorDashboardGroup[]) {
   return [...groups].sort((a, b) => {
     if (b.atRiskCount !== a.atRiskCount) {
-      return b.atRiskCount - a.atRiskCount
+      return b.atRiskCount - a.atRiskCount;
     }
 
-    const aAttendance = a.lastAttendanceRate ?? 101
-    const bAttendance = b.lastAttendanceRate ?? 101
-    return aAttendance - bAttendance
-  })
+    const aAttendance = a.lastAttendanceRate ?? 101;
+    const bAttendance = b.lastAttendanceRate ?? 101;
+    return aAttendance - bAttendance;
+  });
 }
 
 function getSeverityTone(severity: PastorDashboardAlert["severity"]) {
-  if (severity === "high") return "risk"
-  if (severity === "medium") return "warn"
-  return "new"
+  if (severity === "high") return "risk";
+  if (severity === "medium") return "warn";
+  return "new";
 }
 
 function getPersonFocus(alerts: PastorDashboardAlert[]) {
-  return alerts.filter((alert) => alert.personId || alert.personName).slice(0, 2)
-}
-
-
-function getAlertSignals(alert: PastorDashboardAlert) {
-  const signals: string[] = []
-
-  if (alert.severity === "high") {
-    signals.push("Prioridade alta para cuidado")
-  } else if (alert.severity === "medium") {
-    signals.push("Sinal de atenção para acompanhar")
-  }
-
-  if (alert.groupName) {
-    signals.push(`Ligado à ${alert.groupName}`)
-  }
-
-  signals.push(alert.description)
-
-  return signals
+  return alerts
+    .filter((alert) => alert.personId || alert.personName)
+    .slice(0, 2);
 }
 
 function PersonFocusCard({ alert }: { alert: PastorDashboardAlert }) {
-  const tone = getSeverityTone(alert.severity)
-  const href = alert.personId ? `/membro/${alert.personId}` : "/pastor/pessoas"
+  const tone = getSeverityTone(alert.severity);
+  const href = alert.personId ? `/membro/${alert.personId}` : "/pastor/pessoas";
 
   return (
     <Link
       href={href}
-      className="block rounded-2xl border border-[var(--border-light)] bg-[var(--card)] p-4 transition hover:bg-[var(--surface)] active:scale-[0.99]"
+      className={cn(
+        "block rounded-2xl border p-4 transition hover:bg-[var(--surface)] active:scale-[0.99]",
+        tone === "risk" && "border-[var(--risk-border)] bg-[var(--risk-bg)]",
+        tone === "warn" && "border-[var(--warn-border)] bg-[var(--warn-bg)]",
+        tone === "new" && "border-[var(--new-border)] bg-[var(--new-bg)]",
+      )}
     >
       <div className="flex items-start gap-3">
         <div
           className={cn(
-            "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
-            tone === "risk" && "bg-[var(--risk-bg)] text-[var(--risk)]",
-            tone === "warn" && "bg-[var(--warn-bg)] text-[var(--warn)]",
-            tone === "new" && "bg-[var(--new-bg)] text-[var(--new)]",
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--card)]",
+            tone === "risk" && "text-[var(--risk)]",
+            tone === "warn" && "text-[var(--warn)]",
+            tone === "new" && "text-[var(--new)]",
           )}
         >
           <HeartHandshake className="h-5 w-5" />
@@ -129,15 +115,10 @@ function PersonFocusCard({ alert }: { alert: PastorDashboardAlert }) {
           <p className="mt-2 line-clamp-2 text-sm leading-5 text-[var(--text-secondary)]">
             {alert.description}
           </p>
-          <ContextSignalList
-            signals={getAlertSignals(alert)}
-            tone={tone}
-            className="mt-3"
-          />
         </div>
       </div>
     </Link>
-  )
+  );
 }
 
 function ActionLink({
@@ -146,10 +127,10 @@ function ActionLink({
   title,
   description,
 }: {
-  href: string
-  icon: ReactNode
-  title: string
-  description: string
+  href: string;
+  icon: ReactNode;
+  title: string;
+  description: string;
 }) {
   return (
     <Link
@@ -160,18 +141,20 @@ function ActionLink({
         {icon}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-[var(--text-primary)]">{title}</p>
+        <p className="text-sm font-semibold text-[var(--text-primary)]">
+          {title}
+        </p>
         <p className="mt-0.5 text-xs leading-5 text-[var(--text-muted)]">
           {description}
         </p>
       </div>
       <ArrowRight className="h-4 w-4 shrink-0 text-[var(--text-muted)]" />
     </Link>
-  )
+  );
 }
 
 export default function PastorPage() {
-  const { data, isLoading } = usePastorDashboard()
+  const { data, isLoading } = usePastorDashboard();
 
   if (isLoading) {
     return (
@@ -180,31 +163,35 @@ export default function PastorPage() {
         <div className="h-14 animate-pulse rounded-2xl bg-[var(--surface)]" />
         <div className="space-y-2">
           {[...Array(3)].map((_, index) => (
-            <div key={index} className="h-20 animate-pulse rounded-2xl bg-[var(--surface)]" />
+            <div
+              key={index}
+              className="h-20 animate-pulse rounded-2xl bg-[var(--surface)]"
+            />
           ))}
         </div>
       </div>
-    )
+    );
   }
 
-  const summary = data?.summary
-  const alerts = data?.alerts ?? []
-  const groups = data?.groups ?? []
+  const summary = data?.summary;
+  const alerts = data?.alerts ?? [];
+  const groups = data?.groups ?? [];
 
-  const atRiskCount = summary?.atRiskCount ?? 0
-  const overdueTasksCount = summary?.overdueTasksCount ?? 0
-  const averageAttendance = summary?.averageAttendance ?? 0
-  const attentionGroups = sortGroupsForPastor(groups.filter(isGroupInAttention))
-  const supervisorFocus = getSupervisorFocus(attentionGroups)
-  const personFocus = getPersonFocus(alerts)
-  const relevantAlerts = alerts.slice(0, 3)
+  const atRiskCount = summary?.atRiskCount ?? 0;
+  const overdueTasksCount = summary?.overdueTasksCount ?? 0;
+  const averageAttendance = summary?.averageAttendance ?? 0;
+  const attentionGroups = sortGroupsForPastor(
+    groups.filter(isGroupInAttention),
+  );
+  const supervisorFocus = getSupervisorFocus(attentionGroups);
+  const personFocus = getPersonFocus(alerts);
 
   const mainPulse =
     atRiskCount > 0
       ? `${atRiskCount} ${pluralize(atRiskCount, "pessoa precisa", "pessoas precisam")} de cuidado esta semana.`
       : attentionGroups.length > 0
         ? `${attentionGroups.length} ${pluralize(attentionGroups.length, "célula pede", "células pedem")} atenção pastoral.`
-        : "A igreja está tranquila por agora."
+        : "A igreja está tranquila por agora.";
 
   const supportPulse = supervisorFocus
     ? `${supervisorFocus.name} concentra ${supervisorFocus.count} ${pluralize(
@@ -218,7 +205,7 @@ export default function PastorPage() {
           "retorno pendente pede",
           "retornos pendentes pedem",
         )} revisão.`
-      : "Nada pede intervenção agora."
+      : "Nada pede intervenção agora.";
 
   return (
     <div className="space-y-5">
@@ -232,7 +219,9 @@ export default function PastorPage() {
         <h2 className="text-2xl font-semibold leading-snug text-[var(--pulse-card-fg)]">
           {mainPulse}
         </h2>
-        <p className="mt-3 text-base leading-7 text-[var(--pulse-card-muted)]">{supportPulse}</p>
+        <p className="mt-3 text-base leading-7 text-[var(--pulse-card-muted)]">
+          {supportPulse}
+        </p>
       </section>
 
       <Link
@@ -264,7 +253,10 @@ export default function PastorPage() {
             <h2 className="text-sm font-medium text-[var(--text-secondary)]">
               Pessoas para olhar primeiro
             </h2>
-            <Link href="/pastor/pessoas" className="text-xs font-medium text-[var(--accent)]">
+            <Link
+              href="/pastor/pessoas"
+              className="text-xs font-medium text-[var(--accent)]"
+            >
               Ver todas
             </Link>
           </div>
@@ -279,24 +271,13 @@ export default function PastorPage() {
           <div className="flex items-start gap-3 text-[var(--ok)]">
             <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
             <div>
-              <h2 className="text-sm font-semibold">Nenhuma pessoa em prioridade agora</h2>
+              <h2 className="text-sm font-semibold">
+                Nenhuma pessoa em prioridade agora
+              </h2>
               <p className="mt-1 text-sm leading-6">
                 Siga perto da equipe. Quando alguém precisar, aparecerá aqui.
               </p>
             </div>
-          </div>
-        </section>
-      )}
-
-      {relevantAlerts.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-sm font-medium text-[var(--text-secondary)]">
-            Por que isso apareceu
-          </h2>
-          <div className="space-y-2">
-            {relevantAlerts.map((alert) => (
-              <AlertCard key={alert.id} alert={alert} />
-            ))}
           </div>
         </section>
       )}
@@ -311,29 +292,30 @@ export default function PastorPage() {
             value={atRiskCount}
             icon={<AlertTriangle className="h-5 w-5" />}
             accent={atRiskCount > 0 ? "risk" : "ok"}
+            helperText="Nas células"
           />
           <SummaryCard
             label="Células sensíveis"
             value={attentionGroups.length}
             icon={<Users className="h-5 w-5" />}
             accent={attentionGroups.length > 0 ? "risk" : "ok"}
+            helperText="Esta semana"
           />
           <SummaryCard
             label="Presença média"
             value={`${averageAttendance}%`}
             icon={<TrendingUp className="h-5 w-5" />}
             accent={getAttendanceAccent(averageAttendance)}
+            helperText="Nas células"
           />
           <SummaryCard
             label="Retornos pendentes"
             value={overdueTasksCount}
             icon={<ClipboardList className="h-5 w-5" />}
             accent={overdueTasksCount > 0 ? "risk" : "ok"}
+            helperText="Esta semana"
           />
         </div>
-        <p className="text-xs leading-5 text-[var(--text-muted)]">
-          Os números ficam como apoio. A prioridade aparece acima.
-        </p>
       </section>
 
       {attentionGroups.length > 0 && (
@@ -342,17 +324,20 @@ export default function PastorPage() {
             <h2 className="text-sm font-medium text-[var(--text-secondary)]">
               Células para acompanhar
             </h2>
-            <Link href="/pastor/equipe" className="text-xs font-medium text-[var(--accent)]">
+            <Link
+              href="/pastor/equipe"
+              className="text-xs font-medium text-[var(--accent)]"
+            >
               Ver equipe
             </Link>
           </div>
           <div className="space-y-2">
             {attentionGroups.slice(0, 3).map((group) => (
-              <GroupCard key={group.id} group={group} />
+              <GroupCard key={group.id} group={group} href={`/pastor/celulas/${group.id}`} compact />
             ))}
           </div>
         </section>
       )}
     </div>
-  )
+  );
 }

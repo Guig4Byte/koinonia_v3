@@ -1,36 +1,38 @@
-"use client"
+"use client";
 
-import { BottomNav } from "@/components/layout/bottom-nav"
-import { RoleGuard } from "@/components/layout/role-guard"
-import { useMe, useLogout } from "@/hooks/use-auth"
-import { getGreeting } from "@/lib/greeting"
-import { LogOut } from "lucide-react"
+import { BottomNav } from "@/components/layout/bottom-nav";
+import { RoleGuard } from "@/components/layout/role-guard";
+import { useMe, useLogout } from "@/hooks/use-auth";
+import { getGreeting } from "@/lib/greeting";
+import { LogOut } from "lucide-react";
 
 export default function PastorLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <RoleGuard allowedRoles={["pastor"]}>
       <PastorLayoutInner>{children}</PastorLayoutInner>
     </RoleGuard>
-  )
+  );
 }
 
 function PastorLayoutInner({ children }: { children: React.ReactNode }) {
-  const { data: user } = useMe()
-  const logout = useLogout()
-  const greeting = getGreeting()
-  const name = user?.name?.split(" ")[0] ?? "Pastor"
+  const { data: user } = useMe();
+  const logout = useLogout();
+  const greeting = getGreeting();
+  const name = user?.name?.split(" ")[0] ?? "Pastor";
 
   return (
     <div className="mx-auto flex min-h-screen max-w-[430px] flex-col bg-[var(--bg)]">
-      <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--bg)]/80 px-5 py-4 backdrop-blur-sm">
+      <header className="koinonia-glass-header sticky top-0 z-40 border-b border-[var(--border)] px-5 py-4">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-[var(--text-muted)]">{greeting},</p>
-            <h1 className="text-lg font-semibold text-[var(--text-primary)]">{name}</h1>
+            <h1 className="text-lg font-semibold text-[var(--text-primary)]">
+              {name}
+            </h1>
           </div>
           <button
             onClick={logout}
@@ -51,5 +53,5 @@ function PastorLayoutInner({ children }: { children: React.ReactNode }) {
         ]}
       />
     </div>
-  )
+  );
 }

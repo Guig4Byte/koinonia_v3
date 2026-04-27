@@ -18,8 +18,8 @@
 
     /* Status — Risco */
     --risk: #934025;
-    --risk-bg: #f6e5dc;
-    --risk-border: #dcaa96;
+    --risk-bg: #f2d4c8;
+    --risk-border: #ce8067;
 
     /* Status — OK */
     --ok: #456728;
@@ -70,8 +70,8 @@
 
     /* Status — Risco */
     --risk: #e08b72;
-    --risk-bg: #3b1c12;
-    --risk-border: #6a3424;
+    --risk-bg: #442116;
+    --risk-border: #7a3b28;
 
     /* Status — OK */
     --ok: #a1c47c;
@@ -104,7 +104,7 @@
     --pulse-card-bg: #2f2419;
     --pulse-card-fg: #fff6e8;
     --pulse-card-muted: rgba(255, 246, 232, 0.72);
-    --pulse-card-soft: rgba(255, 246, 232, 0.10);
+    --pulse-card-soft: rgba(255, 246, 232, 0.1);
   }
 
   * {
@@ -120,17 +120,37 @@
     background-color: var(--bg);
     color: var(--text-primary);
     background-image:
-      radial-gradient(circle at 50% -10%, rgba(255, 253, 244, 0.92), transparent 42rem),
-      radial-gradient(circle at 12% 6%, rgba(164, 103, 39, 0.12), transparent 18rem),
-      radial-gradient(circle at 88% 0%, rgba(120, 80, 35, 0.08), transparent 20rem),
+      radial-gradient(
+        circle at 50% -10%,
+        rgba(255, 253, 244, 0.92),
+        transparent 42rem
+      ),
+      radial-gradient(
+        circle at 12% 6%,
+        rgba(164, 103, 39, 0.12),
+        transparent 18rem
+      ),
+      radial-gradient(
+        circle at 88% 0%,
+        rgba(120, 80, 35, 0.08),
+        transparent 20rem
+      ),
       linear-gradient(180deg, #f7eddd 0%, #efe0ca 100%);
     background-repeat: no-repeat;
   }
 
   .dark body {
     background-image:
-      radial-gradient(circle at 50% -10%, rgba(96, 67, 37, 0.28), transparent 34rem),
-      radial-gradient(circle at 12% 6%, rgba(120, 82, 43, 0.18), transparent 18rem),
+      radial-gradient(
+        circle at 50% -10%,
+        rgba(96, 67, 37, 0.28),
+        transparent 34rem
+      ),
+      radial-gradient(
+        circle at 12% 6%,
+        rgba(120, 82, 43, 0.18),
+        transparent 18rem
+      ),
       linear-gradient(180deg, #17130f 0%, #211a13 100%);
   }
 
@@ -150,5 +170,25 @@ html.dark body {
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  .koinonia-glass-header {
+    background: linear-gradient(
+      180deg,
+      rgba(255, 250, 243, 0.94) 0%,
+      rgba(243, 234, 219, 0.9) 100%
+    );
+    -webkit-backdrop-filter: blur(14px) saturate(116%);
+    backdrop-filter: blur(14px) saturate(116%);
+    box-shadow: 0 1px 0 rgba(104, 76, 44, 0.1);
+  }
+
+  .dark .koinonia-glass-header {
+    background: linear-gradient(
+      180deg,
+      rgba(33, 28, 22, 0.94) 0%,
+      rgba(21, 19, 15, 0.9) 100%
+    );
+    box-shadow: 0 1px 0 rgba(212, 185, 141, 0.08);
   }
 }

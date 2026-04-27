@@ -126,7 +126,7 @@ export default function SupervisorProfilePage() {
         </h2>
         <div className="space-y-2">
           {groups.map((group) => (
-            <GroupCard key={group.id} group={group} />
+            <GroupCard key={group.id} group={group} href={`/pastor/celulas/${group.id}`} />
           ))}
         </div>
       </section>
